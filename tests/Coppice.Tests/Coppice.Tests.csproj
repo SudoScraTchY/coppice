@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Coppice.Core\Coppice.Core.csproj" />
+    <ProjectReference Include="..\..\src\Coppice.Ports\Coppice.Ports.csproj" />
+    <ProjectReference Include="..\..\src\Coppice.Adapters\Coppice.Adapters.csproj" />
+    <ProjectReference Include="..\..\src\Coppice.Plugins.Net\Coppice.Plugins.Net.csproj" />
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="FsCheck" Version="3.2.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+
+</Project>

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Coppice.Core\Coppice.Core.csproj" />
+    <ProjectReference Include="..\Coppice.Adapters\Coppice.Adapters.csproj" />
+    <ProjectReference Include="..\Coppice.Plugins.Net\Coppice.Plugins.Net.csproj" />
+    <ProjectReference Include="..\Coppice.Manifests\Coppice.Manifests.csproj" />
+
+  </ItemGroup>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>coppice</ToolCommandName>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+
+</Project>

@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Coppice.Adapters/Coppice.Adapters.csproj" />
+    <Project Path="src/Coppice.Cli/Coppice.Cli.csproj" />
+    <Project Path="src/Coppice.Core/Coppice.Core.csproj" />
+    <Project Path="src/Coppice.Manifests/Coppice.Manifests.csproj" />
+    <Project Path="src/Coppice.Plugins.Net/Coppice.Plugins.Net.csproj" />
+    <Project Path="src/Coppice.Ports/Coppice.Ports.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Coppice.ArchitectureTests/Coppice.ArchitectureTests.csproj" />
+    <Project Path="tests/Coppice.Tests/Coppice.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,19 @@
+## Build output
+[Bb]in/
+[Oo]bj/
+artifacts/
+
+## IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+## Test output
+TestResults/
+*.trx
+coverage*.xml
+
+## Tooling
+.dotnet/
