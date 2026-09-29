@@ -31,7 +31,7 @@ public sealed class FactsJsonConverter : JsonConverter<Facts>
                 throw new JsonException("Malformed Facts object.");
             }
 
-            string key = reader.GetString()!;
+            var key = reader.GetString()!;
             reader.Read();
             values[key] = reader.TokenType switch
             {
@@ -53,7 +53,7 @@ public sealed class FactsJsonConverter : JsonConverter<Facts>
         ArgumentNullException.ThrowIfNull(value);
 
         writer.WriteStartObject();
-        foreach (KeyValuePair<string, string> pair in value)
+        foreach (var pair in value)
         {
             writer.WriteString(pair.Key, pair.Value);
         }

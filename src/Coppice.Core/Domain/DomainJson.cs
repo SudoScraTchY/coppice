@@ -39,7 +39,7 @@ public static class DomainJson
     /// </summary>
     public static string ComputeChecksum<T>(T value)
     {
-        byte[] bytes = Encoding.UTF8.GetBytes(Serialize(value));
+        var bytes = Encoding.UTF8.GetBytes(Serialize(value));
         return Convert.ToHexStringLower(SHA256.HashData(bytes));
     }
 }

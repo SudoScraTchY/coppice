@@ -70,7 +70,7 @@ public sealed record UsageBreakdown(ulong SafeBytes, ulong ReviewBytes, ulong Ma
     public static UsageBreakdown FromItems(IEnumerable<Item> items)
     {
         ulong @safe = 0, review = 0, manual = 0;
-        foreach (Item item in items)
+        foreach (var item in items)
         {
             switch (item.Risk)
             {

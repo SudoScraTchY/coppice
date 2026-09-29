@@ -1,0 +1,13 @@
+# Normalize line endings on checkin; checkout as-is on Windows, LF elsewhere.
+* text=auto
+
+*.cs text diff=csharp
+*.csproj text
+*.props text
+*.slnx text
+*.md text
+*.json text
+*.yml text
+
+# The Apache-2.0 license text must stay byte-identical to the canonical copy.
+LICENSE text eol=lf

@@ -19,7 +19,7 @@ public sealed record Facts : IReadOnlyDictionary<string, string>
     public Facts(IReadOnlyDictionary<string, string> values)
     {
         ArgumentNullException.ThrowIfNull(values);
-        foreach (KeyValuePair<string, string> pair in values)
+        foreach (var pair in values)
         {
             Add(pair.Key, pair.Value);
         }
@@ -59,9 +59,9 @@ public sealed record Facts : IReadOnlyDictionary<string, string>
             return false;
         }
 
-        foreach (KeyValuePair<string, string> pair in _values)
+        foreach (var pair in _values)
         {
-            if (!other._values.TryGetValue(pair.Key, out string? value)
+            if (!other._values.TryGetValue(pair.Key, out var value)
                 || !string.Equals(pair.Value, value, StringComparison.Ordinal))
             {
                 return false;
@@ -74,7 +74,7 @@ public sealed record Facts : IReadOnlyDictionary<string, string>
     public override int GetHashCode()
     {
         var hash = new HashCode();
-        foreach (KeyValuePair<string, string> pair in _values)
+        foreach (var pair in _values)
         {
             hash.Add(pair.Key, StringComparer.Ordinal);
             hash.Add(pair.Value, StringComparer.Ordinal);
@@ -105,7 +105,7 @@ public sealed record Facts : IReadOnlyDictionary<string, string>
 
         // Identifier-like throughout, not just the first character: a ':' or '/' anywhere would
         // corrupt the colon-delimited reason/detail columns of the CSV and text reports.
-        foreach (char c in key)
+        foreach (var c in key)
         {
             if (!char.IsAsciiLetterOrDigit(c) && c != '_')
             {
