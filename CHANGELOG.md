@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - T-007 scan pipeline: bounded parallel per-root enumeration with cancellation and progress,
   hard-link-aware sizing, and deterministic ordering. An item whose path escapes its root is
   dropped with an issue rather than carried into the plan.
+- T-008 project discovery: a shared marker registry and discovery service. Plugins register markers
+  (`*.csproj`, `go.mod`, `Cargo.toml`, `package.json`, …) instead of walking the filesystem, which
+  is what keeps adding an ecosystem free of core changes. Vendored and quarantined trees are skipped
+  during descent, not after.
 
 ### Fixed
 - `MaxDepth` on `IFileSystem.EnumerateEntries` now means the same thing in the real adapter and the
