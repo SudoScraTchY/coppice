@@ -13,13 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Ambiguous` so it is never cleaned until pinned.
 - T-006 fingerprint validator: the gate that makes a poisoned tool survivable. A path can exist and
   clear the denylist and still not look like a cache; a failed fingerprint is reported, never cleaned.
-- CI pipeline on the win/linux/mac matrix (see the 0.1.0 section for detail).
-- Package description, tags, and packed README.
+- T-007 scan pipeline: bounded parallel per-root enumeration with cancellation and progress,
+  hard-link-aware sizing, and deterministic ordering. An item whose path escapes its root is
+  dropped with an issue rather than carried into the plan.
 
 ### Fixed
 - `MaxDepth` on `IFileSystem.EnumerateEntries` now means the same thing in the real adapter and the
   fake: 1 = immediate children only. The two implementations disagreed, so a test could pass against
   the fake and fail on a real machine.
+- The scan pipeline de-duplicates by `ItemId`. Two providers covering the same entry previously
+  double-counted the reclaim total and put the same path in the plan twice.
+- Version detection no longer truncates `newtonsoft.json.13.0.3` to `3`.
+- CI pipeline on the win/linux/mac matrix (see the 0.1.0 section for detail).
+- Package description, tags, and packed README.
 
 ## [0.1.0] — foundations
 

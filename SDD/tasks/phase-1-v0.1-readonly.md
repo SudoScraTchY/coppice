@@ -3,7 +3,7 @@
 Goal: earn trust before touching anything. Exit criteria per 12-roadmap.
 Cards: T-005 … T-019. Nothing in this phase mutates user data.
 
-> **In progress (2026-09-29).** T-005 and T-006 are complete and verified. The remaining cards are
+> **In progress (2026-09-29).** T-005, T-006, and T-007 are complete and verified. The remaining cards are
 > open. A CI pipeline (`.github/workflows/build.yml`) now runs the full gate on the
 > win/linux/mac matrix, closes the Phase 0 "CI green" caveat, and enforces the no-network-dependency
 > rule from the Definition of Done.
@@ -44,10 +44,10 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - Per-root parallel enumeration with cancellation + progress; hard-link/reparse-aware sizing (unique file counted once); deterministic sort before emission.
 
 **Acceptance**
-- [ ] Sizes match fixture truth within 2% (FR-04)
-- [ ] Hard-link fixture counts shared file once
-- [ ] Long-path fixture scans without error
-- [ ] Two runs → byte-identical snapshot (NFR-06)
+- [x] Sizes match fixture truth within 2% (FR-04)
+- [x] Hard-link fixture counts shared file once
+- [x] Long-path fixture scans without error
+- [x] Two runs → byte-identical snapshot (NFR-06)
 
 ### T-008 · Project discovery — marker service
 **Refs** FR-06 · **Depends** T-002 · **Effort** M
