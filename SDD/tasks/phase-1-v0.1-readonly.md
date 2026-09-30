@@ -3,7 +3,7 @@
 Goal: earn trust before touching anything. Exit criteria per 12-roadmap.
 Cards: T-005 … T-019. Nothing in this phase mutates user data.
 
-> **In progress (2026-09-29).** T-005 through T-008 are complete and verified. The remaining cards are
+> **In progress (2026-09-29).** T-005 through T-009 are complete and verified. The remaining cards are
 > open. A CI pipeline (`.github/workflows/build.yml`) now runs the full gate on the
 > win/linux/mac matrix, closes the Phase 0 "CI green" caveat, and enforces the no-network-dependency
 > rule from the Definition of Done.
@@ -67,8 +67,8 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - `state/snapshots/<utc>.json`, schema v1, sorted keys, keep-last-N pruning.
 
 **Acceptance**
-- [ ] Round-trip + schema-version rejection test
-- [ ] Pruning keeps newest N, logs pruned ids
+- [x] Round-trip + schema-version rejection test
+- [x] Pruning keeps newest N, logs pruned ids
 
 ### T-010 · .NET profile data
 **Refs** FR-01, FR-02, 09-ecosystems · **Depends** T-005 · **Effort** M
