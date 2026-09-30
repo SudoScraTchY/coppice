@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - T-007 scan pipeline: bounded parallel per-root enumeration with cancellation and progress,
   hard-link-aware sizing, and deterministic ordering. An item whose path escapes its root is
   dropped with an issue rather than carried into the plan.
+- T-010 .NET profile data: the location table from 09-ecosystems as data in the plugin, with
+  per-OS defaults, fingerprints, owners, and tiers. Defaults carry unexpanded placeholders
+  (`~`, `{user}`, `%VAR%`, `$VAR`) and are resolved per machine at scan time, so the table is
+  portable and testable rather than baked against one environment.
 - T-009 snapshot store: schema-versioned, checksummed persistence of scan results with keep-last-N
   pruning. An unknown schema version is refused rather than guessed at, and pruned ids are returned
   rather than silently discarded.

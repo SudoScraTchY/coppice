@@ -3,7 +3,7 @@
 Goal: earn trust before touching anything. Exit criteria per 12-roadmap.
 Cards: T-005 … T-019. Nothing in this phase mutates user data.
 
-> **In progress (2026-09-29).** T-005 through T-009 are complete and verified. The remaining cards are
+> **In progress (2026-09-29).** T-005 through T-010 are complete and verified. The remaining cards are
 > open. A CI pipeline (`.github/workflows/build.yml`) now runs the full gate on the
 > win/linux/mac matrix, closes the Phase 0 "CI green" caveat, and enforces the no-network-dependency
 > rule from the Definition of Done.
@@ -77,8 +77,8 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - Location table from 09 as data inside Coppice.Plugins.Net: sources, per-OS defaults, fingerprints, owners, tiers.
 
 **Acceptance**
-- [ ] Every 09 location row is represented and round-trips
-- [ ] Per-OS default table test (win/linux/mac incl. NuGet temp/http variants)
+- [x] Every 09 location row is represented and round-trips
+- [x] Per-OS default table test (win/linux/mac incl. NuGet temp/http variants)
 
 ### T-011 · .NET inventory
 **Refs** FR-04 · **Depends** T-007, T-010 · **Effort** L
