@@ -26,13 +26,16 @@ public sealed class PhysicalFileSystem : IFileSystem
 
         var results = new List<FileEntry>();
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        Walk(path, depth: 0, options, results, visited);
+        Walk(path, level: 0, options, results, visited);
         return results;
     }
 
-    private void Walk(string directory, int depth, EnumerationRequest options, List<FileEntry> results, HashSet<string> visited)
+    // `level` counts levels below the requested root: the root is 0, its immediate children are 1,
+    // so MaxDepth = 1 means immediate children only — the same contract as System.IO's
+    // TopDirectoryOnly and as the fake VFS used in tests.
+    private void Walk(string directory, int level, EnumerationRequest options, List<FileEntry> results, HashSet<string> visited)
     {
-        if (options.MaxDepth is int max && depth > max)
+        if (options.MaxDepth is int max && level > max)
         {
             return;
         }
@@ -71,9 +74,9 @@ public sealed class PhysicalFileSystem : IFileSystem
             bool descend = entry.Kind == EntryKind.Directory
                 || (entry.IsLink && options.FollowLinks && Directory.Exists(child));
 
-            if (descend)
+            if (descend && (options.MaxDepth is not int limit || level + 1 <= limit))
             {
-                Walk(child, depth + 1, options, results, visited);
+                Walk(child, level + 1, options, results, visited);
             }
         }
     }

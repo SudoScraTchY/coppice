@@ -20,6 +20,9 @@
     <Authors>Coppice Authors</Authors>
     <Copyright>Copyright (c) Coppice Authors</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageDescription>A cross-platform, plugin-based toolchain and cache cleaner for polyglot developers. Dry-run by default; every proposed deletion carries a reason string.</PackageDescription>
+    <PackageTags>dotnet;cleanup;cache;toolchain;developer-tools;disk-space</PackageTags>
     <PackageProjectUrl>https://github.com/coppice/coppice</PackageProjectUrl>
     <RepositoryUrl>https://github.com/coppice/coppice</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

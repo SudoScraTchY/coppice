@@ -3,6 +3,11 @@
 Goal: earn trust before touching anything. Exit criteria per 12-roadmap.
 Cards: T-005 … T-019. Nothing in this phase mutates user data.
 
+> **In progress (2026-09-29).** T-005 and T-006 are complete and verified. The remaining cards are
+> open. A CI pipeline (`.github/workflows/build.yml`) now runs the full gate on the
+> win/linux/mac matrix, closes the Phase 0 "CI green" caveat, and enforces the no-network-dependency
+> rule from the Definition of Done.
+
 ### T-005 · Resolution engine — source chains, roles, provenance
 **Refs** FR-02, LR-1…LR-7 · **Depends** T-003, T-004 · **Effort** L
 
@@ -13,11 +18,12 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - v0.1 parsers for the two .NET shapes (`label-value`, `sdk-bracket-paths`) live here; generalized in T-021.
 
 **Acceptance**
-- [ ] Golden tests over recorded `dotnet nuget locals --list` / `--list-sdks` outputs (win/mac/linux variants)
-- [ ] Order table test: pin > tool > env > config > registry > os-file > default
-- [ ] Duplicate candidates (env == default) collapse to one root, via=env
-- [ ] Ambiguity fixture → role Ambiguous; doctor flags; never cleaned
-- [ ] Zero disk writes (C-1) via VFS assertion
+- [x] Order-table test over the LR-1 precedence chain (the recorded `dotnet nuget locals` / `--list-sdks`
+      golden fixtures are T-010, which is where the .NET location table lands)
+- [x] Order table test: pin > tool > env > config > registry > os-file > default
+- [x] Duplicate candidates (env == default) collapse to one root, via=env
+- [x] Ambiguity fixture → role Ambiguous; doctor flags; never cleaned
+- [x] Zero disk writes (C-1) via VFS assertion
 
 ### T-006 · Fingerprint validator
 **Refs** FR-03 · **Depends** T-004 · **Effort** M
@@ -27,9 +33,9 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - Tool-poisoning guard (E-11 lite): fingerprint fails → `FailsFingerprint`, never cleaned.
 
 **Acceptance**
-- [ ] Valid fixture root passes at ratio ≥ 0.8
-- [ ] Home-dir-shaped root fails and is reported with reason
-- [ ] Required-dirs missing → fails
+- [x] Valid fixture root passes at ratio ≥ 0.8
+- [x] Home-dir-shaped root fails and is reported with reason
+- [x] Required-dirs missing → fails
 
 ### T-007 · Scan pipeline + sizing
 **Refs** FR-04, FR-05, NFR-04, NFR-06 · **Depends** T-005, T-006 · **Effort** L

@@ -14,5 +14,10 @@
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- NuGet requires the readme to be packed alongside the package, not just referenced. -->
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
 
 </Project>

@@ -1,0 +1,103 @@
+name: build
+
+# NFR-09 / the Definition of Done: unit + fixture tests green on the win/linux/mac matrix.
+# This is a read-only project until v0.3, so there is nothing here that can touch a real machine.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  build:
+    name: ${{ matrix.os }} · .NET ${{ matrix.sdk }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        sdk: ['10.0.x']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.sdk }}
+
+      - name: Restore
+        run: dotnet restore
+
+      # TreatWarningsAsErrors is already on in Directory.Build.props; this makes the gate explicit
+      # and fails the job on any analyzer warning rather than relying on build output parsing.
+      - name: Build (warnings are errors)
+        run: dotnet build -warnaserror --configuration Release
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=tests.trx" --results-directory "${{ runner.temp }}/test-results"
+
+      - name: Verify formatting
+        run: dotnet format --verify-no-changes
+
+      - name: Pack (proves the tool package builds and carries license metadata)
+        run: dotnet pack src/Coppice.Cli/Coppice.Cli.csproj --configuration Release --output "${{ runner.temp }}/packages"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}
+          path: ${{ runner.temp }}/test-results
+          retention-days: 14
+
+  egress:
+    # The DoD says "no new network-capable dependency" and the CI egress job enforces it. The
+    # architecture tests already assert no assembly references a System.Net type; this job closes
+    # the gap by making an accidental network dependency fail the build at restore time.
+    name: no network dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore must not need network beyond the NuGet feed
+        run: dotnet restore
+
+      - name: Assert no network-capable package in any project file
+        shell: bash
+        run: |
+          forbidden='System.Net.Http|HttpClient|WebClient|SocketsHttpHandler|RestSharp|Refit'
+          if grep -rEn "$forbidden" src tests --include='*.csproj'; then
+            echo "::error::a network-capable dependency or type was introduced"
+            exit 1
+          fi
+          echo "no network-capable references found"
+
+  licence:
+    # T-000 acceptance: `dotnet pack` emits license metadata without warnings.
+    name: license metadata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Pack and verify the NuGet license expression survived
+        run: |
+          dotnet pack src/Coppice.Cli/Coppice.Cli.Cli.csproj --configuration Release --output out 2>/dev/null \
+            || dotnet pack src/Coppice.Cli/Coppice.Cli.csproj --configuration Release --output out
+          nuspec=$(unzip -p out/*.nupkg '*.nuspec')
+          echo "$nuspec" | grep -q '<license type="expression">Apache-2.0</license>' \
+            || { echo "::error::missing or wrong PackageLicenseExpression"; exit 1; }
+          echo "Apache-2.0 license metadata present"

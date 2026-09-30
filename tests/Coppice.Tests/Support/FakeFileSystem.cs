@@ -33,9 +33,17 @@ public sealed class FakeFileSystem : IFileSystem
 
     // ---- Fixture construction ----
 
+    /// <summary>
+    /// Adds a directory, creating any missing ancestors. Ancestors are implied by the path, so
+    /// creating them here keeps <c>AddDirectory</c> consistent with <c>AddFile</c> — otherwise
+    /// <c>AddDirectory("/cache/pkg/1.0")</c> silently fails to make "/cache" exist, and every later
+    /// assertion about that tree fails for a reason that has nothing to do with the code under test.
+    /// </summary>
     public FakeFileSystem AddDirectory(string path)
     {
-        _nodes[Normalize(path)] = new Node(EntryKind.Directory, null, null, null, LockState.Unlocked, false, DateTimeOffset.UnixEpoch);
+        string full = Normalize(path);
+        _nodes[full] = new Node(EntryKind.Directory, null, null, null, LockState.Unlocked, false, DateTimeOffset.UnixEpoch);
+        EnsureParentDirectories(full);
         return this;
     }
 
@@ -141,8 +149,11 @@ public sealed class FakeFileSystem : IFileSystem
                 continue;
             }
 
-            int depth = CountDepth(full, prefix);
-            if (options.MaxDepth is int max && depth > max)
+            // MaxDepth counts levels below the root, so MaxDepth = 1 means immediate children only
+            // (matching System.IO's TopDirectoryOnly). It must agree with PhysicalFileSystem or a
+            // test can pass against the fake and fail on a real machine.
+            int level = CountDepth(full, prefix) + 1;
+            if (options.MaxDepth is int max && level > max)
             {
                 continue;
             }
@@ -282,6 +293,7 @@ public sealed class FakeFileSystem : IFileSystem
 
     public void CreateDirectory(string path)
     {
+        Writes.Add($"CreateDirectory {path}");
         string full = Normalize(path);
         _nodes[full] = new Node(EntryKind.Directory, null, null, null, LockState.Unlocked, false, DateTimeOffset.UnixEpoch);
         EnsureParentDirectories(full);
@@ -289,6 +301,7 @@ public sealed class FakeFileSystem : IFileSystem
 
     public void Move(string sourcePath, string destinationPath)
     {
+        Writes.Add($"Move {sourcePath} -> {destinationPath}");
         string source = Normalize(sourcePath);
         string destination = Normalize(destinationPath);
         if (!_nodes.TryGetValue(source, out Node? node))
@@ -315,6 +328,7 @@ public sealed class FakeFileSystem : IFileSystem
 
     public void DeleteFile(string path, bool recursive)
     {
+        Writes.Add($"DeleteFile {path} recursive={recursive}");
         string full = Normalize(path);
         if (!_nodes.Remove(full))
         {
@@ -337,6 +351,12 @@ public sealed class FakeFileSystem : IFileSystem
             _nodes.Remove(key);
         }
     }
+
+    /// <summary>
+    /// Every mutation attempted on this VFS, in order. The C-1 conformance check asserts this stays
+    /// empty for any read-only stage: resolution and scanning must never write anything.
+    /// </summary>
+    public List<string> Writes { get; } = [];
 
     // ---- Path helpers ----
 
