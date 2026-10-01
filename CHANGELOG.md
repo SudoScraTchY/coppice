@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - T-007 scan pipeline: bounded parallel per-root enumeration with cancellation and progress,
   hard-link-aware sizing, and deterministic ordering. An item whose path escapes its root is
   dropped with an issue rather than carried into the plan.
+- T-011 .NET inventory: the NuGet package enumerator (one item per id + version, with
+  integrity facts), parsers for every `dotnet` output format, and a total order over .NET
+  versions. Golden fixtures are real captured output, quirks included.
 - T-010 .NET profile data: the location table from 09-ecosystems as data in the plugin, with
   per-OS defaults, fingerprints, owners, and tiers. Defaults carry unexpanded placeholders
   (`~`, `{user}`, `%VAR%`, `$VAR`) and are resolved per machine at scan time, so the table is
@@ -29,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   during descent, not after.
 
 ### Fixed
+- A .NET release now correctly outranks a preview of the same numeric version. The opposite is what
+  a naive string compare gives, and it is how a tool ends up "upgrading" to an older SDK.
+- Trailing-separator trimming no longer turns the drive root `C:\` into `C:`, which Windows resolves
+  relative to the current directory on that drive.
 - `MaxDepth` on `IFileSystem.EnumerateEntries` now means the same thing in the real adapter and the
   fake: 1 = immediate children only. The two implementations disagreed, so a test could pass against
   the fake and fail on a real machine.

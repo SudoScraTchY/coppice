@@ -3,7 +3,7 @@
 Goal: earn trust before touching anything. Exit criteria per 12-roadmap.
 Cards: T-005 … T-019. Nothing in this phase mutates user data.
 
-> **In progress (2026-09-29).** T-005 through T-010 are complete and verified. The remaining cards are
+> **In progress (2026-09-29).** T-005 through T-011 are complete and verified. The remaining cards are
 > open. A CI pipeline (`.github/workflows/build.yml`) now runs the full gate on the
 > win/linux/mac matrix, closes the Phase 0 "CI green" caveat, and enforces the no-network-dependency
 > rule from the Definition of Done.
@@ -87,9 +87,9 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - NuGet packages per id/version (facts: nupkg present, hash file ok); SDKs (band, arch, preview flag); global tools; workload packs; sizes from pipeline.
 
 **Acceptance**
-- [ ] Fixture with 3 versions of 2 packages yields 6 items with correct facts
-- [ ] SDK band/arch/preview parsed from recorded `--list-sdks` outputs
-- [ ] Deterministic ordering (C-4)
+- [x] Fixture with 3 versions of 2 packages yields 6 items with correct facts
+- [x] SDK band/arch/preview parsed from recorded `--list-sdks` outputs
+- [x] Deterministic ordering (C-4)
 
 ### T-012 · .NET reference resolver
 **Refs** FR-07, S-4 · **Depends** T-008, T-011 · **Effort** L

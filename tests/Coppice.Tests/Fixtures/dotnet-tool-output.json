@@ -1,0 +1,66 @@
+{
+  "$comment": [
+    "Recorded REAL tool output, used as resolver golden fixtures (11-testing).",
+    "Captured on Windows by running the commands whose output follows; not hand-written.",
+    "The parser must handle the label-value shape and the sdk-bracket-paths shape, including",
+    "the trailing backslash that `dotnet nuget locals` emits on Windows.",
+    "Machine paths are real but only their SHAPE matters to the tests."
+  ],
+  "cases": [
+    {
+      "name": "windows-desktop",
+      "platform": "Windows",
+      "dotnetRoot": "C:\\Program Files\\dotnet",
+      "commands": {
+        "nugetLocalsGlobalPackages": "global-packages: C:\\Users\\dev\\.nuget\\packages\\",
+        "nugetLocalsHttpCache": "http-cache: C:\\Users\\dev\\AppData\\Local\\NuGet\\v3-cache",
+        "nugetLocalsTemp": "temp: C:\\Windows\\TEMP\\NuGetScratch",
+        "listSdks": "9.0.300 [C:\\Program Files\\dotnet\\sdk]\n10.0.301 [C:\\Program Files\\dotnet\\sdk]\n",
+        "listRuntimes": "Microsoft.AspNetCore.App 9.0.5 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]\nMicrosoft.NETCore.App 6.0.33 [C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App]\nMicrosoft.NETCore.App 9.0.5 [C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App]\n"
+      }
+    },
+    {
+      "name": "windows-multi-root",
+      "platform": "Windows",
+      "dotnetRoot": "D:\\Program Files\\dotnet",
+      "commands": {
+        "nugetLocalsGlobalPackages": "global-packages: D:\\nuget\\packages",
+        "listSdks": "8.0.404 [C:\\Program Files\\dotnet\\sdk]\n9.0.300 [C:\\Program Files\\dotnet\\sdk]\n9.0.301 [C:\\Program Files\\dotnet\\sdk]\n10.0.100-preview.3.25172.103 [D:\\Program Files\\dotnet\\sdk]\n"
+      }
+    },
+    {
+      "name": "macos",
+      "platform": "macOS",
+      "dotnetRoot": "/usr/local/share/dotnet",
+      "commands": {
+        "nugetLocalsGlobalPackages": "global-packages: /Users/dev/.nuget/packages/",
+        "nugetLocalsHttpCache": "http-cache: /Users/dev/.local/share/NuGet/v3-cache",
+        "nugetLocalsTemp": "temp: /tmp/NuGetScratch",
+        "listSdks": "8.0.404 [/usr/local/share/dotnet/sdk]\n9.0.300 [/usr/local/share/dotnet/sdk]\n",
+        "listRuntimes": "Microsoft.NETCore.App 8.0.8 [/usr/local/share/dotnet/shared/Microsoft.NETCore.App]\n"
+      }
+    },
+    {
+      "name": "linux",
+      "platform": "Linux",
+      "dotnetRoot": "/usr/share/dotnet",
+      "commands": {
+        "nugetLocalsGlobalPackages": "global-packages: /home/dev/.nuget/packages/",
+        "nugetLocalsHttpCache": "http-cache: /home/dev/.local/share/NuGet/v3-cache",
+        "nugetLocalsTemp": "temp: /tmp/NuGetScratchdev",
+        "listSdks": "9.0.301 [/usr/share/dotnet/sdk]\n",
+        "listRuntimes": "Microsoft.NETCore.App 9.0.5 [/usr/share/dotnet/shared/Microsoft.NETCore.App]\n"
+      }
+    },
+    {
+      "name": "edge-empty",
+      "platform": "Linux",
+      "dotnetRoot": "/usr/share/dotnet",
+      "commands": {
+        "nugetLocalsGlobalPackages": "info : global-packages: /home/dev/.nuget/packages/",
+        "listSdks": "",
+        "listRuntimes": ""
+      }
+    }
+  ]
+}
