@@ -1,3 +1,0 @@
-global-packages: C:\Users\dev\.nuget\packages
-http-cache: C:\Users\dev\AppData\Local\NuGet\v3-cache
-temp: C:\Users\dev\AppData\Local\Temp\NuGetScratch

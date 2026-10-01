@@ -1,3 +1,0 @@
-global-packages: /home/dev/.nuget/packages
-http-cache: /home/dev/.local/share/NuGet/v3-cache
-temp: /tmp/NuGetScratchdev

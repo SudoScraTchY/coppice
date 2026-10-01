@@ -1,4 +1,0 @@
-9.0.300 [C:\Program Files\dotnet\sdk]
-10.0.100 [C:\Program Files\dotnet\sdk]
-10.0.101 [C:\Program Files\dotnet\sdk]
-11.0.100-preview.1.25100.1 [C:\Program Files\dotnet\sdk]

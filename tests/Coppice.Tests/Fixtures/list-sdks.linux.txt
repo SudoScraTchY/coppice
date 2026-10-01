@@ -1,4 +1,0 @@
-8.0.404 [/usr/share/dotnet/sdk]
-9.0.100 [/usr/share/dotnet/sdk]
-9.0.200 [/usr/share/dotnet/sdk]
-10.0.100 [/home/dev/.dotnet/sdk]
