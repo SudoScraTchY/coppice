@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - T-007 scan pipeline: bounded parallel per-root enumeration with cancellation and progress,
   hard-link-aware sizing, and deterministic ordering. An item whose path escapes its root is
   dropped with an issue rather than carried into the plan.
+- T-012 .NET reference resolver: reads `obj/project.assets.json` and `global.json` and assigns
+  Referenced / Unreferenced / Unknown with a readable reason for each. `Unknown` never yields Safe,
+  and zero readable projects is `Unknown` rather than `Unreferenced` — otherwise a user with no
+  configured project roots would be shown their whole cache as deletable.
 - T-014 `doctor` and `roots` commands: the first working user-facing surface. Both are read-only
   by construction, report each location's `via`, role, validity and a concrete fix hint, and support
   `--json`. Exit codes follow 07 (0 success, 1 runtime, 2 usage, 3 safety abort).

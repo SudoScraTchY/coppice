@@ -98,9 +98,9 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - Parse `obj/project.assets.json` → exact package versions per project; `global.json` → SDK pins (refusal rule S-4); emit three-state Usage **with reason strings** ("used by 9 projects").
 
 **Acceptance**
-- [ ] Referenced / Unreferenced / Unknown fixtures all covered
-- [ ] global.json pin blocks SDK proposal (S-4 test)
-- [ ] Unknown never yields Safe (C-7)
+- [x] Referenced / Unreferenced / Unknown fixtures all covered
+- [x] global.json pin blocks SDK proposal (S-4 test)
+- [x] Unknown never yields Safe (C-7)
 
 ### T-013 · .NET health checks
 **Refs** FR-10 · **Depends** T-011 · **Effort** L
