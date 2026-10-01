@@ -139,6 +139,13 @@ public sealed class FingerprintValidator
         int matches = entries.Count(entry => MatchesAnyPattern(entry, fingerprint));
         double ratio = (double)matches / entries.Count;
 
+        // A zero threshold with no patterns means the profile asked for NO layout check; a location
+        // whose layout the spec describes in prose must not be failed by a generic heuristic.
+        if (fingerprint.MinimumMatchRatio <= 0)
+        {
+            return FingerprintResult.Ok(entries.Count, entries.Count, 1d);
+        }
+
         if (ratio < fingerprint.MinimumMatchRatio)
         {
             return new FingerprintResult(

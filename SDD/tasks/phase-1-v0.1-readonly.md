@@ -119,9 +119,9 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - Human + `--json` output; exit codes per 07; fix hints on invalid roots (NFR-10).
 
 **Acceptance**
-- [ ] All-valid + no problems → exit 0
-- [ ] Invalid root printed with via, role, validity, and a fix hint
-- [ ] JSON output schema-tested
+- [x] All-valid + no problems → exit 0
+- [x] Invalid root printed with via, role, validity, and a fix hint
+- [x] JSON output schema-tested
 
 ### T-015 · `scan` command + console report
 **Refs** FR-18, 07-cli-tui · **Depends** T-009 · **Effort** M

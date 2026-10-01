@@ -69,12 +69,20 @@ public sealed class PhysicalFileSystem : IFileSystem
                 continue;
             }
 
+            // Entries emitted HERE sit at `level + 1`. Guarding only the recursion was not enough:
+            // with MaxDepth = 1 the walk descended one level too far and emitted grandchildren too,
+            // silently inflating every caller's entry count.
+            if (options.MaxDepth is int limit && level + 1 > limit)
+            {
+                continue;
+            }
+
             results.Add(entry);
 
             bool descend = entry.Kind == EntryKind.Directory
                 || (entry.IsLink && options.FollowLinks && Directory.Exists(child));
 
-            if (descend && (options.MaxDepth is not int limit || level + 1 <= limit))
+            if (descend)
             {
                 Walk(child, level + 1, options, results, visited);
             }

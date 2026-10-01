@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - T-007 scan pipeline: bounded parallel per-root enumeration with cancellation and progress,
   hard-link-aware sizing, and deterministic ordering. An item whose path escapes its root is
   dropped with an issue rather than carried into the plan.
+- T-014 `doctor` and `roots` commands: the first working user-facing surface. Both are read-only
+  by construction, report each location's `via`, role, validity and a concrete fix hint, and support
+  `--json`. Exit codes follow 07 (0 success, 1 runtime, 2 usage, 3 safety abort).
 - T-011 .NET inventory: the NuGet package enumerator (one item per id + version, with
   integrity facts), parsers for every `dotnet` output format, and a total order over .NET
   versions. Golden fixtures are real captured output, quirks included.
@@ -32,6 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   during descent, not after.
 
 ### Fixed
+- Fingerprints are now opt-in per location, as 09-ecosystems specifies. Previously every location
+  inherited a 0.8 layout ratio, which marked real caches (`dotnet-tools`, `nuget-http-cache`) as
+  uncleanable — a false positive that makes the tool look broken and talks the user out of it.
+- `PhysicalFileSystem.EnumerateEntries` no longer emits grandchildren when `MaxDepth = 1`. It
+  guarded only the recursion, so every caller's entry count was inflated one level and a real
+  857-package cache failed its layout check.
+- `nuget-http-cache` and `nuget-temp` shipped report-only. 09 grants them delete rights but
+  specifies their layouts in prose, and 10-formats requires a fingerprint for any location with
+  delete rights — a delete right that cannot be validated is one we must not exercise yet.
 - `LICENSE` is now the byte-exact Apache-2.0 text from apache.org. The copy committed in phase 0 had
   section 1's definitions reflowed into a different order, and GitHub's detector therefore reported
   the repository as unlicensed. See ADR-016.

@@ -103,14 +103,28 @@ public sealed record NetLocation
     public bool AppliesTo(OperatingSystemKind os) => SupportedOperatingSystems.Contains(os);
 }
 
-/// <summary>What a valid .NET root must look like (05).</summary>
+/// <summary>What a valid .NET root must look like (05, 09-ecosystems).
+/// <para>
+/// A fingerprint is OPT-IN per location, exactly as 09 specifies it. Only <c>nuget-packages</c>
+/// declares a layout ratio; <c>dotnet-root</c> declares required markers; the rest declare their
+/// layout in prose ("v3-cache layout", "package dirs") and get NO automated check, because
+/// applying a generic <c>{name}/{version}</c> ratio to them would mark a perfectly good cache as
+/// uncleanable — a false positive that makes the tool look broken and talks the user out of using it.
+/// </para>
+/// </summary>
 public sealed record FingerprintSpec
 {
     /// <summary>Entry subdirectories that must all be present, e.g. <c>host/fxr</c> and <c>sdk</c>.</summary>
     public IReadOnlyList<string> RequiredPaths { get; init; } = [];
 
-    /// <summary>The default layout ratio when a ratio check applies.</summary>
-    public double LayoutRatio { get; init; } = 0.8;
+    /// <summary>
+    /// Fraction of entries that must match <see cref="EntryPatterns"/>. Zero means NO ratio check,
+    /// which is the correct default for a location whose layout the profile does not specify.
+    /// </summary>
+    public double LayoutRatio { get; init; }
+
+    /// <summary>Patterns identifying a versioned entry. Empty means the ratio check is unused.</summary>
+    public IReadOnlyList<string> EntryPatterns { get; init; } = [];
 
     public bool IsEmpty => RequiredPaths.Count == 0 && LayoutRatio <= 0;
 }

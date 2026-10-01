@@ -38,7 +38,7 @@ public static class NetProfile
                 [OperatingSystemKind.Linux] = "~/.nuget/packages",
                 [OperatingSystemKind.MacOS] = "~/.nuget/packages",
             },
-            Fingerprint = new FingerprintSpec { LayoutRatio = 0.8 },
+            Fingerprint = new FingerprintSpec { LayoutRatio = 0.8, EntryPatterns = ["*/version"] },
             Owner = InstallOwner.User,
             Tier = Risk.Safe,
             Removal = new RemovalStrategy
@@ -61,10 +61,14 @@ public static class NetProfile
                 [OperatingSystemKind.Linux] = "~/.local/share/NuGet/v3-cache",
                 [OperatingSystemKind.MacOS] = "~/.local/share/NuGet/v3-cache",
             },
+            // 09 grants gateway removal here, but specifies the layout only in prose ("v3-cache
+            // layout"). 10-formats requires a fingerprint for any location with delete rights, and
+            // a delete right we cannot validate is a delete right we must not exercise. Shipped
+            // report-only until T-013 supplies a layout we can actually check.
             Fingerprint = new FingerprintSpec(),
             Owner = InstallOwner.User,
             Tier = Risk.Safe,
-            Removal = new RemovalStrategy { SupportsSelectiveRemoval = true },
+            Removal = new RemovalStrategy { SupportsSelectiveRemoval = false, ReportOnly = true },
         },
 
         new NetLocation
@@ -81,10 +85,11 @@ public static class NetProfile
                 [OperatingSystemKind.MacOS] = "/tmp/NuGetScratch",
                 [OperatingSystemKind.Linux] = "/tmp/NuGetScratch{user}",
             },
+            // Same reasoning as nuget-http-cache: "scratch" is prose, not a checkable layout.
             Fingerprint = new FingerprintSpec(),
             Owner = InstallOwner.User,
             Tier = Risk.Safe,
-            Removal = new RemovalStrategy { SupportsSelectiveRemoval = true },
+            Removal = new RemovalStrategy { SupportsSelectiveRemoval = false, ReportOnly = true },
         },
 
         new NetLocation
@@ -102,7 +107,7 @@ public static class NetProfile
                 [OperatingSystemKind.MacOS] = "~/.dotnet",
             },
             // A .NET root without both markers is a directory that merely has those names in it.
-            Fingerprint = new FingerprintSpec { RequiredPaths = ["host/fxr", "sdk"], LayoutRatio = 0.8 },
+            Fingerprint = new FingerprintSpec { RequiredPaths = ["host/fxr", "sdk"] },
             Owner = InstallOwner.Unknown,
             Tier = Risk.Review,
             ResolveAll = true,
