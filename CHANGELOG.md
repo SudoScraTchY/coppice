@@ -32,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   during descent, not after.
 
 ### Fixed
+- `LICENSE` is now the byte-exact Apache-2.0 text from apache.org. The copy committed in phase 0 had
+  section 1's definitions reflowed into a different order, and GitHub's detector therefore reported
+  the repository as unlicensed. See ADR-016.
 - A .NET release now correctly outranks a preview of the same numeric version. The opposite is what
   a naive string compare gives, and it is how a tool ends up "upgrading" to an older SDK.
 - Trailing-separator trimming no longer turns the drive root `C:\` into `C:`, which Windows resolves
@@ -43,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   double-counted the reclaim total and put the same path in the plan twice.
 - Version detection no longer truncates `newtonsoft.json.13.0.3` to `3`.
 - CI pipeline on the win/linux/mac matrix (see the 0.1.0 section for detail).
+- GitHub repository created at https://github.com/SudoScraTchY/coppice (public, Apache-2.0).
 - Package description, tags, and packed README.
 
 ## [0.1.0] — foundations
