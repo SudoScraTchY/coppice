@@ -223,10 +223,15 @@ public sealed class PortBoundaryTests
             throw new FileNotFoundException($"Could not find {csproj} from {Environment.CurrentDirectory}.");
         }
 
+        // Take the file name by hand rather than with Path.GetFileNameWithoutExtension: MSBuild
+        // writes Windows-style paths on every OS, and on Linux the BCL does not treat '\' as a
+        // directory separator — so the BCL returns "Coppice.Ports\Coppice.Ports" and every
+        // project-reference assertion silently matches nothing off Windows.
         return
         [
             .. Regex.Matches(File.ReadAllText(csproj), "<ProjectReference\\s+Include=\"([^\"]+)\"")
-                .Select(m => Path.GetFileNameWithoutExtension(m.Groups[1].Value))
+                .Select(m => m.Groups[1].Value.Split(['/', '\\']).Last())
+                .Select(p => p[..p.LastIndexOf('.')])
         ];
     }
 

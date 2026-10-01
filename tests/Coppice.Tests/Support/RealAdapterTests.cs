@@ -85,10 +85,11 @@ public sealed class RealAdapterTests : IDisposable
     public async Task ProcessRunner_captures_output_and_exit_code()
     {
         var runner = new SystemProcessRunner();
+        (string file, string[] args) = Echo();
         ProcessResult result = await runner.RunAsync(new ProcessRequest
         {
-            FileName = Shell(),
-            Arguments = [Command()],
+            FileName = file,
+            Arguments = args,
             Timeout = TimeSpan.FromSeconds(60),
         });
 
@@ -101,10 +102,11 @@ public sealed class RealAdapterTests : IDisposable
     public async Task ProcessRunner_times_out_a_hanging_process()
     {
         var runner = new SystemProcessRunner();
+        (string file, string[] args) = Hang();
         ProcessResult result = await runner.RunAsync(new ProcessRequest
         {
-            FileName = Shell(),
-            Arguments = [OperatingSystem.IsWindows() ? "ping -n 30 127.0.0.1 > nul" : "sleep 30"],
+            FileName = file,
+            Arguments = args,
             Timeout = TimeSpan.FromMilliseconds(400),
         });
 
@@ -161,9 +163,15 @@ public sealed class RealAdapterTests : IDisposable
         Assert.NotEmpty(env.PathEntries);
     }
 
-    private static string Shell() => OperatingSystem.IsWindows() ? "cmd.exe" : "/bin/sh";
+    // ArgumentList quotes each argument for us, so the command itself must NOT carry quotes:
+    // wrapping it in quotes makes the shell try to execute the word `"echo` as a command, which
+    // exits 2 instead of echoing — and the hanging-process test then times out on a process that
+    // had already exited.
+    private static (string File, string[] Args) Echo() => OperatingSystem.IsWindows()
+        ? ("cmd.exe", ["/c", "echo COPPICE_SMOKE"])
+        : ("/bin/sh", ["-c", "echo COPPICE_SMOKE"]);
 
-    private static string Command() => OperatingSystem.IsWindows()
-        ? "/c echo COPPICE_SMOKE"
-        : "-c \"echo COPPICE_SMOKE\"";
+    private static (string File, string[] Args) Hang() => OperatingSystem.IsWindows()
+        ? ("cmd.exe", ["/c", "ping -n 30 127.0.0.1 > nul"])
+        : ("/bin/sh", ["-c", "sleep 30"]);
 }
