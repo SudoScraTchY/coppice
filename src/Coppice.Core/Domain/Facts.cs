@@ -31,6 +31,28 @@ public sealed record Facts : IReadOnlyDictionary<string, string>
         return new Facts(values.ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal));
     }
 
+    /// <summary>
+    /// A copy with additional facts merged in, existing keys winning. A later stage annotating an
+    /// item must not silently drop facts an earlier stage recorded.
+    /// </summary>
+    public Facts With(IEnumerable<KeyValuePair<string, string>> additions)
+    {
+        ArgumentNullException.ThrowIfNull(additions);
+
+        var merged = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (KeyValuePair<string, string> pair in additions)
+        {
+            merged[pair.Key] = pair.Value;
+        }
+
+        foreach (KeyValuePair<string, string> pair in this)
+        {
+            merged[pair.Key] = pair.Value;
+        }
+
+        return new Facts(merged);
+    }
+
     public int Count => _values.Count;
 
     public IEnumerable<string> Keys => _values.Keys;

@@ -2,7 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Coppice.Ports\Coppice.Ports.csproj" />
-
+    <ProjectReference Include="..\Coppice.Core\Coppice.Core.csproj" />
   </ItemGroup>
 
 </Project>

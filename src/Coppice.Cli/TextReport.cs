@@ -128,4 +128,46 @@ public static class TextReport
         ArgumentNullException.ThrowIfNull(builder);
         Console.Out.Write(builder.ToString());
     }
+
+    // ---- scan report tables ----
+
+    public static string UsageHeader() => string.Join(
+        "  ",
+        "USAGE".PadRight(14),
+        "COUNT".PadLeft(8));
+
+    public static string UsageRow(UsageBreakdown u) => string.Join(
+        "\n",
+        string.Join("  ", "Referenced".PadRight(14), u.Referenced.ToString().PadLeft(8)),
+        string.Join("  ", "Unreferenced".PadRight(14), u.Unreferenced.ToString().PadLeft(8)),
+        string.Join("  ", "Unknown".PadRight(14), u.Unknown.ToString().PadLeft(8)),
+        string.Join("  ", "Total".PadRight(14), u.Total.ToString().PadLeft(8)));
+
+    public static string ItemHeader() => string.Join(
+        "  ",
+        "ECOSYSTEM".PadRight(16),
+        "KIND".PadRight(22),
+        "NAME".PadRight(36),
+        "VERSION".PadRight(16),
+        "USAGE".PadRight(12),
+        "RISK".PadRight(6));
+
+    public static string ItemRow(Item item)
+    {
+        string usage = item.Facts.TryGetValue("usage", out string? u) ? u : "Unknown";
+        string risk = item.Risk.ToString();
+        string ecosystem = item.Ecosystem.PadRight(16);
+        string kind = item.Kind.PadRight(22);
+        string name = (item.Name.Length > 36 ? "..." + item.Name[^33..] : item.Name).PadRight(36);
+        string version = item.Version.PadRight(16);
+
+        return string.Join(
+            "  ",
+            ecosystem,
+            kind,
+            name,
+            version,
+            usage.PadRight(12),
+            risk.PadRight(6));
+    }
 }

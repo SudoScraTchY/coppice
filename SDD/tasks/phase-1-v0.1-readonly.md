@@ -130,8 +130,8 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - Report layout per the 07 mock (normative); `--json`; onboarding hint when no project roots configured.
 
 **Acceptance**
-- [ ] Golden console + JSON output on the reference fixture
-- [ ] Onboarding hint fires exactly when ProjectSet is empty
+- [x] Golden console + JSON output on the reference fixture
+- [x] Onboarding hint fires exactly when ProjectSet is empty
 
 ### T-016 · Conformance harness
 **Refs** FR-24, C-1…C-12 · **Depends** T-002, T-003 · **Effort** L

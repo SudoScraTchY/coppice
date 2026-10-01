@@ -1,4 +1,6 @@
 using Coppice.Adapters;
+using Coppice.Core.Domain;
+using Coppice.Core.Scanning;
 
 namespace Coppice.Cli;
 
@@ -34,7 +36,8 @@ public static class CoppiceApp
             {
                 "doctor" => RunDoctor(flags),
                 "roots" => RunRoots(flags),
-                "scan" or "plan" or "apply" or "clean" or "report" => NotYetAvailable(command),
+                "scan" => RunScan(flags),
+                "plan" or "apply" or "clean" or "report" => NotYetAvailable(command),
                 "version" or "--version" => PrintVersion(),
                 "help" or "--help" or "-h" => PrintHelp(),
                 _ => Usage($"unknown command '{command}'"),
@@ -101,6 +104,66 @@ public static class CoppiceApp
         Console.Out.WriteLine($"{report.Roots.Count} location(s). This command only reads; it changes nothing.");
         return ExitSuccess;
     }
+
+    private static int RunScan(CommandFlags flags)
+    {
+        var service = BuildService();
+        DoctorReport report = service.Inspect();
+
+        // Only scan locations that are Valid and have Clean rights. Ambiguous/Missing/Denied are not scanned.
+        var roots = report.Roots
+            .Where(r => r.Root.Validity == Core.Domain.RootValidity.Ok
+                     && r.Root.Role != Core.Domain.RootRole.Inactive)
+            .Select(r => new ScanRoot(r.LocationId, r.Root.RealPath))
+            .ToList();
+
+        // Project roots come from config.toml [projects] or --projects flag. For v0.1 we accept none.
+        var projectRoots = Array.Empty<string>();
+
+        var scanService = new ScanService(service.Fs, service.Env, service.State);
+        ScanReport scanReport = scanService.RunAsync(roots, projectRoots).GetAwaiter().GetResult();
+
+        if (flags.Json)
+        {
+            Console.Out.WriteLine(ScanReportToJson(scanReport));
+            return ExitSuccess;
+        }
+
+        Console.Out.WriteLine("coppice scan");
+        Console.Out.WriteLine();
+        Console.Out.WriteLine($"snapshot: {scanReport.SnapshotId}");
+        Console.Out.WriteLine($"os: {scanReport.OS}");
+        Console.Out.WriteLine($"projects: {scanReport.ProjectCount}");
+        Console.Out.WriteLine($"ecosystems: {string.Join(", ", scanReport.Ecosystems)}");
+        Console.Out.WriteLine();
+        Console.Out.WriteLine(TextReport.UsageHeader());
+        Console.Out.WriteLine(new string('-', 60));
+        Console.Out.WriteLine(TextReport.UsageRow(scanReport.Usage));
+        Console.Out.WriteLine();
+        Console.Out.WriteLine(TextReport.ItemHeader());
+        Console.Out.WriteLine(new string('-', 120));
+
+        foreach (Item item in scanReport.Items)
+        {
+            Console.Out.WriteLine(TextReport.ItemRow(item));
+        }
+
+        Console.Out.WriteLine();
+        Console.Out.WriteLine($"{scanReport.Items.Count} item(s) in {scanReport.Ecosystems.Count} ecosystem(s).");
+
+        foreach (string hint in scanReport.OnboardingHints)
+        {
+            Console.Out.WriteLine();
+            Console.Out.WriteLine($"hint: {hint}");
+        }
+
+        Console.Out.WriteLine();
+        Console.Out.WriteLine("This command only reads and stores a snapshot; it changes nothing.");
+        return ExitSuccess;
+    }
+
+    private static string ScanReportToJson(ScanReport r) =>
+        System.Text.Json.JsonSerializer.Serialize(r, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
 
     private static DoctorService BuildService() =>
         new(new PhysicalFileSystem(), new SystemProcessRunner(), new SystemEnvironment());

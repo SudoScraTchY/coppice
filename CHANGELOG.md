@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Referenced / Unreferenced / Unknown with a readable reason for each. `Unknown` never yields Safe,
   and zero readable projects is `Unknown` rather than `Unreferenced` — otherwise a user with no
   configured project roots would be shown their whole cache as deletable.
+- T-015 `scan` command: runs a full read-only scan, stores a versioned snapshot, and prints a
+  console report with usage breakdown (Referenced/Unreferenced/Unknown), item table, and onboarding
+  hints when no project roots are configured. `--json` output matches the console structure.
 - T-014 `doctor` and `roots` commands: the first working user-facing surface. Both are read-only
   by construction, report each location's `via`, role, validity and a concrete fix hint, and support
   `--json`. Exit codes follow 07 (0 success, 1 runtime, 2 usage, 3 safety abort).

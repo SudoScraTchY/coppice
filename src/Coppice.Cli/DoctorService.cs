@@ -1,7 +1,9 @@
 using System.Text;
 using System.Text.Json;
+using Coppice.Adapters;
 using Coppice.Core.Domain;
 using Coppice.Core.Resolution;
+using Coppice.Core.Scanning;
 using Coppice.Plugins.Net;
 using Coppice.Ports;
 
@@ -46,6 +48,15 @@ public sealed class DoctorService
 
     /// <summary>The machine's home directory, used only to abbreviate paths for display.</summary>
     public string? HomeDirectory => _env.HomeDirectory;
+
+    /// <summary>Exposed so ScanService can use the same filesystem and environment.</summary>
+    public IFileSystem Fs => _fs;
+
+    /// <summary>Exposed so ScanService can use the same environment.</summary>
+    public IEnvironment Env => _env;
+
+    /// <summary>Exposed so ScanService can use the same state store.</summary>
+    public IStateStore State => new FileSystemStateStore(_fs, _env);
 
     /// <summary>
     /// Resolves every .NET location the profile declares and reports what was found. This is the

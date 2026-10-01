@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Coppice.Core.Domain;
 using Coppice.Ports;
 
 namespace Coppice.Adapters;
@@ -62,6 +63,28 @@ public sealed class FileSystemStateStore : IStateStore
         _root = root;
         _clock = clock ?? new SystemClock();
         Directory.CreateDirectory(_root);
+    }
+
+    /// <summary>
+    /// Creates a state store in the default coppice data directory: {LocalAppData}/coppice on Windows,
+    /// ~/.local/share/coppice on Linux, ~/Library/Application Support/coppice on macOS.
+    /// </summary>
+    public FileSystemStateStore(IFileSystem fs, IEnvironment env, IClock? clock = null)
+        : this(GetDefaultRoot(env), clock)
+    {
+    }
+
+    private static string GetDefaultRoot(IEnvironment env)
+    {
+        if (env.OS == OperatingSystemKind.Windows)
+        {
+            string? local = env.GetVariable("LOCALAPPDATA");
+            return Path.Combine(local ?? Path.GetTempPath(), "coppice");
+        }
+
+        string? home = env.HomeDirectory;
+        string xdg = env.GetVariable("XDG_DATA_HOME") ?? Path.Combine(home ?? Path.GetTempPath(), ".local", "share");
+        return Path.Combine(xdg, "coppice");
     }
 
     public async Task<string> WriteAsync(string key, string contentType, string json, CancellationToken cancellationToken = default)
