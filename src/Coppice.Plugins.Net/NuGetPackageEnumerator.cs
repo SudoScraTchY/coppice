@@ -1,6 +1,8 @@
 using Coppice.Core.Domain;
 using Coppice.Core.Scanning;
 using Coppice.Ports;
+using CoreDomain = Coppice.Core.Domain;
+using CoreScanContext = Coppice.Core.Scanning.ScanContext;
 
 namespace Coppice.Plugins.Net;
 
@@ -13,7 +15,7 @@ namespace Coppice.Plugins.Net;
 /// complete package from a half-written one.
 /// </para>
 /// <para>
-/// Every item is <see cref="Risk.Safe"/>: the global-packages cache is re-downloadable, which is
+/// Every item is <see cref="CoreDomain.Risk.Safe"/>: the global-packages cache is re-downloadable, which is
 /// what makes it the only tier a default policy may act on.
 /// </para>
 /// </summary>
@@ -31,8 +33,8 @@ public sealed class NuGetPackageEnumerator : IEntryEnumerator
 
     public string Id => "nuget-packages";
 
-    public async IAsyncEnumerable<Item> EnumerateAsync(
-        ScanContext context,
+    public async IAsyncEnumerable<CoreDomain.Item> EnumerateAsync(
+        CoreScanContext context,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -58,7 +60,7 @@ public sealed class NuGetPackageEnumerator : IEntryEnumerator
                 }
 
                 Facts facts = BuildFacts(package.Name, version);
-                yield return new Item(
+                yield return new CoreDomain.Item(
                     Ecosystem: NetProfile.EcosystemId,
                     Kind: "package",
                     Name: package.Name,
@@ -66,7 +68,7 @@ public sealed class NuGetPackageEnumerator : IEntryEnumerator
                     LocationId: context.LocationId,
                     Path: version.Path,
                     Size: _fs.MeasureSize(version.Path),
-                    Risk: Risk.Safe,
+                    Risk: CoreDomain.Risk.Safe,
                     Facts: facts);
             }
         }

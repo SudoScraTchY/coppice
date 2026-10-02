@@ -1,3 +1,4 @@
+using Coppice.Core.Domain;
 using Coppice.Ports;
 
 namespace Coppice.Core.Scanning;

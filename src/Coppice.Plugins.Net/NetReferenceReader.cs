@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Coppice.Core.Domain;
 using Coppice.Ports;
+using CoreDomain = Coppice.Core.Domain;
 
 namespace Coppice.Plugins.Net;
 
@@ -13,7 +14,7 @@ public sealed record PackageReference(string PackageId, string Version);
 /// </summary>
 public sealed record ReferenceVerdict
 {
-    public required Usage Usage { get; init; }
+    public required CoreDomain.Usage Usage { get; init; }
 
     /// <summary>Projects that reference this exact id + version.</summary>
     public IReadOnlyList<string> ReferencingProjects { get; init; } = [];
@@ -26,7 +27,7 @@ public sealed record ReferenceVerdict
 
     public static ReferenceVerdict Referenced(IReadOnlyList<string> projects) => new()
     {
-        Usage = Usage.Referenced,
+        Usage = CoreDomain.Usage.Referenced,
         ReferencingProjects = projects,
         Reason = projects.Count == 1
             ? $"referenced by 1 project ({projects[0]})"
@@ -35,11 +36,11 @@ public sealed record ReferenceVerdict
 
     public static ReferenceVerdict Unreferenced(int scannedProjects, string packageId) => new()
     {
-        Usage = Usage.Unreferenced,
+        Usage = CoreDomain.Usage.Unreferenced,
         Reason = $"no project references {packageId}; {scannedProjects} project(s) were scanned",
     };
 
-    public static ReferenceVerdict Unknown(string reason) => new() { Usage = Usage.Unknown, Reason = reason };
+    public static ReferenceVerdict Unknown(string reason) => new() { Usage = CoreDomain.Usage.Unknown, Reason = reason };
 }
 
 /// <summary>
@@ -47,7 +48,7 @@ public sealed record ReferenceVerdict
 /// <para>
 /// The assets file is NuGet's own record of what it resolved, so it is exact — no guessing about
 /// which versions a project needs. A project with no assets file is NOT evidence of non-use: it is
-/// evidence that we cannot tell, which is the <see cref="Usage.Unknown"/> case the spec is careful
+/// evidence that we cannot tell, which is the <see cref="CoreDomain.Usage.Unknown"/> case the spec is careful
 /// about.
 /// </para>
 /// </summary>

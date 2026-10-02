@@ -1,10 +1,11 @@
 using Coppice.Core.Domain;
 using Coppice.Ports;
+using CoreDomain = Coppice.Core.Domain;
 
 namespace Coppice.Core.Scanning;
 
 /// <summary>
-/// Enumerates the immediate children of a validated root and yields one <see cref="Item"/> per
+/// Enumerates the immediate children of a validated root and yields one <see cref="CoreDomain.Item"/> per
 /// entry (FR-04). This is the kernel's own default enumerator; plugins supply their own for
 /// richer shapes, and both must produce items in the same deterministic order.
 /// </summary>
@@ -17,7 +18,7 @@ public interface IEntryEnumerator
     /// Yields items for one root. Implementations must not follow links out of the root, must
     /// respect <paramref name="cancellationToken"/>, and must emit in a deterministic order.
     /// </summary>
-    IAsyncEnumerable<Item> EnumerateAsync(ScanContext context, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<CoreDomain.Item> EnumerateAsync(ScanContext context, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -74,7 +75,7 @@ public sealed class DirectoryEntryEnumerator : IEntryEnumerator
                 LocationId: context.LocationId,
                 Path: entry.Path,
                 Size: size,
-                Risk: Risk.Review,
+                Risk: CoreDomain.Risk.Review,
                 Facts: Facts.From([new("enumerator", Id)]));
         }
 

@@ -1,491 +1,512 @@
-using Coppice.Cli;
-using Coppice.Core.Domain;
-using Coppice.Core.Resolution;
-using Coppice.Core.Scanning;
 using Coppice.Plugins.Net;
-using Coppice.Ports;
+using Coppice.Tests.Support;
 using Xunit;
+using EntryKind = Coppice.Ports.EntryKind;
+using FingerprintSpec = Coppice.Ports.FingerprintSpec;
+using Ports = Coppice.Ports;
+using Problem = Coppice.Ports.Problem;
 
 namespace Coppice.Tests.Plugins;
 
 /// <summary>
-/// Card T-013 acceptance (FR-10, C-9). Each health check has a fixture that emits
-/// Problem(code, severity, path, summary). All checks are read-only.
+/// The health checks from the 09-ecosystems table (T-013, re-homed to the plugin for T-016).
+/// <para>
+/// Each test drives the checker through a fake VFS and a scripted process runner, so a check that
+/// starts shelling out or writing fails loudly here instead of on a user's machine.
+/// </para>
+/// <para>
+/// The recurring theme: a check reports only what it can PROVE. Several tests below assert that
+/// NOTHING is reported when a prerequisite is missing, because a health report that speculates is
+/// worse than one that stays quiet — the user cannot tell which lines are facts.
+/// </para>
 /// </summary>
 public sealed class NetHealthCheckerTests
 {
+    private static readonly DateTimeOffset Epoch = DateTimeOffset.UnixEpoch;
+
+    // ---- harness ----
+
+    /// <summary>
+    /// A whole fake world: filesystem, process runner, the roots the scan was given, and the
+    /// environment. One rig per test, because the checks are supposed to be side-effect free and a
+    /// shared rig would hide a write.
+    /// </summary>
+    private sealed class Rig
+    {
+        public FakeFileSystem Fs { get; init; } = new(Ports.OperatingSystemKind.Linux);
+
+        public FakeProcessRunner Runner { get; set; } = new();
+
+        public List<Ports.ScanRoot> Roots { get; } = [];
+
+        public FakeEnvironment Env { get; } = new(Ports.OperatingSystemKind.Linux);
+
+        public Ports.ScanContext Context() => new(
+            Roots,
+            Ports.ProjectSet.Empty,
+            Fs,
+            Runner,
+            Env,
+            new FakeClock(Epoch),
+            CancellationToken.None);
+    }
+
+    private static Rig RigFor(params Ports.ScanRoot[] roots)
+    {
+        var rig = new Rig();
+        rig.Roots.AddRange(roots);
+        return rig;
+    }
+
+    private static Ports.ScanRoot Root(string locationId, string path) => new(
+        locationId,
+        path,
+        locationId,
+        Ports.RootRole.Active,
+        new FingerprintSpec(),
+        "user",
+        Ports.Risk.Safe);
+
+    /// <summary>dotnet --list-sdks output, in the shape the CLI prints it.</summary>
+    private static FakeProcessRunner Sdks(params string[] versions) =>
+        new FakeProcessRunner().Respond("dotnet", string.Join('\n', versions.Select(v => $"{v} [/usr/share/dotnet/sdk]")) + "\n");
+
+    /// <summary>dotnet tool list -g output, in the shape the CLI prints it.</summary>
+    private static FakeProcessRunner Tools(params string[] ids) =>
+        new FakeProcessRunner().Respond("dotnet", "Package Id      Version      Commands\n" + string.Join('\n', ids.Select(i => $"{i,-14} 1.0.0        {i}")) + "\n");
+
+    /// <summary>
+    /// Runs the checks. The process runner is left exactly as the test scripted it: a check that
+    /// queries the CLI must see whatever the test decided the CLI says, including "it is missing".
+    /// </summary>
+    private static Task<IReadOnlyList<Problem>> Check(Rig rig) =>
+        new NetHealthChecker(rig.Context()).CheckAsync(CancellationToken.None);
+
+    private static bool Has(IEnumerable<Problem> problems, string code) =>
+        problems.Any(p => p.Code == code);
+
+    // ---- 1. DOTNET_ROOT_MISSING_LAYOUT ----
 
     [Fact]
-    public async Task SDK_PIN_UNAVAILABLE_Reports_When_GlobalJson_Pins_Missing_SDK()
+    public async Task Reports_a_dotnet_root_with_none_of_the_expected_layout()
     {
-        var fake = new FakeFileSystem();
-        fake.WriteAllText("/home/user/project/global.json", """{"sdk":{"version":"99.0.0"}}""");
-        fake.CreateDirectory("/home/user/dotnet/sdk/8.0.400");
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/empty");
 
-        var checker = new NetHealthChecker(fake, new FakeProcessRunner(), new FakeEnvironment(OperatingSystemKind.Linux, "/home/user"));
-        var roots = new List<RootReport>
-        {
-            new("dotnet-root", new ResolvedRoot("/home/user/dotnet", "/home/user/dotnet", RootRole.Active, ResolvedVia.Default, null, RootValidity.Ok, null), null)
-        };
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        var problems = await checker.CheckAsync([], roots, [], CancellationToken.None);
+        Problem found = Assert.Single(problems, p => p.Code == "DOTNET_ROOT_MISSING_LAYOUT");
+        Assert.Equal(Ports.Severity.Warning, found.Severity);
+        Assert.Equal("/usr/share/dotnet", found.Path);
+    }
 
-        Assert.Contains(problems, p => p.Code == "SDK_PIN_UNAVAILABLE" && p.Severity == Severity.Error);
+    [Theory]
+    [InlineData("sdk")]
+    [InlineData("host")]
+    public async Task Stays_quiet_when_the_root_has_at_least_one_expected_directory(string present)
+    {
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory($"/usr/share/dotnet/{present}");
+
+        IReadOnlyList<Problem> problems = await Check(rig);
+
+        Assert.False(Has(problems, "DOTNET_ROOT_MISSING_LAYOUT"));
+    }
+
+    // ---- 2. DOTNET_ROOT_INVALID ----
+
+    [Fact]
+    public async Task Reports_a_dotnet_root_variable_pointing_outside_every_resolved_root()
+    {
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk");
+        rig.Env.With("DOTNET_ROOT", "/opt/elsewhere");
+
+        IReadOnlyList<Problem> problems = await Check(rig);
+
+        Problem found = Assert.Single(problems, p => p.Code == "DOTNET_ROOT_INVALID");
+        Assert.Equal(Ports.Severity.Error, found.Severity);
+        Assert.Equal("/opt/elsewhere", found.Path);
     }
 
     [Fact]
-    public async Task SDK_SUPERSEDED_MAJOR_Reports_Older_Major_Versions()
+    public async Task Accepts_a_dotnet_root_variable_that_matches_a_resolved_root()
     {
-        var fake = new FakeFileSystem();
-        fake.CreateDirectory("/home/user/dotnet");
-        fake.CreateDirectory("/home/user/dotnet/sdk");
-        fake.CreateDirectory("/home/user/dotnet/sdk/8.0.400");
-        fake.CreateDirectory("/home/user/dotnet/sdk/7.0.400");
-        fake.CreateDirectory("/home/user/dotnet/sdk/6.0.400");
-        fake.CreateDirectory("/home/user/dotnet/host");
-        fake.CreateDirectory("/home/user/dotnet/host/fxr");
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk");
+        rig.Env.With("DOTNET_ROOT", "/usr/share/dotnet");
 
-        var runner = new FakeProcessRunner();
-        runner.Respond("dotnet", "8.0.400 [/home/user/dotnet/sdk/8.0.400]\n7.0.400 [/home/user/dotnet/sdk/7.0.400]\n6.0.400 [/home/user/dotnet/sdk/6.0.400]");
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        var checker = new NetHealthChecker(fake, runner, new FakeEnvironment(OperatingSystemKind.Linux, "/home/user"));
-        var roots = new List<RootReport>
-        {
-            new("dotnet-root", new ResolvedRoot("/home/user/dotnet", "/home/user/dotnet", RootRole.Active, ResolvedVia.Default, null, RootValidity.Ok, null), null)
-        };
+        Assert.False(Has(problems, "DOTNET_ROOT_INVALID"));
+    }
 
-        var problems = await checker.CheckAsync([], roots, [], CancellationToken.None);
+    // ---- 3. DOTNET_PATH_MISSING ----
 
-        // Debug - use Console.WriteLine to see output in test
-        System.Console.WriteLine($"Problems: {problems.Count}");
-        foreach (var p in problems)
-        {
-            System.Console.WriteLine($"  {p.Code}: {p.Summary}");
-        }
+    [Fact]
+    public async Task Reports_a_path_entry_naming_dotnet_with_no_executable()
+    {
+        var rig = RigFor();
+        rig.Env.WithPath("/usr/local/bin", "/opt/dotnet-tools");
+        rig.Fs.AddDirectory("/opt/dotnet-tools");
 
-        Assert.Contains(problems, p => p.Code == "SDK_SUPERSEDED_MAJOR" && p.Severity == Severity.Warning);
+        IReadOnlyList<Problem> problems = await Check(rig);
+
+        Problem found = Assert.Single(problems, p => p.Code == "DOTNET_PATH_MISSING");
+        Assert.Equal("/opt/dotnet-tools", found.Path);
     }
 
     [Fact]
-    public async Task SDK_PREVIEW_SUPERSEDED_Reports_When_GA_Exists()
+    public async Task Accepts_a_path_entry_that_really_holds_the_executable()
     {
-        var fake = new FakeFileSystem();
-        fake.CreateDirectory("/home/user/dotnet/sdk");
-        fake.CreateDirectory("/home/user/dotnet/sdk/8.0.400");
-        fake.CreateDirectory("/home/user/dotnet/sdk/8.0.400-preview.7");
+        var rig = RigFor();
+        rig.Env.WithPath("/usr/local/bin");
+        rig.Fs.AddDirectory("/usr/local/bin");
+        rig.Fs.AddFile("/usr/local/bin/dotnet");
 
-        var runner = new FakeProcessRunner();
-        runner.Respond("dotnet", "8.0.400 [/home/user/dotnet/sdk/8.0.400]\n8.0.400-preview.7 [/home/user/dotnet/sdk/8.0.400-preview.7]");
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        var checker = new NetHealthChecker(fake, runner, new FakeEnvironment(OperatingSystemKind.Linux, "/home/user"));
-        var roots = new List<RootReport>
-        {
-            new("dotnet-root", new ResolvedRoot("/home/user/dotnet", "/home/user/dotnet", RootRole.Active, ResolvedVia.Default, null, RootValidity.Ok, null), null)
-        };
+        Assert.False(Has(problems, "DOTNET_PATH_MISSING"));
+    }
 
-        var problems = await checker.CheckAsync([], roots, [], CancellationToken.None);
+    // ---- 4. SDK_ORPHAN ----
 
-        Assert.Contains(problems, p => p.Code == "SDK_PREVIEW_SUPERSEDED" && p.Severity == Severity.Warning);
+    [Fact]
+    public async Task Reports_an_sdk_folder_the_cli_does_not_know_about()
+    {
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/8.0.400");
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/7.0.100");
+        rig.Runner.Respond("dotnet", "8.0.400 [/usr/share/dotnet/sdk]\n");
+
+        IReadOnlyList<Problem> problems = await Check(rig);
+
+        Problem found = Assert.Single(problems, p => p.Code == "SDK_ORPHAN");
+        Assert.Contains("7.0.100", found.Summary, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task ROOT_INACTIVE_DEFAULT_Reports_When_Override_Exists()
+    public async Task Reports_nothing_about_sdks_when_the_cli_cannot_be_run()
     {
-        var fake = new FakeFileSystem();
-        fake.CreateDirectory("/home/user/dotnet");
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/8.0.400");
+        rig.Runner.Fail("dotnet", exitCode: 127, standardError: "not found");
 
-        var checker = new NetHealthChecker(fake, new FakeProcessRunner(), new FakeEnvironment(OperatingSystemKind.Linux, "/home/user"));
-        var roots = new List<RootReport>
-        {
-            new("dotnet-root", new ResolvedRoot("/home/user/dotnet", "/home/user/dotnet", RootRole.Inactive, ResolvedVia.Default, null, RootValidity.Ok, null), null)
-        };
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        var problems = await checker.CheckAsync([], roots, [], CancellationToken.None);
-
-        Assert.Contains(problems, p => p.Code == "ROOT_INACTIVE_DEFAULT" && p.Severity == Severity.Warning);
+        // The CLI being unavailable proves nothing about the SDKs on disk. Claiming every one is an
+        // orphan would be a wall of false alarms on any machine without dotnet on PATH.
+        Assert.False(Has(problems, "SDK_ORPHAN"));
     }
 
     [Fact]
-    public async Task SDK_DUPLICATE_ARCH_Reports_Non_x64_Architectures()
+    public async Task Reports_nothing_about_sdks_when_no_dotnet_root_was_scanned()
     {
-        var fake = new FakeFileSystem();
-        fake.CreateDirectory("/home/user/dotnet-x64");
-        fake.CreateDirectory("/home/user/dotnet-x64/sdk");
-        fake.CreateDirectory("/home/user/dotnet-x64/sdk/8.0.400");
-        fake.CreateDirectory("/home/user/dotnet-x64/host");
-        fake.CreateDirectory("/home/user/dotnet-x64/host/fxr");
-        fake.CreateDirectory("/home/user/dotnet-x86");
-        fake.CreateDirectory("/home/user/dotnet-x86/sdk");
-        fake.CreateDirectory("/home/user/dotnet-x86/sdk/8.0.400");
-        fake.CreateDirectory("/home/user/dotnet-x86/host");
-        fake.CreateDirectory("/home/user/dotnet-x86/host/fxr");
+        var rig = RigFor(Root("nuget-packages", "/home/dev/.nuget/packages"));
 
-        var runner = new FakeProcessRunner();
-        runner.Respond("dotnet", "8.0.400 [/home/user/dotnet-x64/sdk/8.0.400]\n8.0.400 [/home/user/dotnet-x86/sdk/8.0.400]");
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        var checker = new NetHealthChecker(fake, runner, new FakeEnvironment(OperatingSystemKind.Linux, "/home/user"));
-        var roots = new List<RootReport>
-        {
-            new("dotnet-root", new ResolvedRoot("/home/user/dotnet-x64", "/home/user/dotnet-x64", RootRole.Active, ResolvedVia.Default, null, RootValidity.Ok, null), null),
-            new("dotnet-root", new ResolvedRoot("/home/user/dotnet-x86", "/home/user/dotnet-x86", RootRole.Active, ResolvedVia.Default, null, RootValidity.Ok, null), null)
-        };
+        Assert.Empty(rig.Runner.Calls);
+        Assert.False(Has(problems, "SDK_ORPHAN"));
+    }
 
-        var problems = await checker.CheckAsync([], roots, [], CancellationToken.None);
+    // ---- 5. SDK_IN_TOOLS_LOCATION ----
 
-        // Debug
-        System.Diagnostics.Debug.WriteLine($"Problems: {problems.Count}");
-        foreach (var p in problems)
-        {
-            System.Diagnostics.Debug.WriteLine($"  {p.Code}: {p.Summary}");
-        }
+    [Fact]
+    public async Task Reports_an_sdk_installed_inside_the_tool_directory()
+    {
+        var rig = RigFor(Root("dotnet-tools", "/home/dev/.dotnet/tools"));
+        rig.Fs.AddDirectory("/home/dev/.dotnet/tools/sdk/9.0.100");
 
-        Assert.Contains(problems, p => p.Code == "SDK_DUPLICATE_ARCH" && p.Severity == Severity.Info);
+        IReadOnlyList<Problem> problems = await Check(rig);
+
+        Problem found = Assert.Single(problems, p => p.Code == "SDK_IN_TOOLS_LOCATION");
+        Assert.Equal("/home/dev/.dotnet/tools/sdk/9.0.100", found.Path);
     }
 
     [Fact]
-    public async Task DOTNET_ROOT_MISSING_LAYOUT_Reports_When_No_SDK_Or_Shared()
+    public async Task Stays_quiet_when_the_tool_directory_holds_only_shims()
     {
-        var fake = new FakeFileSystem();
-        fake.CreateDirectory("/home/user/dotnet");
+        var rig = RigFor(Root("dotnet-tools", "/home/dev/.dotnet/tools"));
+        rig.Fs.AddDirectory("/home/dev/.dotnet/tools/dotnetsay");
 
-        var checker = new NetHealthChecker(fake, new FakeProcessRunner(), new FakeEnvironment(OperatingSystemKind.Linux, "/home/user"));
-        var roots = new List<RootReport>
-        {
-            new("dotnet-root", new ResolvedRoot("/home/user/dotnet", "/home/user/dotnet", RootRole.Active, ResolvedVia.Default, null, RootValidity.Ok, null), null)
-        };
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        var problems = await checker.CheckAsync([], roots, [], CancellationToken.None);
+        Assert.False(Has(problems, "SDK_IN_TOOLS_LOCATION"));
+    }
 
-        Assert.Contains(problems, p => p.Code == "DOTNET_ROOT_MISSING_LAYOUT" && p.Severity == Severity.Warning);
+    // ---- 6. ROOT_DUPLICATE ----
+
+    [Fact]
+    public async Task Reports_the_same_directory_resolved_twice_for_one_location()
+    {
+        // One via a link, one via the real path: textually different, physically the same.
+        var rig = RigFor(
+            Root("nuget-packages", "/home/dev/.nuget/packages"),
+            Root("nuget-packages", "/mnt/linked/packages"));
+        rig.Fs.AddDirectory("/home/dev/.nuget/packages/serilog");
+        rig.Fs.AddSymlink("/mnt/linked/packages", "/home/dev/.nuget/packages");
+
+        IReadOnlyList<Problem> problems = await Check(rig);
+
+        Problem found = Assert.Single(problems, p => p.Code == "ROOT_DUPLICATE");
+        Assert.Equal(Ports.Severity.Info, found.Severity);
     }
 
     [Fact]
-    public async Task DOTNET_ROOT_INVALID_Reports_When_DOTNET_ROOT_Env_Points_To_Bad_Dir()
+    public async Task Does_not_confuse_two_separate_installs_with_a_duplicate()
     {
-        var fake = new FakeFileSystem();
-        fake.CreateDirectory("/home/user/bad-dotnet");
+        var rig = RigFor(
+            Root("dotnet-root", "/usr/share/dotnet"),
+            Root("dotnet-root", "/usr/local/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk");
+        rig.Fs.AddDirectory("/usr/local/share/dotnet/sdk");
 
-        var env = new FakeEnvironment(OperatingSystemKind.Linux, "/home/user");
-        env.SetVariable("DOTNET_ROOT", "/home/user/bad-dotnet");
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        var checker = new NetHealthChecker(fake, new FakeProcessRunner(), env);
-        var roots = new List<RootReport>
-        {
-            new("dotnet-root", new ResolvedRoot("/home/user/bad-dotnet", "/home/user/bad-dotnet", RootRole.Active, ResolvedVia.Env, null, RootValidity.Ok, null), null)
-        };
+        Assert.False(Has(problems, "ROOT_DUPLICATE"));
+    }
 
-        var problems = await checker.CheckAsync([], roots, [], CancellationToken.None);
+    // ---- 7. SDK_PREVIEW_SUPERSEDED ----
 
-        Assert.Contains(problems, p => p.Code == "DOTNET_ROOT_INVALID" && p.Severity == Severity.Error);
+    [Fact]
+    public async Task Reports_a_preview_superseded_by_ga_in_the_same_feature_band()
+    {
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/8.0.100");
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/8.0.100-rc.2");
+
+        IReadOnlyList<Problem> problems = await Check(rig);
+
+        Problem found = Assert.Single(problems, p => p.Code == "SDK_PREVIEW_SUPERSEDED");
+        Assert.Contains("8.0.100-rc.2", found.Summary, StringComparison.Ordinal);
+        Assert.Contains("8.0.100", found.Summary, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task SDK_IN_TOOLS_LOCATION_Reports_When_Tools_Has_SDK_Dir()
+    public async Task Keeps_a_preview_that_is_the_only_release_in_its_band()
     {
-        var fake = new FakeFileSystem();
-        fake.CreateDirectory("/home/user/dotnet/sdk/8.0.400");
-        fake.CreateDirectory("/home/user/.dotnet/tools/sdk");
-        fake.CreateDirectory("/home/user/.dotnet/tools/sdk/8.0.400");
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/9.0.100-preview.3");
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/8.0.400");
 
-        var checker = new NetHealthChecker(fake, new FakeProcessRunner(), new FakeEnvironment(OperatingSystemKind.Linux, "/home/user"));
-        var roots = new List<RootReport>
-        {
-            new("dotnet-root", new ResolvedRoot("/home/user/dotnet", "/home/user/dotnet", RootRole.Active, ResolvedVia.Default, null, RootValidity.Ok, null), null),
-            new("dotnet-tools", new ResolvedRoot("/home/user/.dotnet/tools", "/home/user/.dotnet/tools", RootRole.Active, ResolvedVia.Default, null, RootValidity.Ok, null), null)
-        };
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        // Debug: check what the fake filesystem has
-        var testEntries = fake.EnumerateEntries("/home/user/.dotnet/tools/sdk", new EnumerationRequest { MaxDepth = 1 });
-        System.Diagnostics.Debug.WriteLine($"Test enumerate: {testEntries.Count} entries");
-        foreach (var e in testEntries)
-        {
-            System.Diagnostics.Debug.WriteLine($"  {e.Name} kind={e.Kind}");
-        }
-        System.Diagnostics.Debug.WriteLine($"Directories in fake: {string.Join(", ", fake.GetType().GetField("_directories", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(fake) as System.Collections.Generic.HashSet<string> ?? new())}");
+        // 8.0.400 is a different feature band, so it does not supersede the 9.0 preview.
+        Assert.False(Has(problems, "SDK_PREVIEW_SUPERSEDED"));
+    }
 
-        var problems = await checker.CheckAsync([], roots, [], CancellationToken.None);
+    // ---- 8. SDK_SUPERSEDED_MAJOR ----
 
-        // More debug
-        System.Diagnostics.Debug.WriteLine($"Problems found: {problems.Count}");
-        foreach (var p in problems)
-        {
-            System.Diagnostics.Debug.WriteLine($"  {p.Code}: {p.Summary}");
-        }
+    [Fact]
+    public async Task Reports_an_older_major_sdk_as_superseded()
+    {
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/9.0.100");
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/7.0.100");
 
-        Assert.Contains(problems, p => p.Code == "SDK_IN_TOOLS_LOCATION" && p.Severity == Severity.Warning);
+        IReadOnlyList<Problem> problems = await Check(rig);
+
+        Problem found = Assert.Single(problems, p => p.Code == "SDK_SUPERSEDED_MAJOR");
+        Assert.Equal(Ports.Severity.Warning, found.Severity);
+        Assert.Contains("7.0.100", found.Summary, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task DOTNET_TOOL_BROKEN_SHIM_Reports_Unregistered_Tools()
+    public async Task Does_not_flag_a_single_sdk_as_superseded_by_itself()
     {
-        var fake = new FakeFileSystem();
-        fake.CreateDirectory("/home/user/.dotnet/tools/my-tool");
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/9.0.100");
 
-        var runner = new FakeProcessRunner();
-        runner.Respond("dotnet", "Package Id      Version      Commands\nother-tool      1.0.0        other-tool\n");
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        var checker = new NetHealthChecker(fake, runner, new FakeEnvironment(OperatingSystemKind.Linux, "/home/user"));
-        var roots = new List<RootReport>
-        {
-            new("dotnet-tools", new ResolvedRoot("/home/user/.dotnet/tools", "/home/user/.dotnet/tools", RootRole.Active, ResolvedVia.Default, null, RootValidity.Ok, null), null)
-        };
+        Assert.False(Has(problems, "SDK_SUPERSEDED_MAJOR"));
+    }
 
-        var scanRoots = new List<ScanRoot>
-        {
-            new("dotnet-tools", "/home/user/.dotnet/tools")
-        };
+    // ---- 9. SDK_PIN_UNAVAILABLE ----
 
-        var items = new List<Item>
-        {
-            new("dotnet", "package", "my-tool", "1.0.0", "dotnet-tools", "/home/user/.dotnet/tools/my-tool", 0, Risk.Review,
-                new Facts(new Dictionary<string, string> { ["usage"] = "Unknown", ["packageId"] = "my-tool", ["version"] = "1.0.0" }))
-        };
+    [Fact]
+    public async Task Reports_a_global_json_pin_that_no_installed_sdk_satisfies()
+    {
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/9.0.100");
+        rig.Fs.AddFile("/home/dev/global.json", """{ "sdk": { "version": "10.0.100" } }""");
 
-        var problems = await checker.CheckAsync(scanRoots, roots, items, CancellationToken.None);
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        Assert.Contains(problems, p => p.Code == "DOTNET_TOOL_BROKEN_SHIM" && p.Severity == Severity.Warning);
+        Problem found = Assert.Single(problems, p => p.Code == "SDK_PIN_UNAVAILABLE");
+        Assert.Equal(Ports.Severity.Error, found.Severity);
+        Assert.Contains("10.0.100", found.Summary, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task NUGET_PACKAGE_CORRUPT_Reports_Missing_All_Markers()
+    public async Task Accepts_a_pin_that_is_installed()
     {
-        var fake = new FakeFileSystem();
-        fake.CreateDirectory("/home/user/.nuget/packages/newtonsoft.json/13.0.3");
-        // No .nupkg, .nuspec, .signature.p7s, .nupkg.metadata
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/10.0.100");
+        rig.Fs.AddFile("/home/dev/global.json", """{ "sdk": { "version": "10.0.100" } }""");
 
-        var checker = new NetHealthChecker(fake, new FakeProcessRunner(), new FakeEnvironment(OperatingSystemKind.Linux, "/home/user"));
-        var roots = new List<RootReport>
-        {
-            new("nuget-packages", new ResolvedRoot("/home/user/.nuget/packages", "/home/user/.nuget/packages", RootRole.Active, ResolvedVia.Default, null, RootValidity.Ok, null), null)
-        };
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        var items = new List<Item>
-        {
-            new("dotnet", "package", "newtonsoft.json", "13.0.3", "nuget-packages", "/home/user/.nuget/packages/newtonsoft.json/13.0.3", 0, Risk.Review,
-                new Facts(new Dictionary<string, string> { ["usage"] = "Unknown", ["packageId"] = "newtonsoft.json", ["version"] = "13.0.3", ["nupkgPresent"] = "false", ["nuspecPresent"] = "false", ["signatureValid"] = "false" }))
-        };
-
-        var problems = await checker.CheckAsync([], roots, items, CancellationToken.None);
-
-        Assert.Contains(problems, p => p.Code == "NUGET_PACKAGE_CORRUPT" && p.Severity == Severity.Warning);
+        Assert.False(Has(problems, "SDK_PIN_UNAVAILABLE"));
     }
 
     [Fact]
-    public async Task NUGET_PACKAGE_INCOMPLETE_Reports_Missing_Some_Markers()
+    public async Task An_installed_older_major_does_not_satisfy_a_newer_pins_band()
     {
-        var fake = new FakeFileSystem();
-        fake.CreateDirectory("/home/user/.nuget/packages/newtonsoft.json/13.0.3");
-        fake.WriteAllText("/home/user/.nuget/packages/newtonsoft.json/13.0.3/newtonsoft.json.13.0.3.nupkg", "fake");
-        // Missing .nuspec, .signature.p7s, .nupkg.metadata
+        // The pin protects the named version and its rollForward band. An installed 9.x is NOT
+        // within a 10.x pin's band, so the pin is genuinely unsatisfied and must be reported — the
+        // build really will fail.
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/9.0.100");
+        rig.Fs.AddFile("/home/dev/global.json", """{ "sdk": { "version": "10.0.100" } }""");
 
-        var checker = new NetHealthChecker(fake, new FakeProcessRunner(), new FakeEnvironment(OperatingSystemKind.Linux, "/home/user"));
-        var roots = new List<RootReport>
-        {
-            new("nuget-packages", new ResolvedRoot("/home/user/.nuget/packages", "/home/user/.nuget/packages", RootRole.Active, ResolvedVia.Default, null, RootValidity.Ok, null), null)
-        };
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        var items = new List<Item>
-        {
-            new("dotnet", "package", "newtonsoft.json", "13.0.3", "nuget-packages", "/home/user/.nuget/packages/newtonsoft.json/13.0.3", 0, Risk.Review,
-                new Facts(new Dictionary<string, string> { ["usage"] = "Unknown", ["packageId"] = "newtonsoft.json", ["version"] = "13.0.3", ["nupkgPresent"] = "true", ["nuspecPresent"] = "false", ["signatureValid"] = "false" }))
-        };
-
-        var problems = await checker.CheckAsync([], roots, items, CancellationToken.None);
-
-        Assert.Contains(problems, p => p.Code == "NUGET_PACKAGE_INCOMPLETE" && p.Severity == Severity.Warning);
+        Assert.True(Has(problems, "SDK_PIN_UNAVAILABLE"));
     }
 
     [Fact]
-    public async Task NUGET_PACKAGE_ORPHAN_Reports_When_Package_Not_Referenced()
+    public async Task A_pin_does_not_downgrade_an_older_major_to_a_pin_error()
     {
-        var fake = new FakeFileSystem();
-        fake.CreateDirectory("/home/user/.nuget/packages/newtonsoft.json/13.0.3");
-        fake.WriteAllText("/home/user/.nuget/packages/newtonsoft.json/13.0.3/newtonsoft.json.13.0.3.nupkg", "fake");
-        fake.WriteAllText("/home/user/.nuget/packages/newtonsoft.json/13.0.3/newtonsoft.json.nuspec", "fake");
-        fake.WriteAllText("/home/user/.nuget/packages/newtonsoft.json/13.0.3/.signature.p7s", "fake");
-        fake.WriteAllText("/home/user/.nuget/packages/newtonsoft.json/13.0.3/.nupkg.metadata", "fake");
+        // The converse: a 10.x pin must not turn the installed 9.x SDK into an error about the pin.
+        // It is reported once, as superseded-major cleanup advice (a Warning) — a different fact,
+        // with a different severity, from "your pinned SDK is missing".
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/9.0.100");
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/10.0.100");
+        rig.Fs.AddFile("/home/dev/global.json", """{ "sdk": { "version": "10.0.100" } }""");
 
-        var checker = new NetHealthChecker(fake, new FakeProcessRunner(), new FakeEnvironment(OperatingSystemKind.Linux, "/home/user"));
-        var roots = new List<RootReport>
-        {
-            new("nuget-packages", new ResolvedRoot("/home/user/.nuget/packages", "/home/user/.nuget/packages", RootRole.Active, ResolvedVia.Default, null, RootValidity.Ok, null), null)
-        };
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        var items = new List<Item>
-        {
-            new("dotnet", "package", "newtonsoft.json", "13.0.3", "nuget-packages", "/home/user/.nuget/packages/newtonsoft.json/13.0.3", 0, Risk.Review,
-                new Facts(new Dictionary<string, string> { ["usage"] = "Unreferenced", ["packageId"] = "newtonsoft.json", ["version"] = "13.0.3", ["nupkgPresent"] = "true", ["nuspecPresent"] = "true", ["signatureValid"] = "true" }))
-        };
-
-        var problems = await checker.CheckAsync([], roots, items, CancellationToken.None);
-
-        Assert.Contains(problems, p => p.Code == "NUGET_PACKAGE_ORPHAN" && p.Severity == Severity.Info);
+        Assert.False(Has(problems, "SDK_PIN_UNAVAILABLE"));
+        Assert.Contains(problems, p => p.Code == "SDK_SUPERSEDED_MAJOR" && p.Severity == Ports.Severity.Warning);
     }
 
     [Fact]
-    public async Task NUGET_PACKAGE_MISSING_MARKERS_Reports_When_Nupkg_Exists_But_Markers_Missing()
+    public async Task Degrades_quietly_on_an_unreadable_global_json()
     {
-        var fake = new FakeFileSystem();
-        fake.CreateDirectory("/home/user/.nuget/packages/newtonsoft.json/13.0.3");
-        fake.WriteAllText("/home/user/.nuget/packages/newtonsoft.json/13.0.3/newtonsoft.json.13.0.3.nupkg", "fake");
-        // Missing .nuspec, .signature.p7s
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/9.0.100");
+        rig.Fs.AddFile("/home/dev/global.json", "{ not json at all");
 
-        var checker = new NetHealthChecker(fake, new FakeProcessRunner(), new FakeEnvironment(OperatingSystemKind.Linux, "/home/user"));
-        var roots = new List<RootReport>
-        {
-            new("nuget-packages", new ResolvedRoot("/home/user/.nuget/packages", "/home/user/.nuget/packages", RootRole.Active, ResolvedVia.Default, null, RootValidity.Ok, null), null)
-        };
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        var items = new List<Item>
-        {
-            new("dotnet", "package", "newtonsoft.json", "13.0.3", "nuget-packages", "/home/user/.nuget/packages/newtonsoft.json/13.0.3", 0, Risk.Review,
-                new Facts(new Dictionary<string, string> { ["usage"] = "Unknown", ["packageId"] = "newtonsoft.json", ["version"] = "13.0.3", ["nupkgPresent"] = "true", ["nuspecPresent"] = "false", ["signatureValid"] = "true" }))
-        };
-
-        var problems = await checker.CheckAsync([], roots, items, CancellationToken.None);
-
-        Assert.Contains(problems, p => p.Code == "NUGET_PACKAGE_MISSING_MARKERS" && p.Severity == Severity.Warning);
+        // A malformed pin file must not throw and take every other check down with it.
+        Assert.False(Has(problems, "SDK_PIN_UNAVAILABLE"));
     }
 
-    // ---- Fakes for deterministic testing ----
+    // ---- 10. DOTNET_TOOL_BROKEN_SHIM ----
 
-    private sealed class FakeFileSystem : IFileSystem
+    [Fact]
+    public async Task Reports_a_shim_the_cli_does_not_list_as_a_tool()
     {
-        private readonly Dictionary<string, (EntryKind Kind, string? Content, long Size)> _store = new(StringComparer.Ordinal);
-        private readonly HashSet<string> _directories = new(StringComparer.Ordinal);
+        var rig = RigFor(Root("dotnet-tools", "/home/dev/.dotnet/tools"));
+        rig.Fs.AddDirectory("/home/dev/.dotnet/tools/dotnetsay");
+        rig.Fs.AddDirectory("/home/dev/.dotnet/tools/leftover");
+        rig.Runner = Tools("dotnetsay");
 
-        public bool DirectoryExists(string path) => _directories.Contains(Normalize(path));
-        public bool FileExists(string path) => _store.ContainsKey(Normalize(path));
-        public string ReadAllText(string path) => _store[Normalize(path)].Content ?? "";
+        IReadOnlyList<Problem> problems = await Check(rig);
 
-        public void CreateDirectory(string path) => _directories.Add(Normalize(path));
-        public void WriteAllText(string path, string content) => _store[Normalize(path)] = (EntryKind.File, content, content.Length);
+        Problem found = Assert.Single(problems, p => p.Code == "DOTNET_TOOL_BROKEN_SHIM");
+        Assert.Contains("leftover", found.Summary, StringComparison.Ordinal);
+    }
 
-        public IReadOnlyList<FileEntry> EnumerateEntries(string path, EnumerationRequest? options = null)
+    [Fact]
+    public async Task Does_not_flag_the_nuget_store_that_lives_beside_the_shims()
+    {
+        // '.store' is NuGet's own package store inside the tool directory. It never appears in
+        // `dotnet tool list -g`, so treating it as a dead shim would put a false positive in every
+        // report on every machine.
+        var rig = RigFor(Root("dotnet-tools", "/home/dev/.dotnet/tools"));
+        rig.Fs.AddDirectory("/home/dev/.dotnet/tools/.store");
+        rig.Fs.AddDirectory("/home/dev/.dotnet/tools/dotnetsay");
+        rig.Runner = Tools("dotnetsay");
+
+        IReadOnlyList<Problem> problems = await Check(rig);
+
+        Assert.False(Has(problems, "DOTNET_TOOL_BROKEN_SHIM"));
+    }
+
+    [Fact]
+    public async Task Does_not_flag_any_tool_when_the_cli_cannot_be_run()
+    {
+        var rig = RigFor(Root("dotnet-tools", "/home/dev/.dotnet/tools"));
+        rig.Fs.AddDirectory("/home/dev/.dotnet/tools/dotnetsay");
+        rig.Runner.Fail("dotnet", exitCode: 1, standardError: "no tool");
+
+        IReadOnlyList<Problem> problems = await Check(rig);
+
+        Assert.False(Has(problems, "DOTNET_TOOL_BROKEN_SHIM"));
+    }
+
+    // ---- cross-cutting guarantees ----
+
+    [Fact]
+    public async Task Problems_are_ordered_by_severity_then_code()
+    {
+        var rig = RigFor(
+            Root("dotnet-root", "/usr/share/dotnet"),
+            Root("dotnet-tools", "/home/dev/.dotnet/tools"));
+
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/8.0.100");
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/7.0.100");
+        rig.Fs.AddDirectory("/home/dev/.dotnet/tools/leftover");
+        rig.Fs.AddDirectory("/home/dev/.dotnet/tools/sdk/6.0.100");
+        rig.Env.With("DOTNET_ROOT", "/opt/broken");
+        rig.Runner = Tools();
+
+        IReadOnlyList<Problem> problems = await Check(rig);
+
+        Assert.NotEmpty(problems);
+
+        // Severity descending, then code ordinal — total and content-derived, so two scans of the
+        // same machine produce byte-identical reports (NFR-06).
+        for (int i = 1; i < problems.Count; i++)
         {
-            var results = new List<FileEntry>();
-            string norm = Normalize(path);
-            int maxDepth = options?.MaxDepth ?? 1;
-
-            foreach (var kvp in _store)
+            int bySeverity = problems[i - 1].Severity.CompareTo(problems[i].Severity);
+            if (bySeverity == 0)
             {
-                if (kvp.Key.StartsWith(norm + "/", StringComparison.Ordinal))
-                {
-                    string rest = kvp.Key[(norm.Length + 1)..];
-                    if (!rest.Contains('/') || maxDepth > 1)
-                    {
-                        results.Add(new FileEntry
-                        {
-                            Path = kvp.Key,
-                            Name = rest,
-                            Kind = kvp.Value.Kind,
-                            Length = kvp.Value.Size
-                        });
-                    }
-                }
+                Assert.True(
+                    string.CompareOrdinal(problems[i - 1].Code, problems[i].Code) <= 0,
+                    $"{problems[i - 1].Code} should not sort after {problems[i].Code}.");
             }
-            foreach (var dir in _directories)
+            else
             {
-                if (dir.StartsWith(norm + "/", StringComparison.Ordinal))
-                {
-                    string rest = dir[(norm.Length + 1)..];
-                    if (!rest.Contains('/') || maxDepth > 1)
-                    {
-                        results.Add(new FileEntry
-                        {
-                            Path = dir,
-                            Name = rest,
-                            Kind = EntryKind.Directory,
-                            Length = 0
-                        });
-                    }
-                }
+                Assert.True(bySeverity > 0, "problems must be ordered most severe first.");
             }
-            return results;
-        }
-
-        public FileEntry? GetEntry(string path)
-        {
-            string norm = Normalize(path);
-            if (_store.TryGetValue(norm, out var file))
-            {
-                return new FileEntry { Path = norm, Name = Path.GetFileName(norm), Kind = file.Kind, Length = file.Size };
-            }
-            if (_directories.Contains(norm))
-            {
-                return new FileEntry { Path = norm, Name = Path.GetFileName(norm), Kind = EntryKind.Directory, Length = 0 };
-            }
-            return null;
-        }
-
-        public string ResolveLinkTarget(string path) => path;
-        public string ReadSmallText(string path, int maxBytes = 64 * 1024) => _store[Normalize(path)].Content ?? "";
-        public byte[] ReadSmallBytes(string path, int maxBytes = 64 * 1024) => System.Text.Encoding.UTF8.GetBytes(_store[Normalize(path)].Content ?? "");
-        public ulong MeasureSize(string path) => 0;
-        public LockState ProbeLock(string path) => LockState.Unknown;
-        public string GetFullPath(string path) => path;
-        public string GetTempPath() => "/tmp";
-        public string GetHomeDirectory() => "/home/user";
-        public string Combine(params string[] paths) => string.Join("/", paths);
-
-        // Mutation surface (not used in tests but required by interface)
-        public void Move(string sourcePath, string destinationPath) { }
-        public void DeleteFile(string path, bool recursive) { }
-
-        private static string Normalize(string p) => p.Replace('\\', '/').TrimEnd('/');
-    }
-
-    private sealed class FakeProcessRunner : IProcessRunner
-    {
-        private readonly Dictionary<string, ProcessResult> _outputs = new(StringComparer.Ordinal);
-
-        public FakeProcessRunner Respond(string fileName, string output)
-        {
-            _outputs[fileName] = new ProcessResult { ExitCode = 0, StandardOutput = output, StandardError = "", ResolvedFileName = fileName };
-            return this;
-        }
-
-        public void SetOutput(string commandLine, string output)
-        {
-            _outputs[commandLine] = new ProcessResult { ExitCode = 0, StandardOutput = output, StandardError = "", ResolvedFileName = "dotnet" };
-        }
-
-        public Task<ProcessResult> RunAsync(ProcessRequest request, CancellationToken ct)
-        {
-            string key = $"{request.FileName} {string.Join(" ", request.Arguments)}";
-            if (_outputs.TryGetValue(key, out var result))
-            {
-                return Task.FromResult(result);
-            }
-            // Also try just the fileName
-            if (_outputs.TryGetValue(request.FileName, out var result2))
-            {
-                return Task.FromResult(result2);
-            }
-            return Task.FromResult(new ProcessResult { ExitCode = 1, StandardOutput = "", StandardError = "command not mocked", ResolvedFileName = "dotnet" });
         }
     }
 
-    private sealed class FakeEnvironment : IEnvironment
+    [Fact]
+    public async Task Checks_never_write_through_the_port()
     {
-        private readonly Dictionary<string, string> _vars = new(StringComparer.OrdinalIgnoreCase);
-        private readonly OperatingSystemKind _os;
-        private readonly string _home;
+        var rig = RigFor(
+            Root("dotnet-root", "/usr/share/dotnet"),
+            Root("dotnet-tools", "/home/dev/.dotnet/tools"),
+            Root("nuget-packages", "/home/dev/.nuget/packages"));
 
-        public FakeEnvironment(OperatingSystemKind os, string home)
-        {
-            _os = os;
-            _home = home;
-        }
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/8.0.100");
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/7.0.100");
+        rig.Fs.AddDirectory("/home/dev/.dotnet/tools/leftover");
+        rig.Fs.AddDirectory("/home/dev/.nuget/packages/serilog/13.0.3");
+        rig.Env.With("DOTNET_ROOT", "/opt/broken");
+        rig.Runner = Tools();
 
-        public OperatingSystemKind OS => _os;
-        public string HomeDirectory => _home;
-        public IReadOnlyList<string> PathEntries => Array.Empty<string>();
+        _ = await Check(rig);
 
-        public string? GetVariable(string name) => _vars.TryGetValue(name, out var v) ? v : null;
-        public string? GetMachineVariable(string name) => null;
-        public string? GetFolderPath(string wellKnownFolder) => null;
-        public void SetVariable(string name, string value) => _vars[name] = value;
-        public string ExpandEnvironmentVariables(string input) => input;
+        // C-9: a health check is an observation. The moment it writes, "check health" and "clean
+        // up" are the same button.
+        Assert.Empty(rig.Fs.Writes);
+    }
+
+    [Fact]
+    public async Task An_empty_scan_context_reports_nothing_and_runs_nothing()
+    {
+        var rig = RigFor();
+
+        IReadOnlyList<Problem> problems = await Check(rig);
+
+        Assert.Empty(problems);
     }
 }

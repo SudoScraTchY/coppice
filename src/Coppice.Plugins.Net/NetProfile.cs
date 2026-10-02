@@ -1,5 +1,6 @@
 using Coppice.Core.Domain;
 using Coppice.Ports;
+using CoreDomain = Coppice.Core.Domain;
 
 namespace Coppice.Plugins.Net;
 
@@ -40,7 +41,7 @@ public static class NetProfile
             },
             Fingerprint = new FingerprintSpec { LayoutRatio = 0.8, EntryPatterns = ["*/version"] },
             Owner = InstallOwner.User,
-            Tier = Risk.Safe,
+            Tier = CoreDomain.Risk.Safe,
             Removal = new RemovalStrategy
             {
                 SupportsSelectiveRemoval = true,
@@ -67,7 +68,7 @@ public static class NetProfile
             // report-only until T-013 supplies a layout we can actually check.
             Fingerprint = new FingerprintSpec(),
             Owner = InstallOwner.User,
-            Tier = Risk.Safe,
+            Tier = CoreDomain.Risk.Safe,
             Removal = new RemovalStrategy { SupportsSelectiveRemoval = false, ReportOnly = true },
         },
 
@@ -88,7 +89,7 @@ public static class NetProfile
             // Same reasoning as nuget-http-cache: "scratch" is prose, not a checkable layout.
             Fingerprint = new FingerprintSpec(),
             Owner = InstallOwner.User,
-            Tier = Risk.Safe,
+            Tier = CoreDomain.Risk.Safe,
             Removal = new RemovalStrategy { SupportsSelectiveRemoval = false, ReportOnly = true },
         },
 
@@ -109,7 +110,7 @@ public static class NetProfile
             // A .NET root without both markers is a directory that merely has those names in it.
             Fingerprint = new FingerprintSpec { RequiredPaths = ["host/fxr", "sdk"] },
             Owner = InstallOwner.Unknown,
-            Tier = Risk.Review,
+            Tier = CoreDomain.Risk.Review,
             ResolveAll = true,
             Removal = new RemovalStrategy { SupportsSelectiveRemoval = true },
         },
@@ -126,7 +127,7 @@ public static class NetProfile
             },
             Fingerprint = new FingerprintSpec(),
             Owner = InstallOwner.User,
-            Tier = Risk.Review,
+            Tier = CoreDomain.Risk.Review,
             // Global tools are removed through the tool, not by deleting a shim: the shim is
             // regenerated and a raw delete leaves `dotnet tool` thinking it is still installed.
             Removal = new RemovalStrategy
@@ -148,7 +149,7 @@ public static class NetProfile
             },
             Fingerprint = new FingerprintSpec(),
             Owner = InstallOwner.User,
-            Tier = Risk.Review,
+            Tier = CoreDomain.Risk.Review,
             Removal = new RemovalStrategy
             {
                 SupportsSelectiveRemoval = false,
@@ -166,7 +167,7 @@ public static class NetProfile
             },
             Fingerprint = new FingerprintSpec(),
             Owner = InstallOwner.Msi,
-            Tier = Risk.Manual,
+            Tier = CoreDomain.Risk.Manual,
             // Installer-owned: the tool explains where the bytes are and stops there.
             Removal = new RemovalStrategy { ReportOnly = true, SupportsSelectiveRemoval = false },
             SupportedOperatingSystems = [OperatingSystemKind.Windows],

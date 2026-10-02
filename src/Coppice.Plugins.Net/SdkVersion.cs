@@ -103,6 +103,21 @@ public static class SdkVersion
     /// <summary>True when <paramref name="candidate"/> is strictly newer than <paramref name="baseline"/>.</summary>
     public static bool IsNewerThan(string candidate, string baseline) => Compare(candidate, baseline) > 0;
 
+    /// <summary>Try to parse a version string into components; returns null if unrecognized.</summary>
+    public static bool TryParse(string version, out Parsed parsed)
+    {
+        try
+        {
+            parsed = Parse(version);
+            return parsed.Major != null && parsed.Minor != null && parsed.Patch != null;
+        }
+        catch
+        {
+            parsed = new Parsed(null, null, null, null);
+            return false;
+        }
+    }
+
     /// <summary>
     /// Architecture from an install path. Recognizes the folder names a .NET installer actually
     /// uses; returns <c>unknown</c> rather than guessing when the path says nothing.
@@ -178,7 +193,7 @@ public static class SdkVersion
     private static int Numeric(string? part) =>
         int.TryParse(part, NumberStyles.None, CultureInfo.InvariantCulture, out int value) ? value : 0;
 
-    private readonly record struct Parsed(string? Major, string? Minor, string? Patch, string? Preview);
+    public readonly record struct Parsed(string? Major, string? Minor, string? Patch, string? Preview);
 
     /// <summary>
     /// Splits a .NET version into its numeric core and its pre-release tail, discarding build

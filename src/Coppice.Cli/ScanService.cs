@@ -6,6 +6,15 @@ using Coppice.Core.Scanning;
 using Coppice.Core.Snapshots;
 using Coppice.Plugins.Net;
 using Coppice.Ports;
+using CoreDomain = Coppice.Core.Domain;
+using CoreProject = Coppice.Core.Projects.Project;
+using CoreProjectSet = Coppice.Core.Projects.ProjectSet;
+using CoreReferenceVerdict = Coppice.Plugins.Net.ReferenceVerdict;
+using CoreScanRoot = Coppice.Core.Scanning.ScanRoot;
+using PortProject = Coppice.Ports.Project;
+using PortProjectSet = Coppice.Ports.ProjectSet;
+using PortReferenceVerdict = Coppice.Ports.ReferenceVerdict;
+using PortScanRoot = Coppice.Ports.ScanRoot;
 
 namespace Coppice.Cli;
 
@@ -57,7 +66,7 @@ public sealed class ScanService
     /// stays Unknown.
     /// </summary>
     public async Task<ScanReport> RunAsync(
-        IReadOnlyList<ScanRoot> roots,
+        IReadOnlyList<PortScanRoot> roots,
         IReadOnlyList<string> projectRoots,
         CancellationToken cancellationToken = default)
     {
@@ -74,16 +83,12 @@ public sealed class ScanService
         var engine = new ResolutionEngine(_fs, os, _env.HomeDirectory);
         var validator = new FingerprintValidator(_fs, os);
 
-        var resolvedRoots = new List<RootReport>();
+        var resolvedRoots = new List<ResolutionOutcome>();
         foreach (NetLocation location in NetProfile.ForOperatingSystem(os))
         {
             LocationSpec spec = doctor.BuildSpec(location);
             ResolutionOutcome outcome = engine.Resolve(spec, validator.AsPredicate(DoctorService.FingerprintFor(location)));
-
-            foreach (ResolvedRoot root in outcome.Roots)
-            {
-                resolvedRoots.Add(new RootReport(location.Id, root, TextReport.FixHint(root)));
-            }
+            resolvedRoots.Add(outcome);
         }
 
         var pipeline = new ScanPipeline(
@@ -92,7 +97,10 @@ public sealed class ScanService
             [new NuGetPackageEnumerator(_fs, os)],
             _env.HomeDirectory);
 
-        ScanResult result = await pipeline.RunAsync(roots, cancellationToken: cancellationToken).ConfigureAwait(false);
+        // Convert PortScanRoot to CoreScanRoot for the pipeline
+        var coreRoots = roots.Select(r => new CoreScanRoot(r.LocationId, r.ResolvedPath)).ToList();
+
+        ScanResult result = await pipeline.RunAsync(coreRoots, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         // Classify usage now, while the projects are in hand. Resolving later — after the snapshot —
         // would leave stored items with a usage verdict that no longer matches the evidence.
@@ -100,7 +108,7 @@ public sealed class ScanService
         var reader = new NetReferenceReader(_fs);
         char separator = os == OperatingSystemKind.Windows ? '\\' : '/';
 
-        foreach (Project project in projects.Projects)
+        foreach (CoreProject project in projects.Projects)
         {
             resolver.AddProject(project.RootPath, reader.ReadReferences(project.RootPath, separator));
         }
@@ -108,7 +116,7 @@ public sealed class ScanService
         var annotated = new List<Item>(result.Items.Count);
         foreach (Item item in result.Items)
         {
-            ReferenceVerdict verdict = resolver.Resolve(item.Name, item.Version);
+            CoreReferenceVerdict verdict = resolver.Resolve(item.Name, item.Version);
             annotated.Add(item with
             {
                 Facts = item.Facts.With(
@@ -135,9 +143,28 @@ public sealed class ScanService
             .SaveAsync(snapshot, cancellationToken)
             .ConfigureAwait(false);
 
-        // Run health checks on the resolved roots and scanned items
-        var healthChecker = new NetHealthChecker(_fs, new SystemProcessRunner(), _env);
-        IReadOnlyList<Problem> problems = await healthChecker.CheckAsync(roots, resolvedRoots, ordered, cancellationToken).ConfigureAwait(false);
+        // Health checks run through the PLUGIN's capability, not a CLI-local copy (T-016). The kernel
+        // asks a question; the ecosystem answers it. A CLI-side implementation would mean a second
+        // ecosystem plugin could never bring its own health checks, which is the thing 04 exists to
+        // prevent. The portable Problems are mapped into the Core shape the report renders.
+        var plugin = new DotnetEcosystem(_fs);
+        var pluginContext = new Ports.ScanContext(
+            roots,
+            ToPortProjects(projects),
+            _fs,
+            new SystemProcessRunner(),
+            _env,
+            _clock,
+            cancellationToken);
+
+        IReadOnlyList<Ports.Problem> reported = plugin is Ports.IHealthChecker health
+            ? await health.CheckAsync(pluginContext).ConfigureAwait(false)
+            : [];
+
+        IReadOnlyList<CoreDomain.Problem> problems =
+        [
+            .. reported.Select(ToCoreProblem)
+        ];
 
         string[] hints = BuildOnboardingHints(projects, resolver, ordered);
 
@@ -154,11 +181,40 @@ public sealed class ScanService
     }
 
     /// <summary>
+    /// Projects in the portable shape the plugin boundary speaks. Core and Ports declare the same
+    /// record twice — deliberately, so a plugin cannot reach kernel behaviour through a discovery
+    /// result — and this is the single translation between them.
+    /// </summary>
+    private static Ports.ProjectSet ToPortProjects(CoreProjectSet projects) => new(
+        [.. projects.Projects.Select(p => new Ports.Project(p.RootPath, p.MarkerIds, p.Ecosystems) { MarkerFiles = p.MarkerFiles })],
+        projects.Ecosystems,
+        [.. projects.Issues.Select(i => new Ports.PortableScanIssue(i.Code, i.Summary, i.Path))]);
+
+    /// <summary>Maps one portable problem into the Core shape the report and snapshot render.</summary>
+    private static CoreDomain.Problem ToCoreProblem(Ports.Problem problem) => new()
+    {
+        Ecosystem = NetProfile.EcosystemId,
+        Code = problem.Code,
+        Severity = problem.Severity switch
+        {
+            Ports.Severity.Error => CoreDomain.Severity.Error,
+            Ports.Severity.Warning => CoreDomain.Severity.Warning,
+            _ => CoreDomain.Severity.Info,
+        },
+        Summary = problem.Summary,
+        Path = string.IsNullOrEmpty(problem.Path) ? null : problem.Path,
+        Detail = CoreDomain.Facts.From(
+            [.. problem.Data
+                .Select(kv => new KeyValuePair<string, string>(kv.Key, Sanitize(kv.Value)))
+                .Append(new KeyValuePair<string, string>("locationId", problem.LocationId ?? string.Empty))]),
+    };
+
+    /// <summary>
     /// 07: the first run with no project roots prints an onboarding hint, because without projects
     /// every item is Unknown and nothing can be considered Safe. Without this the tool looks broken
     /// on a fresh machine.
     /// </summary>
-    private static string[] BuildOnboardingHints(ProjectSet projects, ReferenceResolver resolver, IReadOnlyList<Item> items)
+    private static string[] BuildOnboardingHints(CoreProjectSet projects, ReferenceResolver resolver, IReadOnlyList<Item> items)
     {
         var hints = new List<string>();
 

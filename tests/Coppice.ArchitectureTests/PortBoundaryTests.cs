@@ -94,6 +94,69 @@ public sealed class PortBoundaryTests
         Assert.Contains("IStateStore", names);
     }
 
+    /// <summary>
+    /// The capability interfaces from 04-plugin-contract (IEcosystem, IInventoryProvider,
+    /// IReferenceResolver, IRemovalStrategy, IHealthChecker, IVersionOrdering) must live in Ports
+    /// and nowhere else. Two declarations with the same name would let a plugin bind to the wrong
+    /// one silently — the compiler would not complain, and the conformance suite would pass against
+    /// an interface nobody calls.
+    /// </summary>
+    [Fact]
+    public void The_plugin_capability_interfaces_are_declared_exactly_once_in_ports()
+    {
+        string[] required = ["IEcosystem", "IInventoryProvider", "IReferenceResolver", "IRemovalStrategy", "IHealthChecker", "IVersionOrdering"];
+
+        foreach (string name in required)
+        {
+            List<string> declaringAssemblies =
+            [
+                .. new[] { CoreAssembly, PluginsAssembly, "Coppice.Ports", "Coppice.Adapters", ManifestsAssembly, "Coppice.Cli" }
+                    .Select(TryLoad)
+                    .OfType<Assembly>()
+                    .Where(a => SafeGetTypes(a).Any(t => t.IsPublic && t.IsInterface && t.Name == name))
+                    .Select(a => a.GetName().Name!)
+            ];
+
+            Assert.Equal(["Coppice.Ports"], declaringAssemblies);
+        }
+    }
+
+    /// <summary>
+    /// The plugin boundary is only meaningful if the portable types it passes are primitives of the
+    /// contract. A plugin that receives a Core type (Item, ResolvedRoot, ScanOutcome) can reach
+    /// kernel behaviour the ports were meant to hide, so no Core type may appear in any public
+    /// signature of a capability interface.
+    /// </summary>
+    [Fact]
+    public void No_capability_interface_mentions_a_Core_type()
+    {
+        string[] capabilityInterfaces = ["IEcosystem", "IInventoryProvider", "IReferenceResolver", "IRemovalStrategy", "IHealthChecker", "IVersionOrdering"];
+
+        var offenders = new List<string>();
+
+        foreach (string name in capabilityInterfaces)
+        {
+            Type? contract = SafeGetTypes(Load("Coppice.Ports")).FirstOrDefault(t => t.Name == name);
+            Assert.True(contract is not null, $"{name} was not found in Coppice.Ports.");
+
+            foreach (MethodInfo method in SafeGetMethods(contract))
+            {
+                foreach (Type referenced in new[] { method.ReturnType }.Concat(method.GetParameters().Select(p => p.ParameterType)))
+                {
+                    foreach (string ns in Namespaces(referenced))
+                    {
+                        if (ns.StartsWith("Coppice.Core", StringComparison.Ordinal))
+                        {
+                            offenders.Add($"{name}.{method.Name} -> {referenced.FullName}");
+                        }
+                    }
+                }
+            }
+        }
+
+        Assert.Empty(offenders);
+    }
+
     [Fact]
     public void The_only_filesystem_mutation_surface_is_behind_the_port()
     {
@@ -244,6 +307,23 @@ public sealed class PortBoundaryTests
         }
 
         return dir?.FullName ?? throw new DirectoryNotFoundException("Could not locate the repository root.");
+    }
+
+    /// <summary>
+    /// Loads a sibling assembly by name. An assembly this test project does not reference is not
+    /// copied to its output, so a null result means "not present here" — never "boundary broken".
+    /// The caller decides whether absence matters.
+    /// </summary>
+    private static Assembly? TryLoad(string name)
+    {
+        try
+        {
+            return Assembly.Load(name);
+        }
+        catch (System.IO.FileNotFoundException)
+        {
+            return null;
+        }
     }
 
     private static Assembly Load(string name) => Assembly.Load(name);

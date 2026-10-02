@@ -1,5 +1,6 @@
 using Coppice.Core.Domain;
 using Coppice.Ports;
+using CoreDomain = Coppice.Core.Domain;
 
 namespace Coppice.Plugins.Net;
 
@@ -88,8 +89,8 @@ public sealed record NetLocation
 
     public required InstallOwner Owner { get; init; }
 
-    /// <summary>The risk tier a default-policy scan may act on. Never <see cref="Risk.Manual"/>.</summary>
-    public required Risk Tier { get; init; }
+    /// <summary>The risk tier a default-policy scan may act on. Never <see cref="CoreDomain.Risk.Manual"/>.</summary>
+    public required CoreDomain.Risk Tier { get; init; }
 
     public required RemovalStrategy Removal { get; init; }
 

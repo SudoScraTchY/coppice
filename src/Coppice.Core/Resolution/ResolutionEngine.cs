@@ -1,6 +1,7 @@
 using Coppice.Core.Domain;
 using Coppice.Core.PathSafety;
 using Coppice.Ports;
+using CoreDomain = Coppice.Core.Domain;
 
 namespace Coppice.Core.Resolution;
 
@@ -17,7 +18,7 @@ public sealed record ResolutionOutcome(
     IReadOnlyList<ResolutionIssue> Issues)
 {
     /// <summary>The root a first-match location resolved to, or null when nothing resolved.</summary>
-    public ResolvedRoot? Active => Roots.FirstOrDefault(r => r.Role == RootRole.Active);
+    public ResolvedRoot? Active => Roots.FirstOrDefault(r => r.Role == CoreDomain.RootRole.Active);
 }
 
 /// <summary>
@@ -49,7 +50,7 @@ public sealed class ResolutionEngine
 
     /// <summary>
     /// Resolves one location. <paramref name="fingerprint"/> is the optional gate from T-006; when
-    /// supplied and it fails, every root is marked <see cref="RootValidity.FailsFingerprint"/>.
+    /// supplied and it fails, every root is marked <see cref="CoreDomain.RootValidity.FailsFingerprint"/>.
     /// </summary>
     public ResolutionOutcome Resolve(LocationSpec spec, Func<string, bool>? fingerprint = null)
     {
@@ -85,11 +86,11 @@ public sealed class ResolutionEngine
                 continue;
             }
 
-            RootValidity validity = Validate(root: canonical.Path, realPath, spec, issues, candidate);
+            CoreDomain.RootValidity validity = Validate(root: canonical.Path, realPath, spec, issues, candidate);
 
-            if (validity == RootValidity.Ok && fingerprint is not null && !fingerprint(realPath))
+            if (validity == CoreDomain.RootValidity.Ok && fingerprint is not null && !fingerprint(realPath))
             {
-                validity = RootValidity.FailsFingerprint;
+                validity = CoreDomain.RootValidity.FailsFingerprint;
                 issues.Add(new ResolutionIssue(
                     spec.Id, "FINGERPRINT-FAIL",
                     $"'{realPath}' does not match the expected layout for '{spec.Id}'. It will be reported but never cleaned.",
@@ -115,7 +116,7 @@ public sealed class ResolutionEngine
                 $"Two live sources disagree about '{spec.Id}' ({ambigDetail}) and there is no pin. It will not be cleaned until pinned.",
                 null));
 
-            roots = [.. roots.Select(r => r with { Validity = r.Validity == RootValidity.Ok ? RootValidity.Ambiguous : r.Validity })];
+            roots = [.. roots.Select(r => r with { Validity = r.Validity == CoreDomain.RootValidity.Ok ? CoreDomain.RootValidity.Ambiguous : r.Validity })];
         }
 
         return new ResolutionOutcome(spec.Id, Deterministic.OrderRoots(roots), issues);
@@ -184,7 +185,7 @@ public sealed class ResolutionEngine
         return ranked;
     }
 
-    private RootValidity Validate(
+    private CoreDomain.RootValidity Validate(
         string root,
         string realPath,
         LocationSpec spec,
@@ -200,37 +201,37 @@ public sealed class ResolutionEngine
                 spec.Id, "DENIED",
                 $"'{realPath}' is on the safety denylist (matched '{deniedBy}'). It will be reported but never cleaned.",
                 candidate.RawValue));
-            return RootValidity.Denied;
+            return CoreDomain.RootValidity.Denied;
         }
 
         // Gate 1: exists and is a directory.
         if (!_fs.DirectoryExists(root))
         {
-            return RootValidity.NotFound;
+            return CoreDomain.RootValidity.NotFound;
         }
 
-        return RootValidity.Ok;
+        return CoreDomain.RootValidity.Ok;
     }
 
     /// <summary>
-    /// The highest-precedence live candidate is <see cref="RootRole.Active"/>. The rest are
-    /// <see cref="RootRole.Additional"/> in both modes — the difference between First and All is
+    /// The highest-precedence live candidate is <see cref="CoreDomain.RootRole.Active"/>. The rest are
+    /// <see cref="CoreDomain.RootRole.Additional"/> in both modes — the difference between First and All is
     /// whether the lower-precedence sources are consulted at all, not how the winner is labelled.
-    /// A source that reports itself not live yields <see cref="RootRole.Inactive"/>, which the spec
+    /// A source that reports itself not live yields <see cref="CoreDomain.RootRole.Inactive"/>, which the spec
     /// caps at Review tier (LR-5): an old folder nobody points at is often the safest, biggest win.
     /// </summary>
-    private static RootRole DecideRole(List<Candidate> ranked, Candidate candidate)
+    private static CoreDomain.RootRole DecideRole(List<Candidate> ranked, Candidate candidate)
     {
         if (!candidate.IsLive)
         {
-            return RootRole.Inactive;
+            return CoreDomain.RootRole.Inactive;
         }
 
         Candidate? winner = ranked.FirstOrDefault(c => c.IsLive);
         bool isWinner = winner is not null
             && string.Equals(winner.RawValue ?? winner.Path, candidate.RawValue ?? candidate.Path, StringComparison.Ordinal);
 
-        return isWinner ? RootRole.Active : RootRole.Additional;
+        return isWinner ? CoreDomain.RootRole.Active : CoreDomain.RootRole.Additional;
     }
 
     private static IEnumerable<Candidate> RankedLive(List<Candidate> ranked) =>

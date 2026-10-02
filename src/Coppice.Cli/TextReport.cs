@@ -183,7 +183,7 @@ public static class TextReport
         return string.Join(
             "  ",
             p.Severity.ToString().PadRight(12),
-            (p.LocationId ?? "").PadRight(16),
+            (p.Detail.TryGetValue("locationId", out string locationId) ? locationId : string.Empty).PadRight(16),
             p.Code.PadRight(20),
             p.Summary);
     }
