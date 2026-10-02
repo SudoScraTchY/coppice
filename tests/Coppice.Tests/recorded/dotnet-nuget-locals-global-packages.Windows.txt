@@ -1,0 +1,6 @@
+# coppice recorded tool output
+# os: Windows
+# command: dotnet nuget locals global-packages --list
+# source: captured on a real machine: Windows 10, .NET SDK 10.0.301, `dotnet` on PATH. The username in the nuget-locals lines is the literal capture and is intentionally NOT redacted.
+# Lines beginning with '#' are the header. The payload below is the tool's verbatim output.
+global-packages: C:\Users\dev\.nuget\packages\

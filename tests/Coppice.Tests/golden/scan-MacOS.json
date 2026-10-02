@@ -1,0 +1,301 @@
+{
+  "SnapshotId": "snap_19700101T000000Z",
+  "OS": 3,
+  "Items": [
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "package",
+      "Name": "bqysmrxt.cvyd",
+      "Version": "4.4.19",
+      "LocationId": "nuget-packages",
+      "Path": "/Users/dev/.nuget/packages/bqysmrxt.cvyd/4.4.19",
+      "Size": 235099,
+      "Risk": 1,
+      "Facts": {
+        "metadataPresent": "true",
+        "nupkgPresent": "true",
+        "nuspecPresent": "true",
+        "packageId": "bqysmrxt.cvyd",
+        "signaturePresent": "true",
+        "usage": "Unknown",
+        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+      },
+      "ItemId": "c09ea69b20519194"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "package",
+      "Name": "ciqjxdcuk.ispu",
+      "Version": "7.7.20",
+      "LocationId": "nuget-packages",
+      "Path": "/Users/dev/.nuget/packages/ciqjxdcuk.ispu/7.7.20",
+      "Size": 235655,
+      "Risk": 1,
+      "Facts": {
+        "metadataPresent": "true",
+        "nupkgPresent": "true",
+        "nuspecPresent": "true",
+        "packageId": "ciqjxdcuk.ispu",
+        "signaturePresent": "true",
+        "usage": "Unknown",
+        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+      },
+      "ItemId": "ec3c6cedf4fee7a9"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "package",
+      "Name": "fcims.ninibvgw",
+      "Version": "11.0.15-preview.7",
+      "LocationId": "nuget-packages",
+      "Path": "/Users/dev/.nuget/packages/fcims.ninibvgw/11.0.15-preview.7",
+      "Size": 464358,
+      "Risk": 1,
+      "Facts": {
+        "metadataPresent": "true",
+        "nupkgPresent": "true",
+        "nuspecPresent": "true",
+        "packageId": "fcims.ninibvgw",
+        "signaturePresent": "true",
+        "usage": "Unknown",
+        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+      },
+      "ItemId": "e3d30012578b881d"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "package",
+      "Name": "fxrosju.gwcimw",
+      "Version": "8.6.18",
+      "LocationId": "nuget-packages",
+      "Path": "/Users/dev/.nuget/packages/fxrosju.gwcimw/8.6.18",
+      "Size": 113598,
+      "Risk": 1,
+      "Facts": {
+        "metadataPresent": "true",
+        "nupkgPresent": "true",
+        "nuspecPresent": "true",
+        "packageId": "fxrosju.gwcimw",
+        "signaturePresent": "true",
+        "usage": "Unknown",
+        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+      },
+      "ItemId": "e5c915ee04ff74be"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "package",
+      "Name": "gtl.dirykr",
+      "Version": "3.4.33",
+      "LocationId": "nuget-packages",
+      "Path": "/Users/dev/.nuget/packages/gtl.dirykr/3.4.33",
+      "Size": 515197,
+      "Risk": 1,
+      "Facts": {
+        "metadataPresent": "true",
+        "nupkgPresent": "true",
+        "nuspecPresent": "true",
+        "packageId": "gtl.dirykr",
+        "signaturePresent": "true",
+        "usage": "Unknown",
+        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+      },
+      "ItemId": "d67fda7c5d936fd1"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "package",
+      "Name": "hoqcqrniyh.azacqup",
+      "Version": "2.7.13",
+      "LocationId": "nuget-packages",
+      "Path": "/Users/dev/.nuget/packages/hoqcqrniyh.azacqup/2.7.13",
+      "Size": 79634,
+      "Risk": 1,
+      "Facts": {
+        "metadataPresent": "true",
+        "nupkgPresent": "true",
+        "nuspecPresent": "true",
+        "packageId": "hoqcqrniyh.azacqup",
+        "signaturePresent": "true",
+        "usage": "Unknown",
+        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+      },
+      "ItemId": "3d0daa8ab7346a4e"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "package",
+      "Name": "jktbqsgt.psaknu",
+      "Version": "9.5.17",
+      "LocationId": "nuget-packages",
+      "Path": "/Users/dev/.nuget/packages/jktbqsgt.psaknu/9.5.17",
+      "Size": 130726,
+      "Risk": 1,
+      "Facts": {
+        "metadataPresent": "true",
+        "nupkgPresent": "true",
+        "nuspecPresent": "true",
+        "packageId": "jktbqsgt.psaknu",
+        "signaturePresent": "true",
+        "usage": "Unknown",
+        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+      },
+      "ItemId": "e573873be2a47532"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "package",
+      "Name": "owtjya.tzvvqz",
+      "Version": "8.7.1",
+      "LocationId": "nuget-packages",
+      "Path": "/Users/dev/.nuget/packages/owtjya.tzvvqz/8.7.1",
+      "Size": 41004,
+      "Risk": 1,
+      "Facts": {
+        "metadataPresent": "true",
+        "nupkgPresent": "true",
+        "nuspecPresent": "true",
+        "packageId": "owtjya.tzvvqz",
+        "signaturePresent": "true",
+        "usage": "Unknown",
+        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+      },
+      "ItemId": "298ecd12b065625f"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "package",
+      "Name": "pvzvgg.lnbddmm",
+      "Version": "11.3.12-preview.4",
+      "LocationId": "nuget-packages",
+      "Path": "/Users/dev/.nuget/packages/pvzvgg.lnbddmm/11.3.12-preview.4",
+      "Size": 241067,
+      "Risk": 1,
+      "Facts": {
+        "metadataPresent": "true",
+        "nupkgPresent": "true",
+        "nuspecPresent": "true",
+        "packageId": "pvzvgg.lnbddmm",
+        "signaturePresent": "true",
+        "usage": "Unknown",
+        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+      },
+      "ItemId": "51d3f10b733e96c0"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "package",
+      "Name": "rywnjtzxd.iemjs",
+      "Version": "11.7.4",
+      "LocationId": "nuget-packages",
+      "Path": "/Users/dev/.nuget/packages/rywnjtzxd.iemjs/11.7.4",
+      "Size": 336429,
+      "Risk": 1,
+      "Facts": {
+        "metadataPresent": "true",
+        "nupkgPresent": "true",
+        "nuspecPresent": "true",
+        "packageId": "rywnjtzxd.iemjs",
+        "signaturePresent": "true",
+        "usage": "Unknown",
+        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+      },
+      "ItemId": "c41c373f363e3ce0"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "package",
+      "Name": "vfuhiejgkc.ycbmzgwofi",
+      "Version": "6.9.1",
+      "LocationId": "nuget-packages",
+      "Path": "/Users/dev/.nuget/packages/vfuhiejgkc.ycbmzgwofi/6.9.1",
+      "Size": 246392,
+      "Risk": 1,
+      "Facts": {
+        "metadataPresent": "true",
+        "nupkgPresent": "true",
+        "nuspecPresent": "true",
+        "packageId": "vfuhiejgkc.ycbmzgwofi",
+        "signaturePresent": "true",
+        "usage": "Unknown",
+        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+      },
+      "ItemId": "b00a3b071bdeb4ed"
+    }
+  ],
+  "Issues": [],
+  "Problems": [
+    {
+      "Ecosystem": "dotnet",
+      "Code": "DOTNET_PATH_MISSING",
+      "Severity": 1,
+      "Summary": "PATH entry \u0027/Users/dev/.dotnet/tools\u0027 names dotnet but contains no dotnet executable. Every shell start pays for it and tooling can pick the wrong one.",
+      "Path": "/Users/dev/.dotnet/tools",
+      "Detail": {
+        "locationId": "dotnet-root"
+      }
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Code": "SDK_PREVIEW_SUPERSEDED",
+      "Severity": 1,
+      "Summary": "Preview SDK 9.0.100-preview.7 is superseded by GA 9.0.100 in the same feature band (9.0.100).",
+      "Path": null,
+      "Detail": {
+        "band": "9.0.100",
+        "gaVersion": "9.0.100",
+        "locationId": "dotnet-sdk",
+        "previewVersion": "9.0.100-preview.7"
+      }
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Code": "SDK_SUPERSEDED_MAJOR",
+      "Severity": 1,
+      "Summary": "SDK 9.0.100 is superseded by 10.0.200. Removing it frees space but will break anything that pins or targets the older major.",
+      "Path": null,
+      "Detail": {
+        "locationId": "dotnet-sdk",
+        "newVersion": "10.0.200",
+        "oldVersion": "9.0.100"
+      }
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Code": "SDK_SUPERSEDED_MAJOR",
+      "Severity": 1,
+      "Summary": "SDK 9.0.100-preview.7 is superseded by 10.0.200. Removing it frees space but will break anything that pins or targets the older major.",
+      "Path": null,
+      "Detail": {
+        "locationId": "dotnet-sdk",
+        "newVersion": "10.0.200",
+        "oldVersion": "9.0.100-preview.7"
+      }
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Code": "SDK_SUPERSEDED_MAJOR",
+      "Severity": 1,
+      "Summary": "SDK 8.0.400 is superseded by 10.0.200. Removing it frees space but will break anything that pins or targets the older major.",
+      "Path": null,
+      "Detail": {
+        "locationId": "dotnet-sdk",
+        "newVersion": "10.0.200",
+        "oldVersion": "8.0.400"
+      }
+    }
+  ],
+  "Usage": {
+    "Referenced": 0,
+    "Unreferenced": 0,
+    "Unknown": 11,
+    "Total": 11
+  },
+  "Ecosystems": [
+    "dotnet"
+  ],
+  "ProjectCount": 0,
+  "OnboardingHints": [
+    "No projects were found. Reference resolution needs project roots: pass --projects \u003Cpath\u003E or set [projects] roots in config.toml. Until then every package is Unknown and nothing is Safe."
+  ]
+}

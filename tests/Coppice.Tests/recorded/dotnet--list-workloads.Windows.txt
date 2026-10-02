@@ -1,0 +1,10 @@
+# coppice recorded tool output
+# os: Windows
+# command: dotnet workload list
+# source: captured on a real machine: Windows 10, .NET SDK 10.0.301, `dotnet` on PATH. The username in the nuget-locals lines is the literal capture and is intentionally NOT redacted.
+# Lines beginning with '#' are the header. The payload below is the tool's verbatim output.
+Workload version: 10.0.300-manifests.8c7d7c03
+
+Installed Workload Id      Manifest Version         Installation Source
+----------------------------------------------------------------------
+android                    36.1.43/10.0.100         VS 18.7.11925.98

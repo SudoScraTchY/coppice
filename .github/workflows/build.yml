@@ -46,6 +46,13 @@ jobs:
       - name: Verify formatting
         run: dotnet format --verify-no-changes
 
+      # The golden tests already assert the report is correct; this asserts the PINNED file is the
+      # one they read. If the csproj copy step ever regressed, or a golden file were regenerated here
+      # instead of in a review, the tests alone would pass against whatever the code emitted.
+      - name: Verify golden reports are unchanged
+        shell: bash
+        run: bash scripts/verify-golden.sh Release
+
       - name: Pack (proves the tool package builds and carries license metadata)
         run: dotnet pack src/Coppice.Cli/Coppice.Cli.csproj --configuration Release --output "${{ runner.temp }}/packages"
 

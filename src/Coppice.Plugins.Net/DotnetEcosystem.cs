@@ -372,9 +372,23 @@ public static class NetEcosystemLocations
 {
     public static IReadOnlyList<string> All { get; } = ["nuget-packages", "dotnet-tools", "dotnet-workloads", "dotnet-root"];
 
-    private static readonly Regex VersionShaped = new(@"^\d+(\.\d+)+", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    /// <summary>Anchored on purpose: 'lib', 'ref' and 'tools' must NOT match, but '1.0.0-beta.2' must.</summary>
+    private static readonly Regex VersionShaped = new(
+        @"^\d+(\.\d+)+(-[0-9A-Za-z.+-]+)?$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-    /// <summary>True when <paramref name="name"/> looks like a version rather than a package internals directory.</summary>
+    /// <summary>
+    /// True when <paramref name="name"/> is a NuGet version rather than one of the directories that
+    /// live beside the versions inside a package id.
+    /// <para>
+    /// NuGet writes versions as dotted numerics with an optional <c>-prerelease</c> tail. The
+    /// directories it puts NEXT to them are the package's own: <c>.tools</c> and <c>.metadata</c> are
+    /// NuGet bookkeeping, and <c>lib</c>/<c>ref</c>/<c>build</c>/<c>runtimes</c>/<c>tools</c> are the
+    /// extracted tree. Reading any of those as a version invents a cleanup target, and the extracted
+    /// tree nests again (<c>lib/net8.0</c>), so without this filter one package reports several
+    /// phantom versions named after its target frameworks.
+    /// </para>
+    /// </summary>
     public static bool LooksLikeVersion(string name) =>
         !name.StartsWith('.') && VersionShaped.IsMatch(name);
 }

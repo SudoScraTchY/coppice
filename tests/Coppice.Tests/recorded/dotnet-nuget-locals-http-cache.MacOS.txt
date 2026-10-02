@@ -1,0 +1,6 @@
+# coppice recorded tool output
+# os: MacOS
+# command: dotnet nuget locals http-cache --list
+# source: SYNTHETIC. Not captured from a tool on this platform: reproduced from the documented output shape for macOS, with POSIX install paths and the username replaced by 'dev'. Re-capture with `python scripts/record-tool-outputs.py` run on macOS before trusting any parser change against it.
+# Lines beginning with '#' are the header. The payload below is the tool's verbatim output.
+http-cache: /Users/dev/.local/share/NuGet/v3-cache

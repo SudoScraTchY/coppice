@@ -39,6 +39,14 @@ public sealed class NuGetPackageEnumerator : IEntryEnumerator
     {
         ArgumentNullException.ThrowIfNull(context);
 
+        // This enumerator knows ONE layout. The pipeline offers every root to every enumerator, so
+        // declining the roots that are not this location's is what stops a dotnet-root being read as
+        // a package cache — which reports host/fxr as a package named "host", version "fxr".
+        if (!string.Equals(context.LocationId, Id, StringComparison.Ordinal))
+        {
+            yield break;
+        }
+
         // The version directory name is lowercased by NuGet on a case-sensitive filesystem, so
         // ordering must be ordinal, not a locale-aware compare.
         foreach (FileEntry package in Ordered(context.RootPath))
@@ -55,6 +63,21 @@ public sealed class NuGetPackageEnumerator : IEntryEnumerator
                 cancellationToken.ThrowIfCancellationRequested();
 
                 if (version.Kind != EntryKind.Directory)
+                {
+                    continue;
+                }
+
+                // Two kinds of directory live here that are NOT versions, and reporting either as
+                // one would invent a cleanup target that does not exist:
+                //
+                //  - '.tools' and '.metadata': NuGet's own bookkeeping, side by side the versions.
+                //  - 'lib', 'ref', 'build', 'runtimes' and friends: the EXTRACTED package. The
+                //    extracted tree has its own nesting (lib/net8.0/…), so without this filter a
+                //    package contributes phantom "versions" named after its target frameworks.
+                //
+                // NuGet writes versions as dotted numerics (13.0.3, 1.0.0-preview.1). Anything else
+                // is a directory this cache owns for a different purpose.
+                if (!NetEcosystemLocations.LooksLikeVersion(version.Name))
                 {
                     continue;
                 }

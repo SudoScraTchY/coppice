@@ -1,0 +1,9 @@
+# coppice recorded tool output
+# os: MacOS
+# command: dotnet workload list
+# source: SYNTHETIC. Not captured from a tool on this platform: reproduced from the documented output shape for macOS, with POSIX install paths and the username replaced by 'dev'. Re-capture with `python scripts/record-tool-outputs.py` run on macOS before trusting any parser change against it.
+# Lines beginning with '#' are the header. The payload below is the tool's verbatim output.
+Workload version: 10.0.100-manifests.1a2b3c4d
+
+Installed Workload Id      Manifest Version         Installation Source
+----------------------------------------------------------------------

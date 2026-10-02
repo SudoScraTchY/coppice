@@ -1,0 +1,8 @@
+# coppice recorded tool output
+# os: MacOS
+# command: dotnet --list-sdks
+# source: SYNTHETIC. Not captured from a tool on this platform: reproduced from the documented output shape for macOS, with POSIX install paths and the username replaced by 'dev'. Re-capture with `python scripts/record-tool-outputs.py` run on macOS before trusting any parser change against it.
+# Lines beginning with '#' are the header. The payload below is the tool's verbatim output.
+8.0.404 [/usr/local/share/dotnet/sdk]
+9.0.302 [/usr/local/share/dotnet/sdk]
+10.0.100 [/usr/local/share/dotnet/sdk]

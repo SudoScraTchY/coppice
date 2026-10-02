@@ -270,6 +270,28 @@ public sealed class NetHealthCheckerTests
     // ---- 7. SDK_PREVIEW_SUPERSEDED ----
 
     [Fact]
+    public void A_feature_band_does_not_span_two_majors()
+    {
+        // The bug this pins: a band built from minor.patch alone made 9.0.100 and 8.0.100 the SAME
+        // band, so 9.0's GA declared 8.0's preview superseded — a false statement that would
+        // eventually authorise deleting an SDK a net8.0 project still needs.
+        Assert.NotEqual(SdkVersion.BandOf("9.0.100"), SdkVersion.BandOf("8.0.100"));
+        Assert.Equal(SdkVersion.BandOf("9.0.100"), SdkVersion.BandOf("9.0.100-preview.3"));
+    }
+
+    [Fact]
+    public async Task A_ga_from_a_newer_major_does_not_supersede_an_older_bands_preview()
+    {
+        var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/8.0.100-preview.7");
+        rig.Fs.AddDirectory("/usr/share/dotnet/sdk/9.0.100");
+
+        IReadOnlyList<Problem> problems = await Check(rig);
+
+        Assert.False(Has(problems, "SDK_PREVIEW_SUPERSEDED"));
+    }
+
+    [Fact]
     public async Task Reports_a_preview_superseded_by_ga_in_the_same_feature_band()
     {
         var rig = RigFor(Root("dotnet-root", "/usr/share/dotnet"));

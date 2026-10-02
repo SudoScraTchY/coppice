@@ -1,0 +1,9 @@
+# coppice recorded tool output
+# os: Windows
+# command: dotnet tool list -g
+# source: captured on a real machine: Windows 10, .NET SDK 10.0.301, `dotnet` on PATH. The username in the nuget-locals lines is the literal capture and is intentionally NOT redacted.
+# Lines beginning with '#' are the header. The payload below is the tool's verbatim output.
+Package Id                            Version      Commands
+----------------------------------------------------------
+dotnet-ef                             10.0.8       dotnet-ef
+microsoft.web.librarymanager.cli      3.0.71       libman

@@ -16,5 +16,24 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!--
+    Golden report files (T-017). They live in the source tree and are copied NEXT TO the test binary,
+    because that is where the test looks: a golden file that only exists under bin/ is regenerated on
+    every clean build and the golden comparison silently degrades into "compare against whatever the
+    code does today".
+
+    CopyToOutputDirectory is PreserveNewest rather than Always so an edited file is picked up, and
+    the gitignore rule for bin/ keeps the copies out of the repository.
+  -->
+  <ItemGroup>
+    <None Include="golden\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <!-- Recorded real tool outputs, same reason and same copy rule as the golden files. -->
+    <None Include="recorded\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 
 </Project>

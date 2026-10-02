@@ -1,0 +1,9 @@
+# coppice recorded tool output
+# os: Linux
+# command: dotnet --list-runtimes
+# source: SYNTHETIC. Not captured from a tool on this platform: reproduced from the documented output shape for Linux, with POSIX install paths and the username replaced by 'dev'. Re-capture with `python scripts/record-tool-outputs.py` run on Linux before trusting any parser change against it.
+# Lines beginning with '#' are the header. The payload below is the tool's verbatim output.
+Microsoft.AspNetCore.App 8.0.11 [/usr/share/dotnet/shared/Microsoft.AspNetCore.App]
+Microsoft.AspNetCore.App 9.0.8 [/usr/share/dotnet/shared/Microsoft.AspNetCore.App]
+Microsoft.NETCore.App 8.0.11 [/usr/share/dotnet/shared/Microsoft.NETCore.App]
+Microsoft.NETCore.App 9.0.8 [/usr/share/dotnet/shared/Microsoft.NETCore.App]

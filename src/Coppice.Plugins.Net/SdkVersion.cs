@@ -39,11 +39,22 @@ public sealed record RuntimeInfo(string Name, string Version, string InstallPath
 /// </summary>
 public static class SdkVersion
 {
-    /// <summary>Feature band, e.g. <c>9.0.300</c> → <c>0.300</c>.</summary>
+    /// <summary>
+    /// Feature band, e.g. <c>9.0.300</c> → <c>9.0.300</c>.
+    /// <para>
+    /// The MAJOR is part of the band. A .NET feature band is the minor.patch pair WITHIN one major:
+    /// 9.0.100 and 8.0.100 are different bands, not the same band in different majors. Leaving the
+    /// major out made every same-shaped SDK on the machine look like one band, so 9.0's GA would
+    /// declare 8.0's preview "superseded in the same band" — a false statement that would eventually
+    /// authorise deleting an SDK a net8.0 project still needs.
+    /// </para>
+    /// </summary>
     public static string BandOf(string version)
     {
         Parsed parsed = Parse(version);
-        return parsed.Major is null ? string.Empty : $"{parsed.Minor}.{parsed.Patch}";
+        return parsed.Major is null
+            ? string.Empty
+            : $"{parsed.Major}.{parsed.Minor}.{parsed.Patch}";
     }
 
     /// <summary>Major component, e.g. <c>9.0.300</c> → <c>9</c>.</summary>

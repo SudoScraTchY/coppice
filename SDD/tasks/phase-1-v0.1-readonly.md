@@ -151,9 +151,9 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - Deterministic synthetic trees per OS flavor (NuGet multi-version, .NET roots, read-only go modcache, cargo registry, npm `_cacache`); `fixtures/recorded/*.txt` real tool outputs; golden report snapshots.
 
 **Acceptance**
-- [ ] Generator is seed-deterministic (two runs → identical trees)
-- [ ] Recorded outputs cover win/mac/linux variants for each tool query
-- [ ] Golden files committed and diffed in CI
+- [x] Generator is seed-deterministic (two runs → identical trees)
+- [x] Recorded outputs cover win/mac/linux variants for each tool query
+- [x] Golden files committed and diffed in CI
 
 ### T-018 · CI matrix + egress-blocked job
 **Refs** FR-25, NFR-02, NFR-03 · **Depends** T-001 · **Effort** M

@@ -163,7 +163,10 @@ public sealed class NetInventoryTests
         Assert.Equal("9.0.300", sdks[0].Version);
         Assert.Equal(@"C:\Program Files\dotnet\sdk", sdks[0].InstallPath);
         Assert.Equal("9", sdks[0].Major);
-        Assert.Equal("0.300", sdks[0].Band);
+        // The band carries its major. 9.0.300 and 8.0.300 are different feature bands, not one band
+        // in two majors — without the major, 9.0's GA would declare 8.0's preview "superseded in the
+        // same band", which would eventually authorise deleting an SDK a net8.0 project still needs.
+        Assert.Equal("9.0.300", sdks[0].Band);
         Assert.False(sdks[0].IsPreview);
         Assert.Equal("10.0.301", sdks[1].Version);
     }
@@ -179,7 +182,7 @@ public sealed class NetInventoryTests
         SdkInfo preview = sdks.Single(s => s.IsPreview);
         Assert.Equal("7.0.100-preview.7.21379.14", preview.Version);
         Assert.Equal("7", preview.Major);
-        Assert.Equal("0.100", preview.Band);
+        Assert.Equal("7.0.100", preview.Band);
 
         Assert.False(sdks.Single(s => s.Version == "6.0.100").IsPreview);
         Assert.False(sdks.Single(s => s.Version == "8.0.401").IsPreview);
