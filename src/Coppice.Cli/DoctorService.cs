@@ -46,6 +46,18 @@ public sealed class DoctorService
         _os = env.OS;
     }
 
+    public DoctorService(IFileSystem fs, IProcessRunner runner, IEnvironment env, OperatingSystemKind os)
+    {
+        ArgumentNullException.ThrowIfNull(fs);
+        ArgumentNullException.ThrowIfNull(runner);
+        ArgumentNullException.ThrowIfNull(env);
+
+        _fs = fs;
+        _runner = runner;
+        _env = env;
+        _os = os;
+    }
+
     /// <summary>The machine's home directory, used only to abbreviate paths for display.</summary>
     public string? HomeDirectory => _env.HomeDirectory;
 
@@ -103,7 +115,7 @@ public sealed class DoctorService
     /// Builds a location's source chain: pin, then tool, then env, then the per-OS default. The
     /// order is the profile's, and the engine's precedence table enforces it.
     /// </summary>
-    private LocationSpec BuildSpec(NetLocation location)
+    internal LocationSpec BuildSpec(NetLocation location)
     {
         var sources = new Dictionary<ResolvedVia, SourceResult>();
 
@@ -224,7 +236,7 @@ public sealed class DoctorService
         return null;
     }
 
-    private static Fingerprint FingerprintFor(NetLocation location)
+    internal static Fingerprint FingerprintFor(NetLocation location)
     {
         // A location whose profile declares no layout check gets none. Passing a 0 ratio with no
         // patterns would make every entry "not matching" and reject a perfectly good cache.

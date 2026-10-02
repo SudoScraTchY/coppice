@@ -1,6 +1,7 @@
 using Coppice.Adapters;
 using Coppice.Core.Domain;
 using Coppice.Core.Projects;
+using Coppice.Core.Resolution;
 using Coppice.Core.Scanning;
 using Coppice.Core.Snapshots;
 using Coppice.Plugins.Net;
@@ -14,6 +15,7 @@ public sealed record ScanReport(
     OperatingSystemKind OS,
     IReadOnlyList<Item> Items,
     IReadOnlyList<ScanIssue> Issues,
+    IReadOnlyList<Problem> Problems,
     UsageBreakdown Usage,
     IReadOnlyList<string> Ecosystems,
     int ProjectCount,
@@ -30,17 +32,20 @@ public sealed record ScanReport(
 public sealed class ScanService
 {
     private readonly IFileSystem _fs;
+    private readonly IProcessRunner _runner;
     private readonly IEnvironment _env;
     private readonly IStateStore _state;
     private readonly IClock _clock;
 
-    public ScanService(IFileSystem fs, IEnvironment env, IStateStore state, IClock? clock = null)
+    public ScanService(IFileSystem fs, IProcessRunner runner, IEnvironment env, IStateStore state, IClock? clock = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
+        ArgumentNullException.ThrowIfNull(runner);
         ArgumentNullException.ThrowIfNull(env);
         ArgumentNullException.ThrowIfNull(state);
 
         _fs = fs;
+        _runner = runner;
         _env = env;
         _state = state;
         _clock = clock ?? new DefaultClock();
@@ -62,6 +67,24 @@ public sealed class ScanService
         OperatingSystemKind os = _env.OS;
 
         var projects = new ProjectDiscoveryService(_fs).Discover(projectRoots);
+
+        // We need the resolved roots from the doctor to run health checks.
+        // Build them the same way the doctor does.
+        var doctor = new DoctorService(_fs, _runner, _env, os);
+        var engine = new ResolutionEngine(_fs, os, _env.HomeDirectory);
+        var validator = new FingerprintValidator(_fs, os);
+
+        var resolvedRoots = new List<RootReport>();
+        foreach (NetLocation location in NetProfile.ForOperatingSystem(os))
+        {
+            LocationSpec spec = doctor.BuildSpec(location);
+            ResolutionOutcome outcome = engine.Resolve(spec, validator.AsPredicate(DoctorService.FingerprintFor(location)));
+
+            foreach (ResolvedRoot root in outcome.Roots)
+            {
+                resolvedRoots.Add(new RootReport(location.Id, root, TextReport.FixHint(root)));
+            }
+        }
 
         var pipeline = new ScanPipeline(
             _fs,
@@ -112,6 +135,10 @@ public sealed class ScanService
             .SaveAsync(snapshot, cancellationToken)
             .ConfigureAwait(false);
 
+        // Run health checks on the resolved roots and scanned items
+        var healthChecker = new NetHealthChecker(_fs, new SystemProcessRunner(), _env);
+        IReadOnlyList<Problem> problems = await healthChecker.CheckAsync(roots, resolvedRoots, ordered, cancellationToken).ConfigureAwait(false);
+
         string[] hints = BuildOnboardingHints(projects, resolver, ordered);
 
         return new ScanReport(
@@ -119,6 +146,7 @@ public sealed class ScanService
             os,
             ordered,
             result.Issues,
+            problems,
             UsageBreakdown.FromItems(ordered),
             [NetProfile.EcosystemId],
             projects.Projects.Count,

@@ -1,6 +1,7 @@
 using Coppice.Adapters;
 using Coppice.Core.Domain;
 using Coppice.Core.Scanning;
+using Coppice.Ports;
 
 namespace Coppice.Cli;
 
@@ -120,7 +121,7 @@ public static class CoppiceApp
         // Project roots come from config.toml [projects] or --projects flag. For v0.1 we accept none.
         var projectRoots = Array.Empty<string>();
 
-        var scanService = new ScanService(service.Fs, service.Env, service.State);
+        var scanService = new ScanService(service.Fs, new SystemProcessRunner(), service.Env, service.State);
         ScanReport scanReport = scanService.RunAsync(roots, projectRoots).GetAwaiter().GetResult();
 
         if (flags.Json)
@@ -155,6 +156,18 @@ public static class CoppiceApp
         {
             Console.Out.WriteLine();
             Console.Out.WriteLine($"hint: {hint}");
+        }
+
+        if (scanReport.Problems.Count > 0)
+        {
+            Console.Out.WriteLine();
+            Console.Out.WriteLine("HEALTH PROBLEMS:");
+            Console.Out.WriteLine(TextReport.ProblemHeader());
+            Console.Out.WriteLine(new string('-', 120));
+            foreach (Problem p in scanReport.Problems)
+            {
+                Console.Out.WriteLine(TextReport.ProblemRow(p));
+            }
         }
 
         Console.Out.WriteLine();

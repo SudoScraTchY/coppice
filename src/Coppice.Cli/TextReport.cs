@@ -170,4 +170,21 @@ public static class TextReport
             usage.PadRight(12),
             risk.PadRight(6));
     }
+
+    public static string ProblemHeader() => string.Join(
+        "  ",
+        "SEVERITY".PadRight(12),
+        "LOCATION".PadRight(16),
+        "CODE".PadRight(20),
+        "MESSAGE");
+
+    public static string ProblemRow(Problem p)
+    {
+        return string.Join(
+            "  ",
+            p.Severity.ToString().PadRight(12),
+            (p.LocationId ?? "").PadRight(16),
+            p.Code.PadRight(20),
+            p.Summary);
+    }
 }
