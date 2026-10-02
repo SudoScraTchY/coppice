@@ -518,3 +518,124 @@ internal sealed class OrdinalVersionOrdering : IVersionOrdering
         return new VersionComponents(major, minor, 0, 0, null, null);
     }
 }
+
+/// <summary>
+/// A deliberately non-conformant plugin: every violation a real plugin has plausibly shipped.
+/// <para>
+/// This exists to prove the harness has TEETH. A conformance suite that has never rejected anything
+/// is indistinguishable from a suite that asserts nothing, and the failure mode is invisible: the
+/// rules get quietly weakened over time and nothing ever goes red. Each test below names the rule it
+/// expects to catch the corresponding violation, so a rule that stops working fails here first.
+/// </para>
+/// </summary>
+internal sealed class BrokenEcosystem : IEcosystem, IInventoryProvider
+{
+    private readonly BrokenViolation _violation;
+
+    public BrokenEcosystem(BrokenViolation violation) => _violation = violation;
+
+    public string Id => "broken";
+
+    public bool IsPresent(Ports.ScanContext ctx) => ctx.Roots.Count > 0;
+
+    public IVersionOrdering Versions { get; } = new NonTransitiveVersionOrdering();
+
+    public async IAsyncEnumerable<Ports.PortableItem> Discover(Ports.ScanContext ctx)
+    {
+        if (_violation is BrokenViolation.WritesDuringInventory)
+        {
+            // C-1: a plugin that "cleans up as it inventories".
+            ctx.FileSystem.CreateDirectory("/cache/self-inventoried");
+        }
+
+        foreach (Ports.ScanRoot root in ctx.Roots)
+        {
+            if (_violation is BrokenViolation.SpawnsAProcess)
+            {
+                // C-3: the only sanctioned way out is IProcessRunner, and inventory has no business
+                // using it at all — this shows up as a recorded call the suite did not expect.
+                await ctx.ProcessRunner.RunAsync(
+                    new Ports.ProcessRequest { FileName = "dotnet", Arguments = ["--list-sdks"] },
+                    ctx.CancellationToken);
+            }
+
+            foreach (FileEntry entry in ctx.FileSystem.EnumerateEntries(root.ResolvedPath, new Ports.EnumerationRequest { MaxDepth = 1 }))
+            {
+                if (entry.Kind != EntryKind.Directory)
+                {
+                    continue;
+                }
+
+                string path = _violation is BrokenViolation.ReportsPathsOutsideItsRoots
+                    ? "/somewhere/else/completely/" + entry.Name
+                    : entry.Path;
+
+                Dictionary<string, string> facts = _violation is BrokenViolation.EmitsUnserializableFacts
+                    ? new Dictionary<string, string> { ["note"] = "line one\nline two" }
+                    : new Dictionary<string, string> { ["locationId"] = root.LocationId };
+
+                if (_violation is BrokenViolation.ForgetsProvenance)
+                {
+                    facts = new Dictionary<string, string> { ["unrelated"] = "yes" };
+                }
+
+                yield return new Ports.PortableItem(
+                    "broken-id",
+                    Id,
+                    "package",
+                    entry.Name,
+                    _violation is BrokenViolation.OrderDependsOnEnumeration ? entry.Name + Guid.NewGuid() : "1.0.0",
+                    path,
+                    root.Tier,
+                    facts);
+
+                if (_violation is BrokenViolation.HangsForever)
+                {
+                    // C-10: a plugin that never returns. Awaiting an uncancellable delay here would
+                    // hang the whole suite, so the harness's own timeout is what has to catch it.
+                    await Task.Delay(TimeSpan.FromMinutes(30), ctx.CancellationToken);
+                }
+            }
+        }
+    }
+}
+
+internal enum BrokenViolation
+{
+    None,
+    WritesDuringInventory,
+    SpawnsAProcess,
+    ReportsPathsOutsideItsRoots,
+    ForgetsProvenance,
+    EmitsUnserializableFacts,
+    OrderDependsOnEnumeration,
+    HangsForever,
+}
+
+/// <summary>
+/// A version comparison that is NOT a total order, because it is STATEFUL: the same pair compared
+/// twice gives different answers, and the result depends on how many comparisons ran before it.
+/// <para>
+/// This is the realistic version of the bug — a memoisation or mutable-cache mistake — rather than an
+/// artificial cycle. It matters because "keep the newest N" is implemented as a sort: an ordering
+/// whose answer depends on call history produces a different set of survivors on every run, and the
+/// difference is invisible until someone's build breaks.
+/// </para>
+/// </summary>
+internal sealed class NonTransitiveVersionOrdering : IVersionOrdering
+{
+    private int _calls;
+
+    public int Compare(string? x, string? y)
+    {
+        if (string.Equals(x, y, StringComparison.Ordinal))
+        {
+            return 0;
+        }
+
+        int ordinal = string.CompareOrdinal(x, y);
+        return _calls++ % 2 == 0 ? ordinal : -ordinal;
+    }
+
+    public VersionComponents? TryParse(string version) => new(0, 0, 0, 0, null, null);
+}

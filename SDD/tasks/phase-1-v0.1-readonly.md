@@ -140,9 +140,9 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - xUnit harness that runs any `IEcosystem` implementation against fake-VFS fixtures and asserts all 12 conformance rules; violation = failing test with the rule id in the message. .NET plugin is the first consumer.
 
 **Acceptance**
-- [ ] All C-1…C-12 rules implemented as assertions
-- [ ] Deliberately-broken sample plugin fails with named rule ids
-- [ ] Runs in CI on all three OS
+- [x] All C-1…C-12 rules implemented as assertions
+- [x] Deliberately-broken sample plugin fails with named rule ids
+- [x] Runs in CI on all three OS
 
 ### T-017 · Fixture generator + golden tests
 **Refs** NFR-06, 11-testing · **Depends** T-016 · **Effort** L
