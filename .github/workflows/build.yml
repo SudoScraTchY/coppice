@@ -18,19 +18,34 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.os }} · .NET ${{ matrix.sdk }}
+    # 3 OS x 2 arch (T-018 acceptance: "Suite green on all six cells").
+    #
+    # arm64 runs on the x64 runners under emulation. That is a real slowdown on the test suite, but it
+    # is the only way to get arm64 coverage in public CI, and the suite is fast enough that the cost
+    # is cheaper than an arm-only bug reaching a user's machine.
+    name: ${{ matrix.os }} · ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        sdk: ['10.0.x']
+        arch: [x64, arm64]
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ matrix.sdk }}
+          dotnet-version: '10.0.x'
+          # Without this, every cell resolves the host's SDK and the arm64 half of the matrix quietly
+          # re-tests x64 six times over.
+          architecture: ${{ matrix.arch }}
+
+      - name: Report the SDK actually in use
+        shell: bash
+        run: |
+          echo "cell: ${{ matrix.os }} / ${{ matrix.arch }}"
+          dotnet --info | sed -n '1,12p'
 
       - name: Restore
         run: dotnet restore
@@ -40,15 +55,22 @@ jobs:
       - name: Build (warnings are errors)
         run: dotnet build -warnaserror --configuration Release
 
+      # Category!=Network is load-bearing. This job's claim is that the shipped suite makes NO network
+      # calls; the one test that deliberately dials out belongs to the egress job, which is where its
+      # failure would mean something.
       - name: Test
-        run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=tests.trx" --results-directory "${{ runner.temp }}/test-results"
+        run: >
+          dotnet test --configuration Release --no-build
+          --filter 'Category!=Network'
+          --logger "trx;LogFileName=tests.trx"
+          --results-directory "${{ runner.temp }}/test-results"
 
       - name: Verify formatting
         run: dotnet format --verify-no-changes
 
-      # The golden tests already assert the report is correct; this asserts the PINNED file is the
-      # one they read. If the csproj copy step ever regressed, or a golden file were regenerated here
-      # instead of in a review, the tests alone would pass against whatever the code emitted.
+      # The golden tests assert the report is correct; this asserts the PINNED file is the one they
+      # read. If the csproj copy step regressed, or a golden file were regenerated here instead of in a
+      # review, the tests alone would pass against whatever the code emitted.
       - name: Verify golden reports are unchanged
         shell: bash
         run: bash scripts/verify-golden.sh Release
@@ -59,16 +81,22 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results-${{ matrix.os }}
+          name: test-results-${{ matrix.os }}-${{ matrix.arch }}
           path: ${{ runner.temp }}/test-results
           retention-days: 14
 
   egress:
-    # The DoD says "no new network-capable dependency" and the CI egress job enforces it. The
-    # architecture tests already assert no assembly references a System.Net type; this job closes
-    # the gap by making an accidental network dependency fail the build at restore time.
-    name: no network dependencies
+    # NFR-02/NFR-03: the suite must pass with egress BLOCKED, and that must be demonstrated rather
+    # than assumed.
+    #
+    # A blocked-egress container running a suite that never touches the network produces a green job
+    # whether or not the isolation actually works. So this job runs EgressCanaryTests, which opens a
+    # real TCP connection to 1.1.1.1:443 and asserts it FAILS. With egress blocked it passes, and that
+    # pass is the proof. If the isolation regresses, the canary fails and this job fails loudly
+    # instead of reporting a green that means nothing.
+    name: egress blocked
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -76,18 +104,72 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Restore must not need network beyond the NuGet feed
-        run: dotnet restore
-
-      - name: Assert no network-capable package in any project file
+      # Restore into a path INSIDE the workspace. The container mounts the workspace and runs with a
+      # different HOME, so packages restored to the runner's default ~/.nuget would not be findable
+      # from inside — and the container cannot fetch them, because its network is none.
+      - name: Restore into a workspace-local package folder
         shell: bash
         run: |
-          forbidden='System.Net.Http|HttpClient|WebClient|SocketsHttpHandler|RestSharp|Refit'
-          if grep -rEn "$forbidden" src tests --include='*.csproj'; then
-            echo "::error::a network-capable dependency or type was introduced"
+          # $GITHUB_WORKSPACE, not $PWD: the path must resolve identically in this step and in the
+          # docker -v mount below, and PWD is whatever the runner last cd'd into.
+          echo "EGRESS_PACKAGES=$GITHUB_WORKSPACE/.egress-packages" >> "$GITHUB_ENV"
+          dotnet restore --packages "$GITHUB_WORKSPACE/.egress-packages"
+
+      - name: Build against the offline package folder
+        shell: bash
+        run: |
+          dotnet build --configuration Release --no-restore \
+            -p:RestorePackagesPath="$EGRESS_PACKAGES"
+
+      # The isolation itself. --network none removes the only route to the internet a container has.
+      # BOTH test projects, not just Coppice.Tests. Coppice.ArchitectureTests is where the
+      # "no assembly references a System.Net type" rule lives, so running the egress job without it
+      # would leave the strictest network check unverified exactly where it matters.
+      - name: Run the full suite with no network
+        run: |
+          docker run --rm --network none \
+            -v "$GITHUB_WORKSPACE:/src" \
+            -w /src \
+            -e NUGET_PACKAGES=/src/.egress-packages \
+            -e DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+            -e DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 \
+            mcr.microsoft.com/dotnet/sdk:10.0 \
+            bash -c '
+              set -e
+              dotnet test tests/Coppice.Tests/Coppice.Tests.csproj \
+                --configuration Release --no-build \
+                --settings tests/egress.runsettings \
+                --logger "trx;LogFileName=egress.trx" \
+                --results-directory /src/.egress-results
+              dotnet test tests/Coppice.ArchitectureTests/Coppice.ArchitectureTests.csproj \
+                --configuration Release --no-build \
+                --settings tests/egress.runsettings \
+                --logger "trx;LogFileName=architecture.trx" \
+                --results-directory /src/.egress-results
+            '
+
+      - name: Prove the canary is actually load-bearing
+        shell: bash
+        run: |
+          # If the egress run had silently excluded the canary, the green above would prove nothing.
+          # Confirm the canary actually executed, by name, inside that run.
+          results=$(find "$GITHUB_WORKSPACE/.egress-results" -name 'egress.trx' | head -1)
+          if [[ -z "$results" ]]; then
+            echo "::error::the egress run produced no results file"
             exit 1
           fi
-          echo "no network-capable references found"
+          if ! grep -q 'Egress_is_blocked_in_this_environment' "$results"; then
+            echo "::error::the egress canary did not run — a green egress job without it proves nothing"
+            exit 1
+          fi
+          echo "egress canary ran under --network none"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egress-results
+          path: ${{ github.workspace }}/.egress-results
+          retention-days: 14
 
   licence:
     # T-000 acceptance: `dotnet pack` emits license metadata without warnings.
@@ -102,7 +184,7 @@ jobs:
 
       - name: Pack and verify the NuGet license expression survived
         run: |
-          dotnet pack src/Coppice.Cli/Coppice.Cli.Cli.csproj --configuration Release --output out 2>/dev/null \
+          dotnet pack src/Coppice.Cli/Coppice.Cli.csproj --configuration Release --output out 2>/dev/null \
             || dotnet pack src/Coppice.Cli/Coppice.Cli.csproj --configuration Release --output out
           nuspec=$(unzip -p out/*.nupkg '*.nuspec')
           echo "$nuspec" | grep -q '<license type="expression">Apache-2.0</license>' \

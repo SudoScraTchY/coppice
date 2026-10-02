@@ -15,5 +15,10 @@ TestResults/
 *.trx
 coverage*.xml
 
+# CI egress job scratch: a package cache restored into the workspace so the blocked-egress
+# container can find it without a network. Large, regenerable, and job-specific.
+.egress-packages/
+.egress-results/
+
 ## Tooling
 .dotnet/

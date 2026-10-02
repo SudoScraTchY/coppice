@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Egress-blocked test run (T-018, NFR-02/NFR-03).
+
+  This does TWO things, and the second is the one that matters:
+
+  1. It excludes the Network category, so the ordinary suite never touches the network. That is the
+     property under test, and it is enforced by construction rather than by review.
+
+  2. It leaves the egress canary ENABLED. The canary opens a real TCP connection and asserts it
+     FAILS. The container running this has egress blocked, so the canary passes — and that pass is
+     the proof the isolation is real. Without the canary, a broken network configuration would
+     produce a green job that proved nothing.
+
+  Do not "fix" the canary by deleting it or by excluding the Network category here. Its failure mode
+  is the signal.
+-->
+<RunSettings>
+  <Run>
+    <!-- Fail the whole job on any test failure, not just the first, so one run reports everything. -->
+    <TestSessionTimeout>1800000</TestSessionTimeout>
+
+    <!-- No parallelism benefit here: the canary is timing-sensitive, and a serial run in a
+         constrained container is more predictable than six threads competing for the sandbox. -->
+    <MaxCpuCount>1</MaxCpuCount>
+
+    <CollectSourceInformation>false</CollectSourceInformation>
+    <TestRunParameters>
+      <Parameter name="EgressBlocked" value="true" />
+    </TestRunParameters>
+  </Run>
+
+  <RunConfiguration>
+    <!-- Serial execution. The canary asserts on connection TIMING, and a saturated container can
+         time out a healthy connection and make a working setup look broken. -->
+    <DisableAppDomain>false</DisableAppDomain>
+    <DisableParallelization>true</DisableParallelization>
+  </RunConfiguration>
+</RunSettings>

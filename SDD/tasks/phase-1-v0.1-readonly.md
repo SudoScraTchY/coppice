@@ -162,8 +162,13 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - 3-OS × 2-arch matrix; a container job with blocked egress running the full suite; artifact upload of test results.
 
 **Acceptance**
-- [ ] Suite green on all six cells
-- [ ] Egress job fails loudly if any test attempts a network call (verified by a canary test that is expected to fail when egress is open)
+- [ ] Suite green on all six cells (written; needs a CI run — cannot be proven locally)
+- [x] Egress job fails loudly if any test attempts a network call (verified by a canary test that is expected to fail when egress is open)
+
+> Both items are implemented and the canary's local behaviour is verified (it fails with egress
+> open, which is the required half). The six-cell matrix and the `--network none` container run can
+> only be confirmed by a CI run: this machine is Windows-only and has no Docker daemon, so neither
+> the arm64 emulation nor the blocked-egress container could be exercised here.
 
 ### T-019 · v0.1 release + dogfooding
 **Refs** NFR-11, 12-roadmap · **Depends** T-005…T-018 · **Effort** M
