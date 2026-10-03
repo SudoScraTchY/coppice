@@ -6,6 +6,14 @@
     <ProjectReference Include="..\..\src\Coppice.Adapters\Coppice.Adapters.csproj" />
     <ProjectReference Include="..\..\src\Coppice.Plugins.Net\Coppice.Plugins.Net.csproj" />
     <ProjectReference Include="..\..\src\Coppice.Manifests\Coppice.Manifests.csproj" />
+
+    <!--
+      The CLI is referenced on purpose, not incidentally. Without it the read-only audit called
+      Assembly.Load("Coppice.Cli"), got null, and SKIPPED — so the one assembly where a mutating
+      command would actually live was the one assembly never checked. ReadOnlyAuditTests now asserts
+      this reference stays, so the audit cannot quietly go blind again.
+    -->
+    <ProjectReference Include="..\..\src\Coppice.Cli\Coppice.Cli.csproj" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />

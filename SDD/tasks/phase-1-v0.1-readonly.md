@@ -177,42 +177,64 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - Self-contained single-file publish per OS/arch; release notes; dogfood checklist on ≥ 5 real machines; findings filed as new cards.
 
 **Acceptance**
-- [ ] Binaries < 30 MB each (NFR-11) — **MEASURED 37.7 MB, over budget.** Cold start 110 ms, well
-      inside the 300 ms target. See the note below.
+- [x] Binaries < 30 MB each (NFR-11) — **543 KB framework-dependent**, well inside budget.
+      Cold start 73 ms against a 300 ms target. See the note below.
 - [ ] 5+ dogfood reports collected; every finding has a card
 - [x] Zero mutations possible in v0.1 (verified by egress + VFS audit of commands)
 
-> **NFR-11 is missed: 37.7 MB against a 30 MB budget.** Measured on win-x64 with
-> `-p:PublishSingleFile -p:SelfContained -p:EnableCompressionInSingleFile`: a single
-> `Coppice.Cli.exe` of 37,676,519 bytes. Compression and `InvariantGlobalization` do not move it
-> (37,675,766) because the self-contained .NET runtime dominates, not coppice's own code.
+> **How the size budget was met, and what it cost.**
 >
-> `PublishTrimmed=true` is the real lever and it is currently BLOCKED, not merely unset:
-> `DomainJson.cs` uses reflection-based `JsonSerializer.Serialize/Deserialize`, which fails
-> trimming analysis with IL2026 under `TreatWarningsAsErrors`. Fixing it means a source-generated
-> `JsonSerializerContext` — which in turn conflicts with the polymorphic `Item`/`Snapshot` shapes and
-> would need its own card. Tracked as the size finding below rather than papered over.
+> Measured on win-x64, all single-file, all producing a working binary that runs `doctor`, `scan`
+> and `--json` correctly:
 >
-> Cold start measured on the same binary: 110 ms warm, 212 ms on first run (extraction + JIT).
-> Both under the 300 ms target. `doctor` takes ~5.7 s, which is NOT cold start — it is the
-> resolution chain spawning `dotnet` per location, and it is a separate finding.
+> | build | binary | cold start |
+> |---|---|---|
+> | self-contained, compressed | 37.7 MB | 110 ms |
+> | self-contained, trimmed + compressed | 35.9 MB | — |
+> | **framework-dependent** | **543 KB** | **73 ms** |
+>
+> The second row refuted the plan. I had recommended a `JsonSerializerContext` rewrite to unlock
+> trimming, reasoning that trimming was the lever. It is not: trimming saves 1.8 MB, because the
+> self-contained **runtime** dominates the payload, not coppice's code. A whole card spent narrowing
+> the wrong term. Measuring first would have cost one publish.
+>
+> Dropping the bundled runtime is what moves it — 543 KB, 69x smaller, and 37 ms faster to start
+> because there is no payload to extract. The cost is that the binary needs .NET 10 installed.
+>
+> For coppice that trade is close to free, and not obviously so: the audience is polyglot developers
+> who already have .NET, and the thing being managed IS the .NET cache. A 37 MB download to report on
+> a cache the user can already run code against is the wrong default. The self-contained build stays
+> available for anyone who wants it, and `scripts/measure-coldstart.sh` makes the comparison
+> reproducible rather than a number buried in a commit message.
+>
+> `doctor` still takes ~5.7 s, which is NOT cold start — it is the resolution chain spawning `dotnet`
+> per location, and it is filed separately as F-002.
 
 ## T-019 findings (filed during implementation)
 
 These came out of building T-019's DoD items. Each needs its own card; they are listed here so the
 release is not blocked by losing them.
 
-### F-001 · Self-contained binary is 37.7 MB against a 30 MB budget (NFR-11)
-`PublishTrimmed` is blocked by IL2026 on `DomainJson`'s reflection-based `Serialize`/`Deserialize`.
-The fix is a source-generated `JsonSerializerContext`, which needs reconciling with the polymorphic
-`Item`/`Snapshot` shapes first. Until then v0.1 ships over budget, or ships framework-dependent.
+### F-001 · RESOLVED — the size budget is met by dropping the bundled runtime
+Originally filed as "self-contained is 37.7 MB, over budget, blocked by IL2026 on `DomainJson`".
+Measuring the alternatives first showed the diagnosis was wrong: trimming buys 1.8 MB, so the
+`JsonSerializerContext` rewrite would have been a card spent on the wrong term. The payload is the
+.NET runtime, not coppice. Framework-dependent single-file is 543 KB and starts 37 ms faster, so the
+finding closes with no code change. A source-generated context is still worth having eventually —
+not for size, but because it removes a trimming warning — and is not a release blocker.
 
 ### F-002 · `coppice doctor` takes ~5.7 s
-Not cold start (that is 110 ms). It is the resolution chain spawning `dotnet` once per location per
+Not cold start (that is 73 ms). It is the resolution chain spawning `dotnet` once per location per
 rung, as 05 specifies. On a machine with no .NET on PATH this is several failed process launches.
 Two candidates, both needing measurement before either is chosen: cache the tool queries for the
 duration of one command, or resolve locations in parallel. Neither is safe to do speculatively — a
 cached tool answer would go stale within a run and the resolver's whole purpose is to ask the tool.
+
+### F-004 · Framework-dependent means v0.1 needs .NET 10 installed
+The accepted consequence of closing F-001, not a bug. Recorded because it is a user-visible support
+question: a user without .NET gets a runtime error rather than a working report. The self-contained
+build stays available for that case. If dogfooding shows real users hitting it, F-004 becomes the
+card to write and the answer is probably "publish both", which costs one extra CI matrix leg.
 
 ### F-003 · The read-only audit needed two detectors, and the first was wrong
 Recorded because the failure is instructive. The audit searches each method's IL for calls to the

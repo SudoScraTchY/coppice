@@ -9,6 +9,13 @@
   </ItemGroup>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!--
+      The binary is `coppice`, not `Coppice.Cli`. The project already declares that as its
+      ToolCommandName, so this makes the published file agree with the name the CLI prints in its
+      own help and with the name every script and doc refers to. Without it the size gate in
+      scripts/publish.sh silently measured nothing, because the file it looked for was never there.
+    -->
+    <AssemblyName>coppice</AssemblyName>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>coppice</ToolCommandName>
     <IsPackable>true</IsPackable>

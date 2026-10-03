@@ -25,9 +25,18 @@ public sealed class ReadOnlyAuditTests
     private static readonly string[] MutatorMethods = ["DeleteFile", "Move", "CreateDirectory"];
 
     /// <summary>
-    /// Loads a sibling assembly, or null when this project does not reference it. Failing on a missing
-    /// assembly would report a boundary violation that does not exist.
+    /// Loads a sibling assembly, or null when this project does not reference it.
     /// </summary>
+    /// <remarks>
+    /// Returning null is right for an unreferenced sibling — this project does not reference Adapters,
+    /// and demanding it would report a violation that does not exist.
+    /// <para>
+    /// It is NOT right for an assembly that MUST be audited. The CLI is the assembly where mutation
+    /// matters most, and a null here means the audit silently passes without looking at it. That is
+    /// not a false positive, it is a false pass — the outcome an audit cannot be allowed to have.
+    /// <see cref="The_cli_assembly_is_present_to_audit"/> pins the CLI's presence so this stays honest.
+    /// </para>
+    /// </remarks>
     private static Assembly? TryLoad(string name)
     {
         try
@@ -38,6 +47,23 @@ public sealed class ReadOnlyAuditTests
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// The CLI must be loadable for the mutation audit to mean anything. This exists because
+    /// AssemblyName was changed to `coppice` for the published binary, and the loader silently began
+    /// returning null for it — the audit kept passing, having checked nothing.
+    /// </summary>
+    [Fact]
+    public void The_cli_assembly_is_present_to_audit()
+    {
+        // The published binary is `coppice`, so AssemblyName was set to match. Resolve the assembly
+        // from the type we actually audit rather than by string, so a rename cannot silently blind us.
+        Type? app = typeof(Coppice.Cli.CoppiceApp);
+        Assert.NotNull(app.Assembly);
+        Assert.Contains(
+            SafeGetTypes(app.Assembly),
+            t => t.FullName == "Coppice.Cli.CoppiceApp");
     }
 
     /// <summary>
