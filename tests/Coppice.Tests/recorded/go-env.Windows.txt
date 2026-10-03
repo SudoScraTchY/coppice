@@ -1,0 +1,12 @@
+# coppice recorded tool output
+# os: Windows
+# command: go env
+# source: SYNTHETIC - NOT A REAL CAPTURE. Go is NOT installed on the machine that generated this file. Shape follows documented `go env` output (KEY='value', single-quoted). Re-capture on a machine with Go before trusting it for parser changes.
+# Lines beginning with '#' are the header. The payload below is the tool's output.
+GOARCH='amd64'
+GOCACHE='C:\Users\dev\go/.cache/go-build'
+GOENV='C:\Users\dev/.config/go/env'
+GOEXE=''
+GOMODCACHE='C:\Users\dev\go/pkg/mod'
+GOPATH='C:\Users\dev\go'
+GOROOT='C:\Program Files\Go'

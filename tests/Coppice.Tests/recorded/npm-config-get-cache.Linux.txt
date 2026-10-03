@@ -1,0 +1,6 @@
+# coppice recorded tool output
+# os: Linux
+# command: npm config get cache
+# source: SYNTHETIC - NOT A REAL CAPTURE. npm is installed only on the Windows capture machine. Re-capture on this OS before trusting it for parser changes.
+# Lines beginning with '#' are the header. The payload below is the tool's output.
+/home/dev/.npm

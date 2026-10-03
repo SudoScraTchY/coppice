@@ -58,6 +58,15 @@ public sealed class RecordedToolOutputTests
         "dotnet-nuget-locals-global-packages",
         "dotnet-nuget-locals-http-cache",
         "dotnet-nuget-locals-temp",
+
+        // T-021: the parser library's non-.NET cases. Registered here rather than beside the T-021
+        // tests so ONE list defines every recording that must exist — the orphan guard below compares
+        // disk against this list, and a recording only known to its own test file would be invisible
+        // to the check that exists to catch a missing or stale file.
+        "go-env-gomodcache",
+        "go-env",
+        "npm-config-get-cache",
+        "npm-root-g",
     ];
 
     private static readonly OperatingSystemKind[] OperatingSystems =

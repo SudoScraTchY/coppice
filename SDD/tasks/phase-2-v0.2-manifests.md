@@ -26,9 +26,17 @@ Exit criteria per 12-roadmap, including the API freeze checkpoint (T-030).
 - Version parsers against recorded outputs; unknown output shape → confidence drop, never a guess.
 
 **Acceptance**
-- [ ] Each parser has recorded-output goldens per OS
-- [ ] Malformed/unknown output → ScanIssue + lower confidence, no throw
-- [ ] `go env GOMODCACHE` and `npm config get cache` outputs parse correctly
+- [x] Each parser has recorded-output goldens per OS — `label-value`, `line`, `sdk-bracket-paths`,
+      `json-path`, `regex`; 12 new recordings (4 queries × 3 OS), registered in the T-017 query set so
+      the orphan guard covers them
+- [x] Malformed/unknown output → ParseIssue + lower confidence, no throw — every parser returns a
+      `ParseResult(Values, Issues)`; nothing throws, nothing guesses
+- [x] `go env GOMODCACHE` and `npm config get cache` outputs parse correctly — note these are
+      DIFFERENT parsers: Go prints `KEY='value'` (label-value), npm prints a bare path (line)
+
+**Note on `regex`**: 10-formats names it in the closed set and flags it for the audit. The manifest
+validator REFUSES `parse = "regex"` outright, because a pattern is code coppice cannot verify at load
+time. The parser itself exists for code plugins that accept that risk explicitly, with a match timeout.
 
 ### T-022 · `go.toml` profile
 **Refs** FR-23, 09-ecosystems (go) · **Depends** T-020, T-021 · **Effort** M

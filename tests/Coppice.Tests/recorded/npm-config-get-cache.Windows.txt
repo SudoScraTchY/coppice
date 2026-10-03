@@ -1,0 +1,6 @@
+# coppice recorded tool output
+# os: Windows
+# command: npm config get cache
+# source: REAL capture from the development machine: Windows 10, npm 12.0.2. Verbatim output; the username path is the literal capture and is intentionally NOT redacted.
+# Lines beginning with '#' are the header. The payload below is the tool's output.
+C:\Users\SaintScraTchY\AppData\Local\npm-cache
