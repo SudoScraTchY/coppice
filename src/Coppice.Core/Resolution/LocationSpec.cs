@@ -81,6 +81,16 @@ public sealed record LocationSpec
 
     public Coppice.Ports.OperatingSystemKind OS { get; init; }
 
+    /// <summary>
+    /// Declared by the manifest: how much to distrust this location when no tool confirmed it.
+    /// <para>
+    /// Cargo's registry has no query command, so it is located purely by convention (09-ecosystems).
+    /// Without a way to say so, the report would present a guessed path with the same authority as one
+    /// a tool confirmed, and the user would have no reason to distrust it. Zero means full confidence.
+    /// </para>
+    /// </summary>
+    public double ConfidencePenalty { get; init; }
+
     /// <summary>Names the sources in precedence order, for tests and for the doctor report.</summary>
     public static IReadOnlyList<ResolvedVia> PrecedenceOrder { get; } =
         [ResolvedVia.Pin, ResolvedVia.Tool, ResolvedVia.Env, ResolvedVia.Config, ResolvedVia.Registry, ResolvedVia.OsFile, ResolvedVia.Default];

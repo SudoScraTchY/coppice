@@ -19,8 +19,25 @@ public static class TextReport
             locationId.PadRight(20),
             Role(root.Role).PadRight(11),
             Validity(root.Validity).PadRight(17),
-            Via(root.Via).PadRight(9),
+            Via(root.Via, root).PadRight(9),
             Shorten(DisplayPath(root.RealPath, home), 46));
+    }
+
+    /// <summary>
+    /// A one-line explanation for a root whose path was located by convention rather than by asking a
+    /// tool. Returns null when the root is full-confidence, so callers can omit the line entirely.
+    /// </summary>
+    public static string? ConfidenceNote(ResolvedRoot root)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+
+        if (!root.IsLowConfidence)
+        {
+            return null;
+        }
+
+        return root.ConfidenceDetail
+            ?? "this path was located by convention; no tool was asked to confirm it.";
     }
 
     /// <summary>
@@ -104,7 +121,18 @@ public static class TextReport
         _ => validity.ToString(),
     };
 
-    public static string Via(ResolvedVia via) => via switch
+    /// <summary>
+    /// The provenance column. A convention-only answer is marked with a trailing '~' so the table itself
+    /// carries the caveat — a marker in a dedicated column would be missed by anyone reading with
+    /// --no-color or piping to grep, and this is the one case where the user most needs to notice.
+    /// </summary>
+    public static string Via(ResolvedVia via, ResolvedRoot? root = null)
+    {
+        string label = ViaLabel(via);
+        return root is { IsLowConfidence: true } ? label + "~" : label;
+    }
+
+    private static string ViaLabel(ResolvedVia via) => via switch
     {
         ResolvedVia.Pin => "pin",
         ResolvedVia.Tool => "tool",

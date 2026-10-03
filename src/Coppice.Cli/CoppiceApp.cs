@@ -102,6 +102,13 @@ public static class CoppiceApp
                 + $"{(root.Root.ViaDetail is null ? string.Empty : $" ({root.Root.ViaDetail})")}"
                 + $", validity: {TextReport.Validity(root.Root.Validity)}"
                 + $", role: {TextReport.Role(root.Root.Role)}");
+
+            // Named explicitly here as well as marked in the table: `roots` is the command a user runs when
+            // they want to know WHY a path was chosen, which is exactly the question a guessed path invites.
+            if (TextReport.ConfidenceNote(root.Root) is { } note)
+            {
+                Console.Out.WriteLine($"      confidence: LOW — {note}");
+            }
         }
 
         Console.Out.WriteLine();

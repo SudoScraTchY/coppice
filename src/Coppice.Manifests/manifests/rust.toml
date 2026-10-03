@@ -1,0 +1,107 @@
+# rust.toml — Rust toolchain caches (T-023, FR-23, 09-ecosystems "rust").
+#
+# DATA, not code. Validated at load time against the closed sets in 10-formats; every path it names
+# still passes the denylist and fingerprint gates afterwards.
+#
+# THE DEFINING PROPERTY OF THIS PROFILE: cargo has no query command.
+#
+# `cargo` will not tell you where CARGO_HOME is. There is no `cargo env`, no `cargo config get`. So the
+# registry can only be located by reading the environment variable and falling back to a convention. A
+# machine with an unusual CARGO_HOME that the variable does not describe will land on the default, which
+# is harmless but WRONG — and a report that presents it with the same confidence as a path `dotnet
+# nuget locals` confirmed is a report the user has no reason to question.
+#
+# That is what confidence_penalty is for. It does not gate cleaning and it is not a risk tier; it marks
+# the root so the report says how it was found. See RootConfidence in Coppice.Core.Domain.
+
+schema = 1
+id = "rust"
+display_name = "Rust"
+
+[[location]]
+id = "cargo-registry"
+kind = "package-cache"
+layout = "{name}/{version}"
+resolve = "first"
+
+# No `tool` source, because there is no command that can answer. This ordering is the whole story:
+# CARGO_HOME when set, and the convention otherwise.
+sources = [
+  { via = "env", var = "CARGO_HOME" },
+  { via = "default", path = "{home}/.cargo/registry" },
+]
+
+# Without a confirming tool, the resolved path is a convention. 09 requires this be surfaced.
+confidence_penalty = 0.5
+
+# cargo-registry has three distinct subtrees and they are NOT interchangeable:
+#   cache/  the .crate archives      — Safe, regenerable
+#   src/    the extracted sources    — Safe, regenerable
+#   index/  the registry index        — needed to RESOLVE at all, and small
+# Reporting the registry as one flat tier would let a policy propose removing index/ alongside cache/.
+# The plugin splits these into three locations below rather than one, which is why the layout above is
+# empty and the real structure is expressed as separate entries.
+fingerprint = { layout_ratio = 0.0 }
+
+[[location]]
+id = "cargo-registry-cache"
+kind = "download-cache"
+layout = ""
+resolve = "first"
+sources = [
+  { via = "env", var = "CARGO_HOME" },
+  { via = "default", path = "{home}/.cargo/registry/cache" },
+]
+confidence_penalty = 0.5
+
+# The .crate files are a download cache, so the whole location is the unit: there is no per-crate
+# structure worth walking, and a policy that tried would be inventing items.
+
+[[location]]
+id = "cargo-registry-src"
+kind = "package-cache"
+layout = "{name}-{version}"
+resolve = "first"
+sources = [
+  { via = "env", var = "CARGO_HOME" },
+  { via = "default", path = "{home}/.cargo/registry/src" },
+]
+confidence_penalty = 0.5
+
+# Extracted crates live at `<name>-<version>` — index.crates.io/<name>-<version> on the default registry.
+# The layout above is nominal; the plugin reads the real shape because the registry index is a path
+# segment that varies with the registry being used.
+
+[[location]]
+id = "cargo-git"
+kind = "package-cache"
+layout = ""
+resolve = "first"
+sources = [
+  { via = "env", var = "CARGO_HOME" },
+  { via = "default", path = "{home}/.cargo/git" },
+]
+confidence_penalty = 0.5
+
+# git/{db,checkouts}. A git checkout may be the ONLY copy of a dependency fetched from a git source, so
+# this is capped at review rather than safe even though it is a cache.
+risk_ceiling = "review"
+
+[[location]]
+id = "rustup-toolchains"
+kind = "tool-cache"
+layout = "{toolchain}"
+resolve = "all"
+
+# The one Rust location that CAN be queried: `rustup toolchain list` prints the installed toolchains and
+# its root. So this one is full-confidence, and it is the contrast that makes the others legible.
+sources = [
+  { via = "env", var = "RUSTUP_HOME" },
+  { via = "tool", run = "rustup toolchain list", parse = "line" },
+  { via = "default", path = "{home}/.rustup/toolchains" },
+]
+
+# Toolchains are installed binaries, not a cache of downloads: removing one breaks every project pinned
+# to it. Native route only, and never below Review.
+risk_ceiling = "review"
+remove = { command = "rustup toolchain uninstall" }

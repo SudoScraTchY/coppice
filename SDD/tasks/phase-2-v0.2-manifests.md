@@ -66,9 +66,19 @@ that source is needed — it means the module graph mentions the version, not th
 - cargo-registry (cache/src/index subkinds), cargo-git, rustup-toolchains (native `rustup toolchain uninstall` route). No query command exists → env/config/default chain with **lower confidence surfaced**.
 
 **Acceptance**
-- [ ] Cargo.lock fixtures resolve crate versions three-state
-- [ ] Confidence field visibly reduced for cargo-registry (no tool source)
-- [ ] Conformance green
+- [x] Cargo.lock fixtures resolve crate versions three-state — 36 Rust tests; zero projects, an
+      unbuilt project, and a partial read all yield Unknown
+- [x] Confidence field visibly reduced for cargo-registry (no tool source) — `RootConfidence.Lowered`
+      on the root, `default~` marker in the provenance column, and a `~ <reason>` line in doctor;
+      `rustup-toolchains` stays Full, which is the contrast that makes the others legible
+- [x] Conformance green — C-1..C-12 now run against .NET, Go AND Rust
+
+**Mechanism note**: confidence is NOT a risk tier and does not gate cleaning. It answers only "was this
+path confirmed by a tool, or located by convention?". Cargo has no query command, so a machine with an
+unusual `CARGO_HOME` lands somewhere harmless but wrong; the report says so rather than presenting the
+guess with the authority of a confirmed path. The penalty is declared in `rust.toml` and applied by the
+resolution engine — never by the plugin, because a plugin that adjusted its own confidence could
+understate it.
 
 ### T-024 · `node.toml` profile
 **Refs** FR-23, 09-ecosystems (node) · **Depends** T-020, T-021 · **Effort** M

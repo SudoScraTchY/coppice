@@ -1,6 +1,7 @@
 using System.Reflection;
 using Coppice.Plugins.Go;
 using Coppice.Plugins.Net;
+using Coppice.Plugins.Rust;
 using Coppice.Ports;
 using Coppice.Tests.Support;
 using Xunit;
@@ -77,6 +78,7 @@ public sealed class ConformanceFixture
         EntryPatterns = ["*@v*"],
         LayoutRatio = 0.8,
     };
+
 
     public static Ports.ScanRoot Root(
         string locationId,
@@ -201,7 +203,32 @@ public sealed class ConformanceHarnessTests
         };
     }
 
-    public static TheoryData<ConformanceFixture> AllFixtures() => new() { NetFixture(), GoFixture(), EmptyFixture() };
+    /// <summary>The Rust-shaped fixture: an extracted crate tree beneath a registry index directory.</summary>
+    public static ConformanceFixture RustFixture(string name = "cargo-registry-src")
+    {
+        var fs = new FakeFileSystem(OperatingSystemKind.Linux);
+
+        const string registry = "/cargo/registry/src/index.crates.io-1949cf8c6b5b557f";
+        fs.AddDirectory($"{registry}/serde-1.0.197");
+        fs.AddDirectory($"{registry}/serde_json-1.0.114");
+        fs.AddDirectory($"{registry}/winapi-0.4.0");
+
+        // A crate's own vendor tree, and a toolchain install with its bin/.
+        fs.AddDirectory($"{registry}/serde-1.0.197/vendor/serde-core-1.0.0");
+        fs.AddDirectory("/rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin");
+
+        return new ConformanceFixture
+        {
+            Name = name,
+            FileSystem = fs,
+            ProcessRunner = new FakeProcessRunner(),
+            Factory = () => RustFixture(name),
+            Roots = [ConformanceFixture.Root("cargo-registry-src", registry)],
+            PluginFactory = () => new RustEcosystem(),
+        };
+    }
+
+    public static TheoryData<ConformanceFixture> AllFixtures() => new() { NetFixture(), GoFixture(), RustFixture(), EmptyFixture() };
 
     private static async Task<List<Ports.PortableItem>> DiscoverAll(
         IEcosystem ecosystem,

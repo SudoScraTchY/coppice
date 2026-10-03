@@ -310,6 +310,14 @@ public sealed class DoctorService
         {
             sb.AppendLine(TextReport.RootRow(root.LocationId, root.Root, home));
 
+            // A convention-only path gets its caveat on its own line. 09 requires the reduced confidence to
+            // be SURFACED, and a marker in the provenance column is easy to miss when the row is long.
+            string? confidence = TextReport.ConfidenceNote(root.Root);
+            if (confidence is not null)
+            {
+                sb.AppendLine($"      ~ {confidence}");
+            }
+
             if (!string.IsNullOrEmpty(root.Problem))
             {
                 sb.AppendLine($"      -> {root.Problem}");

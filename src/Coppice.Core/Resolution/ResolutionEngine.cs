@@ -97,6 +97,12 @@ public sealed class ResolutionEngine
                     candidate.RawValue));
             }
 
+            // A location the manifest marks as penalty-bearing, resolved WITHOUT a tool or a pin, is
+            // located by convention alone. That is reported rather than hidden: it is not a risk tier and
+            // it does not gate cleaning, it is a statement about how the path was found.
+            bool unconfirmed = spec.ConfidencePenalty > 0
+                && candidate.Via is not (CoreDomain.ResolvedVia.Tool or CoreDomain.ResolvedVia.Pin);
+
             roots.Add(new ResolvedRoot(
                 DeclaredPath: candidate.Path,
                 RealPath: realPath,
@@ -104,7 +110,11 @@ public sealed class ResolutionEngine
                 Via: candidate.Via,
                 ViaDetail: candidate.Detail,
                 Validity: validity,
-                Owner: null));
+                Owner: null,
+                Confidence: unconfirmed ? CoreDomain.RootConfidence.Lowered : CoreDomain.RootConfidence.Full,
+                ConfidenceDetail: unconfirmed
+                    ? $"{spec.Id} has no query command; '{candidate.Via}' is a convention, not a confirmation"
+                    : null));
         }
 
         // LR-4: two live sources disagreeing about a first-match location and no pin means we do not

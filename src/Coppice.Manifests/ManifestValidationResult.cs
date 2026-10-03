@@ -113,6 +113,12 @@ public sealed record ManifestValidationResult(
             {
                 Id = record.Id,
                 Mode = record.Resolve,
+
+                // Carried across, not dropped: this is the whole mechanism by which a location with no
+                // query command (cargo) tells the report to distrust how it was found. An earlier version
+                // built LocationSpecs from Id and Mode only, so the penalty was validated, stored, and
+                // then silently discarded — the field existed and did nothing.
+                ConfidencePenalty = record.ConfidencePenalty,
             });
         }
 

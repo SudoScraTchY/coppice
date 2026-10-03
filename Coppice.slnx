@@ -6,6 +6,7 @@
     <Project Path="src/Coppice.Manifests/Coppice.Manifests.csproj" />
     <Project Path="src/Coppice.Plugins.Go/Coppice.Plugins.Go.csproj" />
     <Project Path="src/Coppice.Plugins.Net/Coppice.Plugins.Net.csproj" />
+    <Project Path="src/Coppice.Plugins.Rust/Coppice.Plugins.Rust.csproj" />
     <Project Path="src/Coppice.Ports/Coppice.Ports.csproj" />
   </Folder>
   <Folder Name="/tests/">
