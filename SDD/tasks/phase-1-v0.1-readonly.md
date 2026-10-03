@@ -177,6 +177,50 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - Self-contained single-file publish per OS/arch; release notes; dogfood checklist on ≥ 5 real machines; findings filed as new cards.
 
 **Acceptance**
-- [ ] Binaries < 30 MB each (NFR-11), cold start < 300 ms measured
+- [ ] Binaries < 30 MB each (NFR-11) — **MEASURED 37.7 MB, over budget.** Cold start 110 ms, well
+      inside the 300 ms target. See the note below.
 - [ ] 5+ dogfood reports collected; every finding has a card
-- [ ] Zero mutations possible in v0.1 (verified by egress + VFS audit of commands)
+- [x] Zero mutations possible in v0.1 (verified by egress + VFS audit of commands)
+
+> **NFR-11 is missed: 37.7 MB against a 30 MB budget.** Measured on win-x64 with
+> `-p:PublishSingleFile -p:SelfContained -p:EnableCompressionInSingleFile`: a single
+> `Coppice.Cli.exe` of 37,676,519 bytes. Compression and `InvariantGlobalization` do not move it
+> (37,675,766) because the self-contained .NET runtime dominates, not coppice's own code.
+>
+> `PublishTrimmed=true` is the real lever and it is currently BLOCKED, not merely unset:
+> `DomainJson.cs` uses reflection-based `JsonSerializer.Serialize/Deserialize`, which fails
+> trimming analysis with IL2026 under `TreatWarningsAsErrors`. Fixing it means a source-generated
+> `JsonSerializerContext` — which in turn conflicts with the polymorphic `Item`/`Snapshot` shapes and
+> would need its own card. Tracked as the size finding below rather than papered over.
+>
+> Cold start measured on the same binary: 110 ms warm, 212 ms on first run (extraction + JIT).
+> Both under the 300 ms target. `doctor` takes ~5.7 s, which is NOT cold start — it is the
+> resolution chain spawning `dotnet` per location, and it is a separate finding.
+
+## T-019 findings (filed during implementation)
+
+These came out of building T-019's DoD items. Each needs its own card; they are listed here so the
+release is not blocked by losing them.
+
+### F-001 · Self-contained binary is 37.7 MB against a 30 MB budget (NFR-11)
+`PublishTrimmed` is blocked by IL2026 on `DomainJson`'s reflection-based `Serialize`/`Deserialize`.
+The fix is a source-generated `JsonSerializerContext`, which needs reconciling with the polymorphic
+`Item`/`Snapshot` shapes first. Until then v0.1 ships over budget, or ships framework-dependent.
+
+### F-002 · `coppice doctor` takes ~5.7 s
+Not cold start (that is 110 ms). It is the resolution chain spawning `dotnet` once per location per
+rung, as 05 specifies. On a machine with no .NET on PATH this is several failed process launches.
+Two candidates, both needing measurement before either is chosen: cache the tool queries for the
+duration of one command, or resolve locations in parallel. Neither is safe to do speculatively — a
+cached tool answer would go stale within a run and the resolver's whole purpose is to ask the tool.
+
+### F-003 · The read-only audit needed two detectors, and the first was wrong
+Recorded because the failure is instructive. The audit searches each method's IL for calls to the
+`IFileSystem` mutators. The first version compared raw 4-byte metadata tokens, and a companion test
+that required it to FIND the calls Adapters makes reported zero. The conclusion looked like a broken
+detector; it was a wrong premise. Adapters *implements* the mutators (`Directory.CreateDirectory`)
+rather than calling them through the port, so there are no such call sites. Two corrections followed:
+the test now uses a compiled probe with a known positive and known negative, and an interface call
+compiles to a MemberRef token rather than the interface's MethodDef, so detection resolves the call
+site and compares declaring type + name. An audit built on an unverified premise passes for the wrong
+reason, which is why the probe test exists.
