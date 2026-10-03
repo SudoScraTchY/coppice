@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Coppice.Ports\Coppice.Ports.csproj" />
+    <!--
+      Core is referenced for OutputParsers (the T-021 parser library) and the Core-domain aliases. A
+      plugin may depend on Core, but NOT the other way round — the dependency direction is what keeps
+      the core from learning about any particular ecosystem.
+    -->
+    <ProjectReference Include="..\Coppice.Core\Coppice.Core.csproj" />
+    <ProjectReference Include="..\Coppice.Manifests\Coppice.Manifests.csproj" />
+  </ItemGroup>
+
+</Project>

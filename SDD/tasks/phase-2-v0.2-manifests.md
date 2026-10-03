@@ -46,9 +46,18 @@ time. The parser itself exists for code plugins that accept that risk explicitly
 - Markers `go.mod`; references `go.sum` (module+version set).
 
 **Acceptance**
-- [ ] go.mod/go.sum fixtures resolve Usage correctly (three states)
-- [ ] Mod-cache fixture with read-only files: native route proposed by default
-- [ ] Conformance suite green for the loaded manifest
+- [x] go.mod/go.sum fixtures resolve Usage correctly (three states) — 79 Go tests; zero projects and
+      an unreadable project both yield Unknown, never Unreferenced
+- [x] Mod-cache fixture with read-only files: native route proposed by default — the native route is
+      DECLARED in `go.toml` (`go clean -modcache`) and carried through the manifest, not invented by the
+      plugin; `GoModCacheReadOnlyTests` pins that
+- [x] Conformance suite green for the loaded manifest — C-1..C-12 now run against the Go plugin too
+
+**Note on MVS**: a cached version BELOW the version go.sum requires is Unreferenced, because Go's
+minimal version selection builds the highest requirement. The first implementation declared it Referenced
+("go.sum mentions something newer"), which is the exact inversion and would have made every superseded
+module in every cache permanently unreclaimable. A `/go.mod`-only hash line is likewise NOT evidence
+that source is needed — it means the module graph mentions the version, not that it was fetched.
 
 ### T-023 · `rust.toml` profile
 **Refs** FR-23, 09-ecosystems (rust) · **Depends** T-020, T-021 · **Effort** M

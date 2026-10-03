@@ -1,4 +1,5 @@
 using System.Reflection;
+using Coppice.Plugins.Go;
 using Coppice.Plugins.Net;
 using Coppice.Ports;
 using Coppice.Tests.Support;
@@ -42,6 +43,18 @@ public sealed class ConformanceFixture
     /// <summary>The recipe this fixture was built from, so a clone matches it exactly.</summary>
     public required Func<ConformanceFixture> Factory { get; init; }
 
+    /// <summary>
+    /// The plugin that owns this fixture, so a rule is checked against the plugin whose contract it
+    /// describes.
+    /// <para>
+    /// This is part of the fixture rather than hardcoded inside each rule. An earlier version built
+    /// <c>new DotnetEcosystem()</c> in all twelve rules, which meant adding a Go fixture would have run
+    /// every rule against the .NET plugin over a Go-shaped VFS — and reported green while proving
+    /// nothing about Go at all.
+    /// </para>
+    /// </summary>
+    public required Func<IEcosystem> PluginFactory { get; init; }
+
     public Ports.ScanContext ToContext() => new(
         Roots,
         Projects,
@@ -55,6 +68,13 @@ public sealed class ConformanceFixture
     public static Ports.FingerprintSpec NuGetFingerprint => new()
     {
         EntryPatterns = ["*/*"],
+        LayoutRatio = 0.8,
+    };
+
+    /// <summary>The 09 layout for go-mod-cache: a module directory carries an @vN version marker.</summary>
+    public static Ports.FingerprintSpec GoModFingerprint => new()
+    {
+        EntryPatterns = ["*@v*"],
         LayoutRatio = 0.8,
     };
 
@@ -126,6 +146,42 @@ public sealed class ConformanceHarnessTests
                 ConformanceFixture.Root("nuget-packages", "/cache", tier: Ports.Risk.Safe, fingerprint: ConformanceFixture.NuGetFingerprint),
                 ConformanceFixture.Root("dotnet-tools", "/tools"),
             ],
+            PluginFactory = () => new DotnetEcosystem(),
+        };
+    }
+
+    /// <summary>
+    /// The Go-shaped fixture: a real module cache layout, including the nesting a module path creates,
+    /// the download cache beside it, and a module's own vendor tree.
+    /// <para>
+    /// This fixture exists because the harness claims a new plugin inherits C-1..C-12 for free. That
+    /// claim is only worth anything once a SECOND plugin has actually run through them, and the Go
+    /// plugin is the first honest test of it.
+    /// </para>
+    /// </summary>
+    public static ConformanceFixture GoFixture(string name = "go-mod-cache")
+    {
+        var fs = new FakeFileSystem(OperatingSystemKind.Linux);
+
+        fs.AddDirectory("/go/pkg/mod/github.com/stretchr/testify@v1.8.4");
+        fs.AddDirectory("/go/pkg/mod/github.com/stretchr/testify@v1.9.0");
+        fs.AddDirectory("/go/pkg/mod/golang.org/x/text@v0.14.0");
+        fs.AddDirectory("/go/pkg/mod/example@v1.0.0");
+
+        // The download cache beside the modules. A plugin that reports it would double-count bytes.
+        fs.AddFile("/go/pkg/mod/cache/download/github.com/stretchr/testify/@v/v1.8.4.zip", "PK");
+
+        // A module's own vendor tree lives beneath it and is not a separate module.
+        fs.AddDirectory("/go/pkg/mod/example@v1.0.0/vendor/github.com/z/w@v0.1.0");
+
+        return new ConformanceFixture
+        {
+            Name = name,
+            FileSystem = fs,
+            ProcessRunner = new FakeProcessRunner(),
+            Factory = () => GoFixture(name),
+            Roots = [ConformanceFixture.Root("go-mod-cache", "/go/pkg/mod", fingerprint: ConformanceFixture.GoModFingerprint)],
+            PluginFactory = () => new GoEcosystem(),
         };
     }
 
@@ -141,10 +197,11 @@ public sealed class ConformanceHarnessTests
             ProcessRunner = new FakeProcessRunner(),
             Factory = EmptyFixture,
             Roots = [ConformanceFixture.Root("nuget-packages", "/cache")],
+            PluginFactory = () => new DotnetEcosystem(),
         };
     }
 
-    public static TheoryData<ConformanceFixture> AllFixtures() => new() { NetFixture(), EmptyFixture() };
+    public static TheoryData<ConformanceFixture> AllFixtures() => new() { NetFixture(), GoFixture(), EmptyFixture() };
 
     private static async Task<List<Ports.PortableItem>> DiscoverAll(
         IEcosystem ecosystem,
@@ -170,7 +227,7 @@ public sealed class ConformanceHarnessTests
     [MemberData(nameof(AllFixtures))]
     public async Task C1_InventoryPerformsZeroWrites(ConformanceFixture fixture)
     {
-        _ = await DiscoverAll(new DotnetEcosystem(), fixture);
+        _ = await DiscoverAll(fixture.PluginFactory(), fixture);
 
         Assert.Empty(fixture.FileSystem.Writes);
     }
@@ -181,7 +238,7 @@ public sealed class ConformanceHarnessTests
     [MemberData(nameof(AllFixtures))]
     public async Task C2_AllPathsFallInsideDeclaredRoots(ConformanceFixture fixture)
     {
-        List<Ports.PortableItem> items = await DiscoverAll(new DotnetEcosystem(), fixture);
+        List<Ports.PortableItem> items = await DiscoverAll(fixture.PluginFactory(), fixture);
 
         foreach (Ports.PortableItem item in items)
         {
@@ -210,7 +267,7 @@ public sealed class ConformanceHarnessTests
     [MemberData(nameof(AllFixtures))]
     public async Task C3_NoNetworkAttempts(ConformanceFixture fixture)
     {
-        _ = await DiscoverAll(new DotnetEcosystem(), fixture);
+        _ = await DiscoverAll(fixture.PluginFactory(), fixture);
 
         // There is no network port to observe, so the checkable form of C-3 is that discovery
         // reached nothing beyond the ports it was given: no process spawned, no write issued. A
@@ -226,11 +283,11 @@ public sealed class ConformanceHarnessTests
     [MemberData(nameof(AllFixtures))]
     public async Task C4_TwoRunsProduceIdenticalOutput(ConformanceFixture fixture)
     {
-        List<Ports.PortableItem> first = await DiscoverAll(new DotnetEcosystem(), fixture);
+        List<Ports.PortableItem> first = await DiscoverAll(fixture.PluginFactory(), fixture);
 
         // A second, independent VFS with identical content. If the plugin's output depends on
         // enumeration order, hash-table iteration or wall-clock time, the two runs diverge here.
-        List<Ports.PortableItem> second = await DiscoverAll(new DotnetEcosystem(), fixture.Clone());
+        List<Ports.PortableItem> second = await DiscoverAll(fixture.PluginFactory(), fixture.Clone());
 
         Assert.Equal(
             first.Select(Shape).Order(StringComparer.Ordinal),
@@ -277,6 +334,8 @@ public sealed class ConformanceHarnessTests
     [InlineData("1.2.3", "1.2.3")]
     public void C6_VersionOrderingIsAntisymmetric(string left, string right)
     {
+        // .NET-specific on purpose: the version pairs are .NET's (previews, 4-part SDK forms), so this
+        // rule asserts about the .NET ordering rather than whatever the fixtures' plugin provides.
         IVersionOrdering versions = new DotnetEcosystem().Versions;
 
         Assert.Equal(Math.Sign(versions.Compare(left, right)), -Math.Sign(versions.Compare(right, left)));
@@ -288,7 +347,7 @@ public sealed class ConformanceHarnessTests
     public void C6_VersionOrderingIsTransitive(ConformanceFixture fixture)
     {
         _ = fixture;
-        IVersionOrdering ordering = new DotnetEcosystem().Versions;
+        IVersionOrdering ordering = fixture.PluginFactory().Versions;
         string[] versions = ["1.0.0", "1.0.1", "1.1.0", "2.0.0", "1.0.0-preview.1"];
 
         foreach (string a in versions)
@@ -328,6 +387,7 @@ public sealed class ConformanceHarnessTests
             ProcessRunner = new FakeProcessRunner(),
             Factory = () => throw new NotSupportedException("this fixture is built per-case and is never cloned"),
             Roots = [ConformanceFixture.Root("go-modules", "/cache")],
+            PluginFactory = () => new GoEcosystem(),
         };
 
         List<Ports.PortableItem> items = await DiscoverAll(ecosystem, fixture);
@@ -379,7 +439,7 @@ public sealed class ConformanceHarnessTests
     [MemberData(nameof(AllFixtures))]
     public async Task C9_HealthChecksAreReadOnly(ConformanceFixture fixture)
     {
-        var ecosystem = new DotnetEcosystem();
+        IEcosystem ecosystem = fixture.PluginFactory();
 
         if (ecosystem is IHealthChecker health)
         {
@@ -395,7 +455,7 @@ public sealed class ConformanceHarnessTests
     [MemberData(nameof(AllFixtures))]
     public async Task C10_PluginCompletesWithoutHanging(ConformanceFixture fixture)
     {
-        Task<List<Ports.PortableItem>> work = DiscoverAll(new DotnetEcosystem(), fixture);
+        Task<List<Ports.PortableItem>> work = DiscoverAll(fixture.PluginFactory(), fixture);
         Task finished = await Task.WhenAny(work, Task.Delay(TimeSpan.FromSeconds(20)));
 
         Assert.True(finished == work, $"{fixture.Name}: discovery did not finish within 20s (C-10).");
@@ -408,7 +468,7 @@ public sealed class ConformanceHarnessTests
     [MemberData(nameof(AllFixtures))]
     public async Task C11_UsesOnlyThePortsItWasGiven(ConformanceFixture fixture)
     {
-        List<Ports.PortableItem> items = await DiscoverAll(new DotnetEcosystem(), fixture);
+        List<Ports.PortableItem> items = await DiscoverAll(fixture.PluginFactory(), fixture);
         Assert.Empty(fixture.FileSystem.Writes);
 
         // Every path reported must exist in the fake VFS. A real disk path on a Linux fixture can
@@ -431,7 +491,7 @@ public sealed class ConformanceHarnessTests
     [MemberData(nameof(AllFixtures))]
     public async Task C12_FactsValuesAreSerializablePrimitives(ConformanceFixture fixture)
     {
-        List<Ports.PortableItem> items = await DiscoverAll(new DotnetEcosystem(), fixture);
+        List<Ports.PortableItem> items = await DiscoverAll(fixture.PluginFactory(), fixture);
 
         foreach (Ports.PortableItem item in items)
         {

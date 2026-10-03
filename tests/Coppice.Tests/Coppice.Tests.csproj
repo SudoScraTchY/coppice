@@ -5,6 +5,7 @@
     <ProjectReference Include="..\..\src\Coppice.Ports\Coppice.Ports.csproj" />
     <ProjectReference Include="..\..\src\Coppice.Adapters\Coppice.Adapters.csproj" />
     <ProjectReference Include="..\..\src\Coppice.Plugins.Net\Coppice.Plugins.Net.csproj" />
+    <ProjectReference Include="..\..\src\Coppice.Plugins.Go\Coppice.Plugins.Go.csproj" />
     <ProjectReference Include="..\..\src\Coppice.Cli\Coppice.Cli.csproj" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
