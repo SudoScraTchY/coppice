@@ -1,0 +1,72 @@
+# node.toml — Node.js / npm caches (T-024, FR-23, 09-ecosystems "node").
+#
+# DATA, not code. Validated at load time against the closed sets in 10-formats; every path it names
+# still passes the denylist and fingerprint gates afterwards.
+#
+# THE DEFINING CONSTRAINT: `_cacache` is CONTENT-ADDRESSED.
+#
+# npm's cache stores blobs under a hash of their CONTENT (`content-v2/sha512/ab/cd/<digest>`), not under
+# a package name. There is no directory called `left-pad`, no stable per-package path, and no way to
+# express "remove left-pad" as a set of paths. The index maps a request URL to a digest, but the bytes
+# are shared: two packages that resolve to the same tarball occupy ONE blob.
+#
+# So npm-cache is a WHOLE-LOCATION tier. The plugin reports the cache as one item and emits no per-package
+# steps, because a per-package step would be a path that either does not exist or belongs to something
+# else. 09: "per-package selective cleanup unsupported; whole-cache tier only".
+#
+# The layout below is therefore EMPTY — an empty layout is what tells the engine the whole root is the
+# unit, rather than "we did not work out the layout".
+
+schema = 1
+id = "node"
+display_name = "Node.js"
+
+[[location]]
+id = "npm-cache"
+kind = "download-cache"
+layout = ""
+resolve = "first"
+
+# `npm config get cache` prints a BARE path with no label — the `line` parser, not label-value. Confirmed
+# by a real capture on Windows (tests/Coppice.Tests/recorded/npm-config-get-cache.Windows.txt).
+sources = [
+  { via = "tool", run = "npm config get cache", parse = "line" },
+  { via = "env", var = "npm_config_cache" },
+  { via = "default", path = "{home}/.npm" },
+]
+
+# npm CAN be queried, so the path is confirmed rather than guessed — no confidence penalty, unlike cargo.
+
+# No entry patterns: there is no per-item structure to check. The one thing worth asserting is that
+# `_cacache` is present, since its absence means this is not an npm cache at all.
+fingerprint = { required_markers = ["_cacache"] }
+
+# The whole cache is Safe to remove — every byte is re-downloadable — but the removal is the whole
+# directory, never a subset. `npm cache clean --force` is the native route.
+risk_ceiling = "safe"
+remove = { command = "npm cache clean --force" }
+
+[[location]]
+id = "npm-global"
+kind = "tool-cache"
+layout = "{package}"
+resolve = "first"
+
+# Unlike the cache, `npm root -g` HAS per-package structure: one directory per globally installed
+# package. So this location does get per-package items, and unlike npm-cache it can be reasoned about.
+sources = [
+  { via = "tool", run = "npm root -g", parse = "line" },
+]
+
+# A globally installed package is real installed code, not a download. It is capped at review even
+# though it is nominally regenerable, because "just install it again" is not true of a private package.
+risk_ceiling = "review"
+
+# Removal is native and per-package, which is the only correct route: deleting the directory leaves npm's
+# own metadata in ~/.npm inconsistent, while `npm uninstall -g` maintains it.
+remove = { command = "npm uninstall -g" }
+
+# pnpm, yarn and bun are DEFERRED, not overlooked (09). pnpm's store hard-links from the global store,
+# which makes it a sizing hazard: naive per-file sizing counts the same bytes many times over, and a
+# hard-link-unaware scan would report a store many times larger than it is. That needs hard-link-aware
+# measurement verified against a real pnpm store before it is scheduled.

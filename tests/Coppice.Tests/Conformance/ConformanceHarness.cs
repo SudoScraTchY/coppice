@@ -1,6 +1,7 @@
 using System.Reflection;
 using Coppice.Plugins.Go;
 using Coppice.Plugins.Net;
+using Coppice.Plugins.Node;
 using Coppice.Plugins.Rust;
 using Coppice.Ports;
 using Coppice.Tests.Support;
@@ -228,7 +229,38 @@ public sealed class ConformanceHarnessTests
         };
     }
 
-    public static TheoryData<ConformanceFixture> AllFixtures() => new() { NetFixture(), GoFixture(), RustFixture(), EmptyFixture() };
+    /// <summary>
+    /// The Node-shaped fixture: a content-addressed cache plus a global root with per-package structure.
+    /// <para>
+    /// Deliberately asymmetric. The cache holds several blobs and index entries but must yield ONE item;
+    /// the global root holds two packages and must yield TWO. A harness that flattened both would pass
+    /// while the whole-location constraint was broken.
+    /// </para>
+    /// </summary>
+    public static ConformanceFixture NodeFixture(string name = "npm-cache")
+    {
+        var fs = new FakeFileSystem(OperatingSystemKind.Linux);
+
+        fs.AddDirectory("/home/dev/.npm/_cacache/content-v2/sha512/ab/cd");
+        fs.AddFile("/home/dev/.npm/_cacache/content-v2/sha512/ab/cd/abcdef", "blob", fileIdentity: "blob-1");
+        fs.AddDirectory("/home/dev/.npm/_cacache/content-v2/sha512/ef/gh");
+        fs.AddFile("/home/dev/.npm/_cacache/content-v2/sha512/ef/gh/efghij", "blob", fileIdentity: "blob-2");
+
+        fs.AddFile("/usr/lib/node_modules/typescript/package.json", "{\"name\":\"typescript\",\"version\":\"5.4.5\"}");
+        fs.AddFile("/usr/lib/node_modules/npm/package.json", "{\"name\":\"npm\",\"version\":\"10.2.0\"}");
+
+        return new ConformanceFixture
+        {
+            Name = name,
+            FileSystem = fs,
+            ProcessRunner = new FakeProcessRunner(),
+            Factory = () => NodeFixture(name),
+            Roots = [ConformanceFixture.Root("npm-cache", "/home/dev/.npm")],
+            PluginFactory = () => new NodeEcosystem(),
+        };
+    }
+
+    public static TheoryData<ConformanceFixture> AllFixtures() => new() { NetFixture(), GoFixture(), RustFixture(), NodeFixture(), EmptyFixture() };
 
     private static async Task<List<Ports.PortableItem>> DiscoverAll(
         IEcosystem ecosystem,

@@ -87,9 +87,23 @@ understate it.
 - npm-cache via `npm config get cache` chain; `_cacache` is content-addressed → whole-location tier only. npm-global via `npm root -g` with native uninstall route.
 
 **Acceptance**
-- [ ] package-lock.json fixtures resolve Usage for globals-vs-locals distinction where possible; otherwise Unknown (correct, not guessed)
-- [ ] npm-cache items are whole-location only (no per-package steps)
-- [ ] Conformance green
+- [x] package-lock.json fixtures resolve Usage for globals-vs-locals distinction where possible;
+      otherwise Unknown (correct, not guessed) — a lockfile describes a PROJECT's dependencies and says
+      nothing about global installs, so a global package resolves Unknown with zero projects
+- [x] npm-cache items are whole-location only (no per-package steps) — `_cacache` yields exactly ONE item
+      against a realistic cache (4 blobs, 2 index entries, 2 package names present); no item points into
+      `content-v2/sha512/`; a `~/.npm` without `_cacache` yields nothing, so `.npmrc` and its auth token
+      are never swept into a "cache"
+- [x] Conformance green — C-1..C-12 now run against .NET, Go, Rust AND Node
+
+**Note on the asymmetry**: `npm-cache` is whole-location and `npm-global` is per-package, in the same
+manifest and the same plugin. Both are "node caches"; only one can be cleaned selectively. The cache is
+`Risk.Safe` (every byte is re-downloadable) yet still one step — safe is about the bytes, `granularity` is
+about the addressability, and conflating them is the bug the two facts exist to prevent.
+
+**Deferred, not overlooked**: pnpm, yarn and bun. pnpm's store hard-links from a global store, so
+per-file sizing counts the same bytes repeatedly — a hard-link-aware scan is already implemented for
+NuGet, but reusing it here needs measurement against a real pnpm store first.
 
 ### T-025 · Policy / retention engine + presets
 **Refs** FR-08, FR-09 · **Depends** T-003, T-012 · **Effort** L
