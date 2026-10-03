@@ -11,9 +11,12 @@ Exit criteria per 12-roadmap, including the API freeze checkpoint (T-030).
 - User dir `<config>/ecosystems/*.toml`; shadowing warning (OQ-08: opt-in enable).
 
 **Acceptance**
-- [ ] Valid manifest loads into location specs consumed by the existing engine
-- [ ] Every closed-set violation produces an actionable error (NFR-10)
-- [ ] Manifest cannot bypass gates: denylist/fingerprint still enforced (test)
+- [x] Valid manifest loads into location specs consumed by the existing engine — `ManifestLoader` +
+      `manifests/go.toml` (3 locations) load from the embedded resource into `LocationSpec`s
+- [x] Every closed-set violation produces an actionable error (NFR-10) — `via`/`parse`/`kind`/`resolve`
+      closed sets; every error carries field + problem + fix
+- [x] Manifest cannot bypass gates: denylist/fingerprint still enforced (test) —
+      `ManifestCannotBypassGatesTests` pins that no schema key can grant permission
 
 ### T-021 · Resolver parser library
 **Refs** FR-02 · **Depends** T-005 · **Effort** M · **Spike first**

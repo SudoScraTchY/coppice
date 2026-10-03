@@ -1,0 +1,68 @@
+# go.toml — Go toolchain caches (T-022 input, FR-23).
+#
+# DATA, not code. This manifest is validated at load time against the closed sets in 10-formats, and
+# every path it names still passes the denylist and fingerprint gates afterwards. Nothing here can
+# switch a gate off.
+#
+# Layout facts (09-ecosystems, go section):
+#   - GOMODCACHE holds versioned modules at <path>/<module-path-escaped>@<version>. Read-only: Go sets
+#     files read-only, so a path-delete needs a gateway that clears the attribute first (v0.3).
+#   - GOCACHE holds build artifacts with no stable per-item identity, so it is a whole-location tier.
+#   - go env is the authoritative query for both, and it exists on every machine with Go installed.
+
+schema = 1
+id = "go"
+display_name = "Go"
+
+[[location]]
+id = "go-mod-cache"
+kind = "package-cache"
+layout = "{name}@{version}"
+resolve = "first"
+
+# `go env GOMODCACHE` prints "GOMODCACHE='/home/u/go/pkg/mod'" — the label-value parser reads it.
+# Order is the core's precedence: tool beats env beats default, and the default is consulted only
+# when no live source answered.
+sources = [
+  { via = "tool", run = "go env GOMODCACHE", parse = "label-value" },
+  { via = "env", var = "GOMODCACHE" },
+  { via = "default", path = "{home}/go/pkg/mod" },
+]
+
+# A mod cache whose depth-1 entries are not module@version directories is not a mod cache. Without
+# this a wrong pin would make coppice propose deleting someone's whole GOPATH.
+fingerprint = { layout_ratio = 0.8, entry_patterns = ["*@v*"] }
+
+# Prefer the native route. `go clean -modcache` is correct in a way a path delete is not: it knows the
+# read-only attributes, and it leaves a valid empty module cache rather than a missing one.
+remove = { command = "go clean -modcache" }
+
+[[location]]
+id = "go-build-cache"
+kind = "build-cache"
+layout = ""
+resolve = "first"
+sources = [
+  { via = "tool", run = "go env GOCACHE", parse = "label-value" },
+  { via = "env", var = "GOCACHE" },
+  { via = "default", path = "{home}/.cache/go-build" },
+]
+
+# No layout check: build artifacts have no per-item identity to check, so a ratio would be a fiction.
+# The whole location is the unit, which is what `layout = ""` means.
+remove = { command = "go clean -cache" }
+
+[[location]]
+id = "go-bin"
+kind = "tool-cache"
+layout = ""
+resolve = "first"
+sources = [
+  { via = "tool", run = "go env GOPATH", parse = "label-value" },
+  { via = "default", path = "{home}/go/bin" },
+]
+
+# GOPATH is usually a multi-install prefix, and the bin directory is what the user put there. It is
+# reported, never proposed for removal — Go has no "clean my tools" command, and deleting a binary the
+# user installed by hand is not coppice's call.
+risk_ceiling = "review"

@@ -1,8 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <!--
+      Core already references Ports transitively, but stating it here is not redundancy: this project
+      calls IFileSystem directly in ManifestLoader, and a project that uses a type it does not
+      reference is relying on someone else's csproj to keep working.
+    -->
+    <ProjectReference Include="..\Coppice.Ports\Coppice.Ports.csproj" />
     <ProjectReference Include="..\Coppice.Core\Coppice.Core.csproj" />
+  </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      Built-in ecosystem profiles ship as embedded resources (10-formats: "Built-in manifests are
+      embedded resources"). LogicalName is set explicitly so the resource name is a stable, readable
+      `Coppice.Manifests.manifests.go.toml` rather than whatever the default naming scheme produces —
+      the loader keys off that substring, and an MSBuild rename would silently load nothing.
+    -->
+    <EmbeddedResource Include="manifests\*.toml" LogicalName="Coppice.Manifests.manifests.%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>
