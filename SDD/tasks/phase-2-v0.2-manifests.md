@@ -134,7 +134,7 @@ NuGet, but reusing it here needs measurement against a real pnpm store first.
 - Flat item table + totals header (CSV); shareable summary (MD); totals consistent with console/JSON.
 
 **Acceptance**
-- [ ] Golden files per format; cross-format totals equality test
+- [x] Golden files per format; cross-format totals equality test
 
 ### T-028 · Escape suite E-1…E-9, E-11 (property-based)
 **Refs** FR-13, NFR-01, 11-testing · **Depends** T-004, T-005, T-006 · **Effort** XL · **Safety card**
