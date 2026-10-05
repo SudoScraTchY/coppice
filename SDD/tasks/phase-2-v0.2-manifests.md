@@ -123,9 +123,9 @@ NuGet, but reusing it here needs measurement against a real pnpm store first.
 - Plan schema v1 per 10; sha256 checksum over canonical serialization; reason strings mandatory on every step.
 
 **Acceptance**
-- [ ] Round-trip lossless; tampered checksum → rejection on load
-- [ ] Every step has non-empty reason (test)
-- [ ] Expected bytes sum equals plan total
+- [x] Round-trip lossless; tampered checksum → rejection on load
+- [x] Every step has non-empty reason (test)
+- [x] Expected bytes sum equals plan total
 
 ### T-027 · CSV + Markdown exporters
 **Refs** FR-18 · **Depends** T-009 · **Effort** S/M

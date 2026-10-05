@@ -1,12 +1,17 @@
-namespace Coppice.Core.Policy;
+using Coppice.Core.Domain;
+using Coppice.Ports;
 
-// The namespace is Coppice.Core.Policy, which shadows the Domain type Policy for unqualified use, and
-// Ports declares its own Usage and RemovalAction for the plugin boundary. Aliases, so every reference
-// below states which type it means rather than depending on which one the compiler picks.
-using CoreDomain = Coppice.Core.Domain;
-using Facts = Coppice.Core.Domain.Facts;
+namespace Coppice.Core.Retention;
+
+// Four aliases, and every one is a genuine same-name collision rather than a naming preference.
+// Ports declares its own Policy, Usage, RemovalAction and Item for the plugin boundary — the portable
+// copies plugins exchange. The engine reasons about the Domain copies, so each name states which one it
+// means. Writing `Ports.Policy` at fifty call sites would be worse, not better.
+//
+// The namespace is Coppice.Core.Retention and deliberately does NOT contain the word "Policy": a
+// namespace named Policy shadows the Domain.Policy type for every file in Core, which cost two rounds
+// of workarounds before it was fixed properly.
 using Item = Coppice.Core.Domain.Item;
-using IVersionOrdering = Coppice.Ports.IVersionOrdering;
 using Policy = Coppice.Core.Domain.Policy;
 using RemovalAction = Coppice.Core.Domain.RemovalAction;
 using Usage = Coppice.Core.Domain.Usage;
@@ -45,7 +50,7 @@ public sealed class RetentionEngine
     /// </para>
     /// </summary>
     public RetentionDecision Evaluate(
-        CoreDomain.Item item,
+        Item item,
         Usage usage,
         Policy policy,
         IReadOnlyList<Item> allItems)
@@ -249,7 +254,7 @@ public sealed class RetentionEngine
 
 /// <summary>What the engine decided about one item, and why. Never a bare bool: the reason is the product.</summary>
 public sealed record RetentionDecision(
-    CoreDomain.Item Item,
+    Item Item,
     bool Admitted,
     bool AdviseOnly,
     string Reason,

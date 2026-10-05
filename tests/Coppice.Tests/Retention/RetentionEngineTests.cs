@@ -1,5 +1,5 @@
 using Coppice.Core.Domain;
-using Coppice.Core.Policy;
+using Coppice.Core.Retention;
 using Coppice.Ports;
 using Xunit;
 using static Coppice.Core.Domain.Policy;

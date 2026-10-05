@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Coppice.Core.Domain;
+using Coppice.Core.Plans;
 
 namespace Coppice.Tests.Domain;
 
@@ -34,26 +35,28 @@ public sealed class RoundTripTests
     [Fact]
     public void Plan_round_trips_losslessly()
     {
-        var plan = new Plan(
-            PlanId: "plan-1",
-            SnapshotId: "snap-1",
-            Policy: Policy.Default,
-            Steps: Deterministic.OrderSteps(
+        // Built through PlanBuilder rather than a constructor, so this tests the shape users will actually
+        // get. It also exercises the builder's own invariants (reasons present, total matches the steps).
+        PlanResult built = PlanBuilder.Build(
+            "snap-1",
+            Policy.Default,
             [
                 new PlanStep("abc123", Risk.Safe, "unreferenced and regenerable", RemovalAction.PathDelete(@"C:\cache\pkg\1.0.0"), 1024),
                 new PlanStep("def456", Risk.Review, "reinstallable, opt-in required", RemovalAction.Native("dotnet workload uninstall foo"), 4096),
                 new PlanStep("ghi789", Risk.Manual, "installer-owned", RemovalAction.ReportOnly("use the Visual Studio Installer"), 8192),
-            ]),
-            ExpectedReclaimBytes: 13_312,
-            Checksum: "deadbeef");
+            ]);
+
+        Assert.True(built.IsSuccess, built.Message);
+        Plan plan = built.Plan!;
 
         string json = DomainJson.Serialize(plan);
         Plan? restored = DomainJson.Deserialize<Plan>(json);
         Assert.Equal(json, DomainJson.Serialize(restored));
-        Assert.Equal(plan.Steps.Count, restored!.Steps.Count);
-        Assert.Equal(plan.Steps.Select(s => s.ItemId), restored.Steps.Select(s => s.ItemId));
+        Assert.Equal(plan, restored);
+        Assert.Equal(plan.Steps.Select(s => s.ItemId), restored!.Steps.Select(s => s.ItemId));
         Assert.Equal(plan.ExpectedReclaimBytes, restored.ExpectedReclaimBytes);
         Assert.Equal(plan.Checksum, restored.Checksum);
+        Assert.True(restored.IsIntact());
     }
 
     [Fact]
