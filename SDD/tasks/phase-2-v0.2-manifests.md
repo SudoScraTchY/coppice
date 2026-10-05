@@ -144,10 +144,10 @@ NuGet, but reusing it here needs measurement against a real pnpm store first.
 - Invariant under test: no proposed or executed step ever escapes a validated root, and poisoned resolutions come back Denied/FailsFingerprint.
 
 **Acceptance**
-- [ ] All ten attack classes covered with shrinking reproducers
-- [ ] Zero escapes across ≥ 100k generated cases in CI
-- [ ] E-11 poisoning fixtures for both `go` and `dotnet` fakes
-- [ ] Suite mandatory on every PR (CI gate)
+- [x] All ten attack classes covered with shrinking reproducers
+- [x] Zero escapes across ≥ 100k generated cases in CI
+- [x] E-11 poisoning fixtures for both `go` and `dotnet` fakes
+- [x] Suite mandatory on every PR (CI gate)
 
 ### T-029 · Config file
 **Refs** FR-22, 10-formats · **Depends** T-009 · **Effort** M

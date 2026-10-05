@@ -4,8 +4,30 @@ using Coppice.Ports;
 namespace Coppice.Core.PathSafety;
 
 /// <summary>
-/// Thin wrapper over <see cref="IFileSystem"/> that exposes safe path operations used by the gateway:
-/// canonicalization, containment checking, real-path resolution (with loop detection), and link-escape detection.
+/// The outcome of resolving a path through links.
+/// <para>
+/// A distinct <see cref="Loop"/> case rather than a sentinel string, because "resolution did not
+/// terminate" and "resolution produced this path" lead to opposite decisions. A cycle has no terminal
+/// directory, so a caller doing a safety check must refuse it; returning the last hop instead would let a
+/// junction loop pass containment and reach a recursive delete.
+/// </para>
+/// </summary>
+/// <param name="Path">The resolved path, or the input path when resolution looped.</param>
+/// <param name="IsLoop">True when link resolution did not terminate.</param>
+public sealed record ResolvedPath(string Path, bool IsLoop)
+{
+    public static ResolvedPath At(string path) => new(path, false);
+
+    /// <summary>A cycle. <see cref="Path"/> is empty; callers that need the input path kept it themselves.</summary>
+    public static ResolvedPath Loop { get; } = new(string.Empty, true);
+}
+
+/// <summary>
+/// Wrapper over an <see cref="IFileSystem"/> that provides path-safety primitives for one OS.
+/// <para>
+/// Pure: every input is an explicit string and an <see cref="OperatingSystemKind"/>. No OS detection, no
+/// ambient state, so every refusal is a function of its arguments and reproducible in a test.
+/// </para>
 /// </summary>
 public sealed class IFileSystemPaths(IFileSystem fs, OperatingSystemKind os)
 {
@@ -49,26 +71,32 @@ public sealed class IFileSystemPaths(IFileSystem fs, OperatingSystemKind os)
     }
 
     /// <summary>
-    /// Resolves symlink/junction chains starting at <paramref name="path"/>.
-    /// Stops on a loop (max 40 hops, matching FakeFileSystem) and returns the terminal path.
-    /// If the final target does not exist, the path is returned as-is (does not require existence).
+    /// Resolves a path through symlinks and junctions.
+    /// <para>
+    /// Returns <see cref="ResolvedPath.Loop"/> when resolution does not terminate. It does NOT return the
+    /// last path it reached: a cycle's final hop is somewhere INSIDE the root by construction, so handing
+    /// it back would let a junction loop pass a containment check and reach a recursive delete — the one
+    /// operation that follows a cycle forever. "Unresolvable" and "resolved to this safe-looking path" are
+    /// different answers, and only the second one is dangerous.
+    /// </para>
     /// </summary>
-    public string ResolveRealPath(string path)
+    public ResolvedPath Resolve(string path)
     {
         var seen = new HashSet<string>(StringComparer.Ordinal) { path };
-        var current = path;
+        string current = path;
+
         for (var hop = 0; hop < 40; hop++)
         {
             var entry = _fs.GetEntry(current);
             if (entry is null || !entry.IsLink)
             {
-                return current;
+                return ResolvedPath.At(current);
             }
 
             var rawTarget = entry.LinkTarget;
             if (rawTarget is null)
             {
-                return current;
+                return ResolvedPath.At(current);
             }
 
             // Resolve relative targets against the link's parent directory.
@@ -76,18 +104,27 @@ public sealed class IFileSystemPaths(IFileSystem fs, OperatingSystemKind os)
                 ? PathCanonicalizer.Canonicalize(rawTarget, _os).Path
                 : PathCanonicalizer.Combine(CurrentDirectory(current), rawTarget, _os);
 
-            // Detect loop: if we land back where we started, or on a path already seen, stop.
+            // A cycle: back where we started, or onto a path already walked. Either way there is no
+            // directory here to reason about.
             if (PathCanonicalizer.PathsEqual(resolvedTarget, current, _os) || !seen.Add(resolvedTarget))
             {
-                return current;
+                return ResolvedPath.Loop;
             }
 
             current = resolvedTarget;
         }
 
-        // Loop detected — return the last resolved path (the gateway will reject it).
-        return current;
+        return ResolvedPath.Loop;
     }
+
+    /// <summary>
+    /// Resolves a path, treating a cycle as "resolves to itself".
+    /// <para>
+    /// For callers that only need the path — de-duplication, display. NOT for safety decisions: a caller
+    /// that must refuse a cycle wants <see cref="Resolve"/>.
+    /// </para>
+    /// </summary>
+    public string ResolveRealPath(string path) => Resolve(path).Path;
 
     /// <summary>
     /// Checks whether resolving links from <paramref name="path"/> escapes <paramref name="root"/>.

@@ -68,6 +68,32 @@ jobs:
       - name: Verify formatting
         run: dotnet format --verify-no-changes
 
+      # T-028 acceptance: "zero escapes across ≥ 100k generated cases in CI" and "suite mandatory on
+      # every PR (CI gate)".
+      #
+      # A SEPARATE step, not a filter on the Test step above, so the escape result is a named and
+      # individually visible outcome. A safety suite whose failure is buried among 900 others is a safety
+      # suite nobody watches.
+      #
+      # The count is pinned here rather than left to the default, and EscapeSuiteScaleTests asserts the
+      # floor — so speeding this job up cannot quietly turn a 100k-case claim into a 200-case one.
+      - name: Escape suite (property-based safety gate)
+        env:
+          COPPICE_ESCAPE_CASES: '100000'
+        run: >
+          dotnet test --configuration Release --no-build
+          --filter 'FullyQualifiedName~Coppice.Tests.Safety'
+          --logger "trx;LogFileName=escape.trx"
+          --results-directory "${{ runner.temp }}/escape-results"
+
+      - name: Upload escape suite results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: escape-results-${{ matrix.os }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/escape-results
+          retention-days: 14
+
       # The golden tests assert the report is correct; this asserts the PINNED file is the one they
       # read. If the csproj copy step regressed, or a golden file were regenerated here instead of in a
       # review, the tests alone would pass against whatever the code emitted.

@@ -25,6 +25,13 @@ public enum ContainmentFailure
     /// <summary>Path still contains unresolved relative segments.</summary>
     HasRelativeSegments,
 
+    /// <summary>
+    /// Link resolution did not terminate. A junction or symlink cycle resolves to no real directory, so
+    /// there is nothing to prove contained — and a recursive delete of a cycle is exactly the operation
+    /// that walks forever or follows a path nobody intended.
+    /// </summary>
+    LinkLoop,
+
     /// <summary>Root path is invalid or empty.</summary>
     InvalidRoot,
 }
@@ -88,26 +95,35 @@ public static class ContainmentCheck
                 $"Path equals the root '{root}'; only children are allowed.");
         }
 
-        // Step 3b: Resolve any symlinks/junctions.
-        var resolved = paths.ResolveRealPath(canonical.Path);
+        // Step 3b: Resolve any symlinks/junctions. A cycle is refused HERE rather than tested below:
+        // the last hop of a loop sits inside the root by construction, so passing it on would report a
+        // junction loop as safe and hand it to a recursive delete — the one operation that never returns.
+        var resolved = paths.Resolve(canonical.Path);
+
+        if (resolved.IsLoop)
+        {
+            return ContainmentResult.Fail(ContainmentFailure.LinkLoop,
+                $"'{canonical.Path}' is part of a symlink or junction cycle and cannot be resolved to a real "
+                    + "directory. It was not planned for removal.");
+        }
 
         // Step 3c: The same root check again, on the RESOLVED path: a link inside the root may
         // point at the root itself.
-        if (PathCanonicalizer.PathsEqual(resolved, root, paths.OS))
+        if (PathCanonicalizer.PathsEqual(resolved.Path, root, paths.OS))
         {
             return ContainmentResult.Fail(ContainmentFailure.IsRoot,
                 $"Path resolves to the root '{root}'; only children are allowed.");
         }
 
         // Step 4: Verify containment within root.
-        if (!paths.IsWithin(root, resolved))
+        if (!paths.IsWithin(root, resolved.Path))
         {
             return ContainmentResult.Fail(ContainmentFailure.EscapedRoot,
-                $"Resolved path '{resolved}' is outside root '{root}'.");
+                $"Resolved path '{resolved.Path}' is outside root '{root}'.");
         }
 
         // Step 4d: Reject any remaining relative segments.
-        if (paths.HasRelativeSegments(resolved))
+        if (paths.HasRelativeSegments(resolved.Path))
         {
             return ContainmentResult.Fail(ContainmentFailure.HasRelativeSegments,
                 $"Resolved path still contains relative segments.");
