@@ -156,9 +156,9 @@ NuGet, but reusing it here needs measurement against a real pnpm store first.
 - TOML config: projects roots, pins, exclusions, policy defaults, quarantine settings; validation with actionable errors; `coppice config path|get|set`.
 
 **Acceptance**
-- [ ] Pin overrides resolution but cannot bypass denylist/fingerprint (test)
-- [ ] Invalid config → exit 2 with line/field-level hints
-- [ ] Schema v1 with migration stub (NFR-12)
+- [x] Pin overrides resolution but cannot bypass denylist/fingerprint (test)
+- [x] Invalid config → exit 2 with line/field-level hints
+- [x] Schema v1 with migration stub (NFR-12)
 
 ### T-030 · API freeze checkpoint
 **Refs** ADR-011 · **Depends** T-022, T-023, T-024, T-016 · **Effort** S (review)

@@ -51,9 +51,14 @@ public static class PropertyRunner
         // result object. So the counterexample has to come out of the exception message rather than a
         // Result field — the message is FsCheck's own rendering of the shrunk input, which is exactly
         // what a maintainer needs to see.
+        // FsCheck's own namespace, named explicitly: this project has a `Coppice.Tests.Config` namespace, and a
+        // bare `Config` inside it resolves there instead of to FsCheck's configuration type. Same class of
+        // collision as `Coppice.Core.Policy` shadowing `Domain.Policy`, and worth remembering.
+        FsCheck.Config config = FsCheck.Config.Default.WithMaxTest(maxCases);
+
         try
         {
-            property.Check(Config.Default.WithMaxTest(maxCases));
+            property.Check(config);
         }
         catch (Xunit.Sdk.FailException)
         {
