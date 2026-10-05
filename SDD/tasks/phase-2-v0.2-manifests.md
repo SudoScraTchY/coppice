@@ -112,9 +112,9 @@ NuGet, but reusing it here needs measurement against a real pnpm store first.
 - Presets conservative/default/aggressive; keep-latest-N per (name, band) using plugin-owned ordering; referenced-protection (S-4); exclusions from config; tier ceilings.
 
 **Acceptance**
-- [ ] Deterministic: same snapshot + policy → identical plan steps
-- [ ] Referenced item never proposed, even under `aggressive`
-- [ ] Each preset has a golden plan on the reference fixture
+- [x] Deterministic: same snapshot + policy → identical plan steps
+- [x] Referenced item never proposed, even under `aggressive`
+- [x] Each preset has a golden plan on the reference fixture
 
 ### T-026 · Plan builder + plan JSON + checksum
 **Refs** FR-11 · **Depends** T-025 · **Effort** M

@@ -1,0 +1,11 @@
+# preset: default
+# policy: keepLatest=2 ceiling=Safe floor=Safe
+
+KEEP    dotnetsay        2.0.0      risk review is above this policy's ceiling safe.
+KEEP    leftover         1.0.0      one of the 2 newest 'leftover' version(s) kept by this policy.
+KEEP    newtonsoft.json  13.0.1     one of the 2 newest 'newtonsoft.json' version(s) kept by this policy.
+KEEP    newtonsoft.json  13.0.3     referenced by at least one project (S-4).
+PROPOSE newtonsoft.json  9.0.1      no project references it; beyond the 2 newest kept for 'newtonsoft.json'; default policy, safe tier.
+KEEP    serilog          3.1.1      one of the 2 newest 'serilog' version(s) kept by this policy.
+KEEP    serilog          4.0.0      one of the 2 newest 'serilog' version(s) kept by this policy.
+KEEP    vs-installer     17.0       risk review is above this policy's ceiling safe.

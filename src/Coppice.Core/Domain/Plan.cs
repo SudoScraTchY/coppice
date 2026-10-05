@@ -11,13 +11,25 @@ public sealed record Policy
         PresetName = "default",
     };
 
-    public Risk MinimumRisk { get; init; } = Risk.Review;
+    /// <summary>
+    /// Confidence floor: refuse anything below this tier. Default is <see cref="Risk.Safe"/>, matching its
+    /// ceiling — the previous default of <see cref="Risk.Review"/> sat ABOVE the Safe ceiling, so the
+    /// default policy admitted nothing at all and proposed an empty plan on every machine, silently.
+    /// </summary>
+    public Risk MinimumRisk { get; init; } = Risk.Safe;
 
     /// <summary>Highest risk the plan is even allowed to contain. Acts as a ceiling above <see cref="MinimumRisk"/>.</summary>
     public Risk MaximumRisk { get; init; } = Risk.Safe;
 
-    /// <summary>Keep the newest N versions per major/band. 0 disables the rule.</summary>
-    public int KeepLatestN { get; init; }
+    /// <summary>
+    /// Keep the newest N versions per (name, ecosystem, location). 0 disables the rule.
+    /// <para>
+    /// Not 0 by default. The rule exists because "unreferenced" does not mean "unused": a package can be
+    /// absent from the scanned projects and still be required by one outside them. With the rule off, the
+    /// default policy would propose removing every version of every unreferenced package.
+    /// </para>
+    /// </summary>
+    public int KeepLatestN { get; init; } = 2;
 
     /// <summary>Referenced items are never removed, whatever else says so.</summary>
     public bool ProtectReferenced { get; init; } = true;
