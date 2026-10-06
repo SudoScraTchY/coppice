@@ -85,22 +85,81 @@ public sealed class IFileSystemPaths(IFileSystem fs, OperatingSystemKind os)
         var seen = new HashSet<string>(StringComparer.Ordinal) { path };
         string current = path;
 
+        // EVERY prefix of the path is examined, not just the path itself. A directory that IS a junction is
+        // the easy case; the one that matters is a path *under* a self-referencing junction, where the leaf
+        // is an ordinary directory and every check that looks only at the leaf reports it clean. That is
+        // how `C:\cache\pkg\1.0.0` came back "safe" while `C:\cache\pkg` pointed at itself.
+        foreach (string ancestor in Ancestors(current))
+        {
+            if (IsLink(ancestor))
+            {
+                ResolvedPath ancestorResolution = ResolveOne(ancestor, seen);
+
+                if (ancestorResolution.IsLoop)
+                {
+                    return ancestorResolution;
+                }
+
+                // Re-root the remaining segments under where the ancestor actually points, then continue
+                // the walk. Without this the rest of the path would be joined onto the DECLARED location
+                // rather than the real one, which is precisely the escape being defended against.
+                string remainder = path[ancestor.Length..];
+                current = ancestorResolution.Path + remainder;
+            }
+        }
+
+        return ResolveOne(current, seen);
+    }
+
+    /// <summary>Every ancestor of <paramref name="path"/>, longest first. Includes the path itself.</summary>
+    private IEnumerable<string> Ancestors(string path)
+    {
+        string current = path;
+
+        while (!string.IsNullOrEmpty(current))
+        {
+            yield return current;
+
+            int last = current.LastIndexOfAny(['\\', '/']);
+
+            if (last <= 0)
+            {
+                // Reached a drive root or the filesystem root; there is nothing above it to check.
+                yield break;
+            }
+
+            current = current[..last];
+        }
+    }
+
+    private bool IsLink(string path)
+    {
+        FileEntry? entry = _fs.GetEntry(path);
+        return entry is not null && entry.IsLink;
+    }
+
+    private ResolvedPath ResolveOne(string path, HashSet<string> seen)
+    {
+        string current = path;
+
         for (var hop = 0; hop < 40; hop++)
         {
-            var entry = _fs.GetEntry(current);
+            FileEntry? entry = _fs.GetEntry(current);
+
             if (entry is null || !entry.IsLink)
             {
                 return ResolvedPath.At(current);
             }
 
-            var rawTarget = entry.LinkTarget;
+            string? rawTarget = entry.LinkTarget;
+
             if (rawTarget is null)
             {
                 return ResolvedPath.At(current);
             }
 
             // Resolve relative targets against the link's parent directory.
-            var resolvedTarget = PathCanonicalizer.IsRooted(rawTarget, _os)
+            string resolvedTarget = PathCanonicalizer.IsRooted(rawTarget, _os)
                 ? PathCanonicalizer.Canonicalize(rawTarget, _os).Path
                 : PathCanonicalizer.Combine(CurrentDirectory(current), rawTarget, _os);
 

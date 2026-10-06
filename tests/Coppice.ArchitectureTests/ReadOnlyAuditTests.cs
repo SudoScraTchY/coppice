@@ -67,11 +67,15 @@ public sealed class ReadOnlyAuditTests
     }
 
     /// <summary>
-    /// Assemblies allowed to call a filesystem mutator. Adapters IS the mutator: it is the one place
-    /// in the system allowed to touch the disk destructively, and only because the Gateway will call
-    /// it in v0.2.
+    /// Assemblies allowed to call a filesystem mutator.
+    /// <para>
+    /// Adapters IS the mutator — it is the one place allowed to touch the disk destructively. Core is
+    /// allowed ONLY because the Gateway (T-031) lives there and is the single mutating code path; the
+    /// test below proves it is the ONLY type in Core that reaches a mutator, so the allowance cannot
+    /// quietly become a blanket permission.
+    /// </para>
     /// </summary>
-    public static TheoryData<string> AssembliesThatMayMutate => ["Coppice.Adapters"];
+    public static TheoryData<string> AssembliesThatMayMutate => ["Coppice.Adapters", "Coppice.Core"];
 
     /// <summary>
     /// Every assembly that must NOT reach a mutator. Adapters is excluded on purpose: it IS the
@@ -260,6 +264,55 @@ public sealed class ReadOnlyAuditTests
     }
 
     // ---- 2. no mutating verb on the command surface ----
+
+    /// <summary>
+    /// The Gateway is the ONLY type in Core permitted to call a mutator.
+    /// <para>
+    /// <c>AssembliesThatMayMutate</c> allows Core as a whole, because refusing the whole assembly would
+    /// mean forbidding the one place that is supposed to mutate. That is a blunt instrument, and a blunt
+    /// allowance becomes a blanket permission the moment someone adds a second call site. So this pins the
+    /// permission to a TYPE: if a new type in Core starts deleting files, this fails and the allowance has
+    /// to be widened deliberately rather than inherited.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void The_gateway_is_the_only_type_in_core_that_mutates()
+    {
+        Assembly core = Assembly.Load("Coppice.Core");
+
+        var offenders = new List<string>();
+
+        foreach (Type type in SafeGetTypes(core))
+        {
+            // The gateway's own type is the permission, not a violation of it.
+            if (type.FullName is "Coppice.Core.Gateway.Gateway")
+            {
+                continue;
+            }
+
+            foreach (MethodInfo method in SafeGetMethods(type))
+            {
+                foreach (MethodInfo mutator in Mutators)
+                {
+                    if (CallsToken(method, mutator))
+                    {
+                        offenders.Add($"{type.FullName}.{method.Name} calls {mutator.Name}");
+                    }
+                }
+            }
+        }
+
+        Assert.Empty(offenders);
+    }
+
+    /// <summary>The gateway exists, so the allowance above is not pointing at nothing.</summary>
+    [Fact]
+    public void The_gateway_exists_in_core()
+    {
+        Type? gateway = Assembly.Load("Coppice.Core").GetType("Coppice.Core.Gateway.Gateway");
+
+        Assert.NotNull(gateway);
+    }
 
     [Fact]
     public void The_cli_exposes_no_command_that_could_imply_mutation()

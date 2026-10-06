@@ -12,10 +12,10 @@ Exit criteria per 12-roadmap.
 - Adds E-10 (relative-path injection into plans) and E-12 (locked file mid-apply) to the escape suite.
 
 **Acceptance**
-- [ ] Escape suite E-1…E-12 green including new E-10/E-12
-- [ ] Locked-file fixture → step skipped, issue recorded, no crash
-- [ ] Drift fixture → strict mode aborts the drifted step only
-- [ ] Gateway is provably the only mutating code path (architecture test)
+- [x] Escape suite E-1…E-12 green including new E-10/E-12
+- [x] Locked-file fixture → step skipped, issue recorded, no crash
+- [x] Drift fixture → strict mode aborts the drifted step only
+- [x] Gateway is provably the only mutating code path (architecture test)
 
 ### T-032 · Quarantine + restore
 **Refs** FR-14, S-11 · **Depends** T-031 · **Effort** L · **Safety card**

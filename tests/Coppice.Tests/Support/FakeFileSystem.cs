@@ -39,10 +39,10 @@ public sealed class FakeFileSystem : IFileSystem
     /// <c>AddDirectory("/cache/pkg/1.0")</c> silently fails to make "/cache" exist, and every later
     /// assertion about that tree fails for a reason that has nothing to do with the code under test.
     /// </summary>
-    public FakeFileSystem AddDirectory(string path)
+    public FakeFileSystem AddDirectory(string path, LockState lockState = LockState.Unlocked)
     {
         string full = Normalize(path);
-        _nodes[full] = new Node(EntryKind.Directory, null, null, null, LockState.Unlocked, false, DateTimeOffset.UnixEpoch);
+        _nodes[full] = new Node(EntryKind.Directory, null, null, null, lockState, false, DateTimeOffset.UnixEpoch);
         EnsureParentDirectories(full);
         return this;
     }
@@ -67,6 +67,23 @@ public sealed class FakeFileSystem : IFileSystem
         string full = Normalize(path);
         _nodes[full] = new Node(EntryKind.File, new byte[sizeInBytes], null, fileIdentity ?? $"id:{full}", LockState.Unlocked, false, DateTimeOffset.UnixEpoch);
         EnsureParentDirectories(full);
+        return this;
+    }
+
+    /// <summary>
+    /// A directory whose recursive size is a known number of bytes.
+    /// <para>
+    /// Built from a real file rather than a recorded size, because <see cref="MeasureSize"/> sums a
+    /// directory's contents. A test that needs a directory of 4096 bytes and a test that needs one of 9999
+    /// need the fake to actually report different numbers, which is what makes the S-2 drift check testable
+    /// at all.
+    /// </para>
+    /// </summary>
+    public FakeFileSystem AddDirectoryOfSize(string path, int sizeInBytes, LockState lockState = LockState.Unlocked)
+    {
+        string full = Normalize(path);
+        AddDirectory(full, lockState);
+        AddFileOfSize(Normalize(full + _separator + "payload.bin"), sizeInBytes);
         return this;
     }
 
