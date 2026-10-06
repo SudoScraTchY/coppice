@@ -167,5 +167,5 @@ NuGet, but reusing it here needs measurement against a real pnpm store first.
 - Contract review: what .NET needed vs what manifests needed; friction list; amendments recorded as ADR notes; freeze or defer with reasons. This is a review card, not a code card.
 
 **Acceptance**
-- [ ] Review doc committed listing every contract friction found
-- [ ] Freeze decision recorded (ADR-011 closed or re-scheduled with reason)
+- [x] Review doc committed listing every contract friction found
+- [x] Freeze decision recorded (ADR-011 closed or re-scheduled with reason)
