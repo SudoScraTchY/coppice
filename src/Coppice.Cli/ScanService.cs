@@ -65,10 +65,13 @@ public sealed class ScanService
     /// <c>--projects</c>; without them, reference resolution cannot prove anything and everything
     /// stays Unknown.
     /// </summary>
+    public Task<ScanReport> RunAsync(IReadOnlyList<PortScanRoot> roots, IReadOnlyList<string> projectRoots) =>
+        RunAsync(roots, projectRoots, CancellationToken.None);
+
     public async Task<ScanReport> RunAsync(
         IReadOnlyList<PortScanRoot> roots,
         IReadOnlyList<string> projectRoots,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(roots);
         ArgumentNullException.ThrowIfNull(projectRoots);
@@ -100,7 +103,7 @@ public sealed class ScanService
         // Convert PortScanRoot to CoreScanRoot for the pipeline
         var coreRoots = roots.Select(r => new CoreScanRoot(r.LocationId, r.ResolvedPath)).ToList();
 
-        ScanResult result = await pipeline.RunAsync(coreRoots, cancellationToken: cancellationToken).ConfigureAwait(false);
+        ScanResult result = await pipeline.RunAsync(coreRoots, progress: null, cancellationToken).ConfigureAwait(false);
 
         // Classify usage now, while the projects are in hand. Resolving later — after the snapshot —
         // would leave stored items with a usage verdict that no longer matches the evidence.

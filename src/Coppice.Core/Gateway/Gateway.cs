@@ -1,6 +1,7 @@
 using System.Diagnostics;
 
 using Coppice.Core.PathSafety;
+using Coppice.Core.Quarantine;
 using Coppice.Ports;
 
 using RemovalAction = Coppice.Core.Domain.RemovalAction;
@@ -31,18 +32,32 @@ public sealed class Gateway
 {
     private readonly IFileSystem _fs;
     private readonly OperatingSystemKind _os;
+    private readonly QuarantineIndex? _quarantine;
+    private readonly IClock _clock;
 
-    public Gateway(IFileSystem fs, OperatingSystemKind os)
+    public Gateway(
+        IFileSystem fs,
+        OperatingSystemKind os,
+        QuarantineIndex? quarantine = null,
+        IClock? clock = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         _fs = fs;
         _os = os;
+        _quarantine = quarantine;
+        _clock = clock ?? new DefaultClock();
     }
 
     /// <summary>
     /// Executes one step. Returns what happened; never throws for a refusal.
+    /// <para>
+    /// A path delete moves to quarantine and — when an index was supplied — records the entry that
+    /// <c>coppice quarantine list|restore</c> reads (T-032). The record is written AFTER the move, so
+    /// the index only ever says what actually happened; the write-ahead journal (T-034) is what closes
+    /// the crash window between the two.
+    /// </para>
     /// </summary>
-    public GatewayStepResult Execute(GatewayStep step, bool strict = false)
+    public async Task<GatewayStepResult> Execute(GatewayStep step, bool strict = false)
     {
         ArgumentNullException.ThrowIfNull(step);
 
@@ -129,7 +144,7 @@ public sealed class Gateway
         // 8. Mutate. Path deletes go to quarantine (S-11); native commands are run and audited.
         return step.Action.Kind switch
         {
-            RemovalKind.PathDelete => Quarantine(step),
+            RemovalKind.PathDelete => await QuarantineAsync(step).ConfigureAwait(false),
             RemovalKind.NativeCommand => RunNative(step),
             RemovalKind.ReportOnly => Skip(step, GatewayRefusal.InstallerOwned,
                 $"'{step.Path}' is report-only; no removal was performed."),
@@ -147,7 +162,7 @@ public sealed class Gateway
     /// is independent and every result is returned.
     /// </para>
     /// </summary>
-    public IReadOnlyList<GatewayStepResult> ExecuteAll(IEnumerable<GatewayStep> steps, bool strict = false)
+    public async Task<IReadOnlyList<GatewayStepResult>> ExecuteAll(IEnumerable<GatewayStep> steps, bool strict = false)
     {
         ArgumentNullException.ThrowIfNull(steps);
 
@@ -155,7 +170,7 @@ public sealed class Gateway
 
         foreach (GatewayStep step in steps)
         {
-            results.Add(Execute(step, strict));
+            results.Add(await Execute(step, strict).ConfigureAwait(false));
         }
 
         return results;
@@ -164,8 +179,15 @@ public sealed class Gateway
     /// <summary>
     /// Moves a path into quarantine. The rename is the mutation: nothing is deleted, so a restore is a
     /// rename back (T-032).
+    /// <para>
+    /// When an index was supplied, the move also writes the entry that <c>coppice quarantine list</c>
+    /// and <c>restore</c> read. The content hash is taken BEFORE the move — taken after, the "verified
+    /// restore" would compare the quarantine copy against itself — and the entry is written AFTER the
+    /// move, so the index only ever records a move that happened. The gap between the two is the crash
+    /// window T-034's write-ahead journal exists to close.
+    /// </para>
     /// </summary>
-    private GatewayStepResult Quarantine(GatewayStep step)
+    private async Task<GatewayStepResult> QuarantineAsync(GatewayStep step)
     {
         if (string.IsNullOrEmpty(step.Action.CanonicalPath))
         {
@@ -173,20 +195,42 @@ public sealed class Gateway
                 $"Step for '{step.ItemId}' has no path to move. Nothing was done.");
         }
 
+        string destination;
+        QuarantineEntry? entry = null;
+
         try
         {
             // The destination is derived, not passed in: a caller-chosen destination is a caller-chosen
             // escape from the containment check that just approved the source.
-            string destination = QuarantinePath.For(step.Root, step.LocationIdForQuarantine(), step.Action.CanonicalPath);
+            destination = QuarantinePath.For(step.Root, step.LocationIdForQuarantine(), step.Action.CanonicalPath);
+
+            if (_quarantine is not null)
+            {
+                // Live state measured now, not the plan's numbers: the index is the record of what was
+                // actually moved, not of what the plan predicted. A stale fingerprint is the drift
+                // check's job to catch, not something to copy into the record.
+                DateTimeOffset quarantinedAt = _clock.UtcNow;
+
+                entry = new QuarantineEntry
+                {
+                    EntryId = QuarantineIndex.FormatEntryId(step.Action.CanonicalPath, quarantinedAt),
+                    OriginalPath = step.Action.CanonicalPath,
+                    QuarantinePath = destination,
+                    Root = step.Root,
+                    LocationId = step.LocationIdForQuarantine(),
+                    ItemId = step.ItemId,
+                    SizeBytes = _fs.MeasureSize(step.Action.CanonicalPath),
+                    QuarantinedAtUtc = quarantinedAt,
+                    ContentHash = QuarantineIndex.HashTree(_fs, step.Action.CanonicalPath),
+                    Ecosystem = step.Ecosystem ?? string.Empty,
+                    Kind = step.Kind ?? string.Empty,
+                    Name = step.Name ?? string.Empty,
+                    Version = step.Version ?? string.Empty,
+                };
+            }
+
             _fs.CreateDirectory(ParentOf(destination, _os));
             _fs.Move(step.Action.CanonicalPath, destination);
-
-            return new GatewayStepResult(
-                step.ItemId,
-                GatewayOutcome.Quarantined,
-                GatewayRefusal.None,
-                destination,
-                $"Moved to quarantine at '{destination}'. Restore with `coppice quarantine restore`.");
         }
         catch (System.IO.IOException ex)
         {
@@ -198,6 +242,35 @@ public sealed class Gateway
             return Skip(step, GatewayRefusal.NeedsElevation,
                 $"Not permitted to move '{step.Action.CanonicalPath}': {ex.Message}");
         }
+
+        if (_quarantine is not null && entry is not null)
+        {
+            try
+            {
+                await _quarantine.SaveAsync(entry).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                // The move succeeded; only the RECORD failed. Reporting a refusal would lie about the
+                // filesystem, and plain success would hide that `quarantine restore` cannot find this
+                // item. So: quarantined, with the consequence in the message. T-035's audit verify is
+                // what flags the now-orphaned content.
+                return new GatewayStepResult(
+                    step.ItemId,
+                    GatewayOutcome.Quarantined,
+                    GatewayRefusal.None,
+                    destination,
+                    $"Moved to quarantine at '{destination}', but the quarantine index could not be updated ({ex.Message}). "
+                        + "The item is safe, but `coppice quarantine restore` will not list it.");
+            }
+        }
+
+        return new GatewayStepResult(
+            step.ItemId,
+            GatewayOutcome.Quarantined,
+            GatewayRefusal.None,
+            destination,
+            $"Moved to quarantine at '{destination}'. Restore with `coppice quarantine restore`.");
     }
 
     /// <summary>
@@ -340,6 +413,15 @@ public sealed class Gateway
         ContainmentFailure.LinkLoop => GatewayRefusal.LinkLoop,
         _ => GatewayRefusal.NotCanonicalizable,
     };
+
+    /// <summary>
+    /// The gateway's fallback clock when none was supplied. Core cannot reach the adapters'
+    /// SystemClock (NFR-08), so the default lives here, as it does in SnapshotStore.
+    /// </summary>
+    private sealed class DefaultClock : IClock
+    {
+        public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
+    }
 }
 
 /// <summary>Extension so a step can name its own quarantine location without the gateway guessing.</summary>

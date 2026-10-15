@@ -206,7 +206,7 @@ public sealed class ScanPipelineTests
         await cts.CancelAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => Pipeline(fs).RunAsync([new ScanRoot("nuget-packages", "/cache")], cancellationToken: cts.Token));
+            () => Pipeline(fs).RunAsync([new ScanRoot("nuget-packages", "/cache")], progress: null, cts.Token));
     }
 
     [Fact]

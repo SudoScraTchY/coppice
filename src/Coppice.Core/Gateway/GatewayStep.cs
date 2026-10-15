@@ -123,6 +123,21 @@ public sealed record GatewayStep
 
     /// <summary>Installer-owned roots are report-only (S-9).</summary>
     public bool InstallerOwned { get; init; }
+
+    /// <summary>
+    /// The ecosystem that produced this step, recorded in the quarantine index (T-032). Null when the
+    /// caller does not carry it — the index entry then says so rather than guessing.
+    /// </summary>
+    public string? Ecosystem { get; init; }
+
+    /// <summary>The item kind (e.g. <c>package</c>), recorded in the quarantine index (T-032).</summary>
+    public string? Kind { get; init; }
+
+    /// <summary>The item's display name, recorded in the quarantine index (T-032).</summary>
+    public string? Name { get; init; }
+
+    /// <summary>The item's version, recorded in the quarantine index (T-032).</summary>
+    public string? Version { get; init; }
 }
 
 /// <summary>

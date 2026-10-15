@@ -20,6 +20,10 @@ namespace Coppice.Tests.Apply;
 /// E-10 (relative-path injection into plans) and E-12 (locked file mid-apply) live here too — both are
 /// apply-time attacks, and 11-testing defers them to exactly this card.
 /// </para>
+/// <para>
+/// Execute is async since T-032: the quarantine move now records an index entry through the async state
+/// store, so every test below awaits the gateway rather than calling it synchronously.
+/// </para>
 /// </summary>
 public sealed class GatewayTests
 {
@@ -66,12 +70,12 @@ public sealed class GatewayTests
     // ---- the happy path --------------------------------------------------------------------------------
 
     [Fact]
-    public void A_valid_step_is_moved_to_quarantine_not_deleted()
+    public async Task A_valid_step_is_moved_to_quarantine_not_deleted()
     {
         FakeFileSystem fs = Cache("newtonsoft.json");
         var gateway = new Gateway(fs, Win);
 
-        GatewayStepResult result = gateway.Execute(Step($@"{Root}\newtonsoft.json\1.0.0"));
+        GatewayStepResult result = await gateway.Execute(Step($@"{Root}\newtonsoft.json\1.0.0"));
 
         Assert.True(result.Succeeded);
         Assert.Equal(GatewayOutcome.Quarantined, result.Result);
@@ -84,14 +88,14 @@ public sealed class GatewayTests
     }
 
     [Fact]
-    public void Quarantine_sits_beside_the_root_not_inside_it()
+    public async Task Quarantine_sits_beside_the_root_not_inside_it()
     {
         // The destination is under the root's PARENT. Inside the root would mean a later recursive delete of
         // the quarantine takes the quarantine with it.
         FakeFileSystem fs = Cache("pkg");
         var gateway = new Gateway(fs, Win);
 
-        GatewayStepResult result = gateway.Execute(Step($@"{Root}\pkg\1.0.0"));
+        GatewayStepResult result = await gateway.Execute(Step($@"{Root}\pkg\1.0.0"));
 
         Assert.StartsWith(@"C:\.coppice\quarantine", result.QuarantinePath!, StringComparison.Ordinal);
     }
@@ -113,7 +117,7 @@ public sealed class GatewayTests
     }
 
     [Fact]
-    public void A_path_not_shaped_like_a_cache_entry_is_refused()
+    public async Task A_path_not_shaped_like_a_cache_entry_is_refused()
     {
         // A root can contain a user's own files. Containment says "inside"; the allowlist says "shaped like
         // a cache entry". Without the second check, everything under a root is fair game.
@@ -126,7 +130,7 @@ public sealed class GatewayTests
         fs.AddDirectoryOfSize($@"{Root}\my-notes\important\backup", 1024);
 
         var gateway = new Gateway(fs, Win);
-        GatewayStepResult result = gateway.Execute(Step($@"{Root}\my-notes\important\backup"));
+        GatewayStepResult result = await gateway.Execute(Step($@"{Root}\my-notes\important\backup"));
 
         Assert.False(result.Succeeded);
         Assert.Equal(GatewayRefusal.NotAllowlisted, result.Refusal);
@@ -136,14 +140,14 @@ public sealed class GatewayTests
     }
 
     [Fact]
-    public void A_deeper_path_than_the_pattern_allows_is_refused()
+    public async Task A_deeper_path_than_the_pattern_allows_is_refused()
     {
         var fs = new FakeFileSystem(Win);
         fs.AddDirectory(Root);
         fs.AddDirectoryOfSize($@"{Root}\pkg\1.0.0\vendor\inner", 1024);
 
         var gateway = new Gateway(fs, Win);
-        GatewayStepResult result = gateway.Execute(Step($@"{Root}\pkg\1.0.0\vendor\inner"));
+        GatewayStepResult result = await gateway.Execute(Step($@"{Root}\pkg\1.0.0\vendor\inner"));
 
         Assert.Equal(GatewayRefusal.NotAllowlisted, result.Refusal);
     }
@@ -151,13 +155,13 @@ public sealed class GatewayTests
     // ---- containment and the denylist (06 steps 1, 3, 4; S-13, S-14) ---------------------------------------
 
     [Fact]
-    public void A_path_outside_the_root_is_refused()
+    public async Task A_path_outside_the_root_is_refused()
     {
         FakeFileSystem fs = Cache("pkg");
         fs.AddDirectoryOfSize(@"C:\Windows\System32\drivers\etc\pkg", 1024);
 
         var gateway = new Gateway(fs, Win);
-        GatewayStepResult result = gateway.Execute(Step(@"C:\Windows\System32\drivers\etc\pkg\1.0.0"));
+        GatewayStepResult result = await gateway.Execute(Step(@"C:\Windows\System32\drivers\etc\pkg\1.0.0"));
 
         Assert.False(result.Succeeded);
         Assert.Contains(
@@ -166,20 +170,20 @@ public sealed class GatewayTests
     }
 
     [Fact]
-    public void The_root_itself_is_never_deleted()
+    public async Task The_root_itself_is_never_deleted()
     {
         // S-13. Removing an empty root is a separate Review-tier action, never a side effect of cleaning it.
         FakeFileSystem fs = Cache("pkg");
         var gateway = new Gateway(fs, Win);
 
-        GatewayStepResult result = gateway.Execute(Step(Root, allowlist: "*"));
+        GatewayStepResult result = await gateway.Execute(Step(Root, allowlist: "*"));
 
         Assert.False(result.Succeeded);
         Assert.True(fs.DirectoryExists(Root));
     }
 
     [Fact]
-    public void A_denylisted_path_is_refused()
+    public async Task A_denylisted_path_is_refused()
     {
         // The pattern matches the shape, so the step reaches the denylist floor. The order matters: an
         // allowlist miss would report NotAllowlisted and stop, so the pattern here has to be one a real
@@ -189,7 +193,7 @@ public sealed class GatewayTests
         fs.AddDirectoryOfSize(@"C:\Windows\cache\pkg\1.0.0", 1024);
 
         var gateway = new Gateway(fs, Win);
-        GatewayStepResult result = gateway.Execute(
+        GatewayStepResult result = await gateway.Execute(
             Step(@"C:\Windows\cache\pkg\1.0.0", root: @"C:\Windows\cache"));
 
         Assert.False(result.Succeeded);
@@ -197,7 +201,7 @@ public sealed class GatewayTests
     }
 
     [Fact]
-    public void A_symlink_cycle_is_refused()
+    public async Task A_symlink_cycle_is_refused()
     {
         // T-028's LinkLoop finding, reached through apply. A cycle reaching a recursive delete is the
         // operation that never returns.
@@ -211,7 +215,7 @@ public sealed class GatewayTests
         fs.AddJunction($@"{Root}\pkg", $@"{Root}\pkg");
 
         var gateway = new Gateway(fs, Win);
-        GatewayStepResult result = gateway.Execute(Step($@"{Root}\pkg\1.0.0"));
+        GatewayStepResult result = await gateway.Execute(Step($@"{Root}\pkg\1.0.0"));
 
         Assert.False(result.Succeeded);
         Assert.Contains(
@@ -220,7 +224,7 @@ public sealed class GatewayTests
     }
 
     [Fact]
-    public void A_symlink_pointing_out_of_the_root_is_refused()
+    public async Task A_symlink_pointing_out_of_the_root_is_refused()
     {
         var fs = new FakeFileSystem(Win);
         fs.AddDirectory(Root);
@@ -229,7 +233,7 @@ public sealed class GatewayTests
         fs.AddDirectoryOfSize(@"C:\Windows\System32\pkg", 1024);
 
         var gateway = new Gateway(fs, Win);
-        GatewayStepResult result = gateway.Execute(Step($@"{Root}\escape\pkg"));
+        GatewayStepResult result = await gateway.Execute(Step($@"{Root}\escape\pkg"));
 
         Assert.False(result.Succeeded);
         Assert.True(fs.DirectoryExists(@"C:\Windows\System32\pkg"));
@@ -238,7 +242,7 @@ public sealed class GatewayTests
     // ---- locks (S-10) and E-12 ---------------------------------------------------------------------------
 
     [Fact]
-    public void E12_A_locked_file_is_skipped_and_the_rest_of_the_plan_continues()
+    public async Task E12_A_locked_file_is_skipped_and_the_rest_of_the_plan_continues()
     {
         // The locked DIRECTORY is what the gateway probes; the fake carries a lock on a node, so the
         // directory node itself must be the locked one. Setting a lock on a file inside would test
@@ -250,8 +254,8 @@ public sealed class GatewayTests
 
         var gateway = new Gateway(fs, Win);
 
-        GatewayStepResult locked = gateway.Execute(Step($@"{Root}\locked\1.0.0"));
-        GatewayStepResult free = gateway.Execute(Step($@"{Root}\free\1.0.0"));
+        GatewayStepResult locked = await gateway.Execute(Step($@"{Root}\locked\1.0.0"));
+        GatewayStepResult free = await gateway.Execute(Step($@"{Root}\free\1.0.0"));
 
         Assert.False(locked.Succeeded);
         Assert.Equal(GatewayRefusal.Locked, locked.Refusal);
@@ -261,14 +265,14 @@ public sealed class GatewayTests
     }
 
     [Fact]
-    public void A_locked_file_produces_a_message_naming_the_lock_not_a_crash()
+    public async Task A_locked_file_produces_a_message_naming_the_lock_not_a_crash()
     {
         var fs = new FakeFileSystem(Win);
         fs.AddDirectory(Root);
         fs.AddDirectoryOfSize($@"{Root}\pkg\1.0.0", 4096, lockState: LockState.Locked);
 
         var gateway = new Gateway(fs, Win);
-        GatewayStepResult result = gateway.Execute(Step($@"{Root}\pkg\1.0.0"));
+        GatewayStepResult result = await gateway.Execute(Step($@"{Root}\pkg\1.0.0"));
 
         Assert.False(result.Succeeded);
         Assert.Contains("Locked", result.Message, StringComparison.OrdinalIgnoreCase);
@@ -276,7 +280,7 @@ public sealed class GatewayTests
     }
 
     [Fact]
-    public void The_gateway_never_throws_for_a_refusal()
+    public async Task The_gateway_never_throws_for_a_refusal()
     {
         // Every refusal must be reportable. An exception here would abort a partially-applied plan and lose
         // the results of the steps that already ran — so the assertion is that all four hostile inputs
@@ -284,13 +288,12 @@ public sealed class GatewayTests
         FakeFileSystem fs = Cache("pkg");
         var gateway = new Gateway(fs, Win);
 
-        IReadOnlyList<GatewayRefusal> refusals =
-        [
-            gateway.Execute(Step($@"{Root}\pkg\1.0.0", installerOwned: true)).Refusal,
-            gateway.Execute(Step($@"{Root}\pkg\1.0.0", allowlist: "nomatch/*")).Refusal,
-            gateway.Execute(Step(Root, allowlist: "*")).Refusal,
-            gateway.Execute(Step($@"C:\Windows\x\1.0.0", root: @"C:\Windows\cache")).Refusal,
-        ];
+        GatewayRefusal installerOwned = (await gateway.Execute(Step($@"{Root}\pkg\1.0.0", installerOwned: true))).Refusal;
+        GatewayRefusal notAllowlisted = (await gateway.Execute(Step($@"{Root}\pkg\1.0.0", allowlist: "nomatch/*"))).Refusal;
+        GatewayRefusal isRoot = (await gateway.Execute(Step(Root, allowlist: "*"))).Refusal;
+        GatewayRefusal contained = (await gateway.Execute(Step(@"C:\Windows\x\1.0.0", root: @"C:\Windows\cache"))).Refusal;
+
+        IReadOnlyList<GatewayRefusal> refusals = [installerOwned, notAllowlisted, isRoot, contained];
 
         Assert.All(refusals, r => Assert.NotEqual(GatewayRefusal.None, r));
         Assert.All(refusals, r => Assert.True(Enum.IsDefined(r), $"{r} is not a defined refusal"));
@@ -307,13 +310,13 @@ public sealed class GatewayTests
     // ---- S-2 drift --------------------------------------------------------------------------------------
 
     [Fact]
-    public void Under_strict_a_changed_item_is_aborted()
+    public async Task Under_strict_a_changed_item_is_aborted()
     {
         FakeFileSystem fs = Cache("pkg");
         var gateway = new Gateway(fs, Win);
 
         // The snapshot recorded 4096 bytes; the directory now holds a different amount.
-        GatewayStepResult result = gateway.Execute(
+        GatewayStepResult result = await gateway.Execute(
             Step($@"{Root}\pkg\1.0.0", size: 999_999),
             strict: true);
 
@@ -323,18 +326,18 @@ public sealed class GatewayTests
     }
 
     [Fact]
-    public void Without_strict_a_changed_item_is_still_removed()
+    public async Task Without_strict_a_changed_item_is_still_removed()
     {
         FakeFileSystem fs = Cache("pkg");
         var gateway = new Gateway(fs, Win);
 
-        GatewayStepResult result = gateway.Execute(Step($@"{Root}\pkg\1.0.0", size: 999_999), strict: false);
+        GatewayStepResult result = await gateway.Execute(Step($@"{Root}\pkg\1.0.0", size: 999_999), strict: false);
 
         Assert.True(result.Succeeded);
     }
 
     [Fact]
-    public void Strict_aborts_only_the_drifted_step()
+    public async Task Strict_aborts_only_the_drifted_step()
     {
         // One drifted package says nothing about the other twenty-nine. Aborting the plan would make the
         // user re-scan and re-plan for a single stale entry.
@@ -351,7 +354,7 @@ public sealed class GatewayTests
 
         DateTimeOffset epoch = DateTimeOffset.UnixEpoch;
 
-        IReadOnlyList<GatewayStepResult> results = gateway.ExecuteAll(
+        IReadOnlyList<GatewayStepResult> results = await gateway.ExecuteAll(
             [
                 Step($@"{Root}\changed\1.0.0", size: 1, stamp: epoch) with { ItemId = "changed" },
                 Step($@"{Root}\stable\1.0.0", size: 4096, stamp: epoch) with { ItemId = "stable" },
@@ -364,13 +367,13 @@ public sealed class GatewayTests
     }
 
     [Fact]
-    public void An_item_that_is_already_gone_is_not_treated_as_drift()
+    public async Task An_item_that_is_already_gone_is_not_treated_as_drift()
     {
         // The goal state, not a problem. Refusing would make the user re-plan work that is already done.
         FakeFileSystem fs = Cache();
         var gateway = new Gateway(fs, Win);
 
-        GatewayStepResult result = gateway.Execute(Step($@"{Root}\vanished\1.0.0"), strict: true);
+        GatewayStepResult result = await gateway.Execute(Step($@"{Root}\vanished\1.0.0"), strict: true);
 
         Assert.NotEqual(GatewayRefusal.Drifted, result.Refusal);
     }
@@ -378,12 +381,12 @@ public sealed class GatewayTests
     // ---- S-7 elevation and S-9 installer-owned -------------------------------------------------------------
 
     [Fact]
-    public void An_installer_owned_root_is_report_only()
+    public async Task An_installer_owned_root_is_report_only()
     {
         FakeFileSystem fs = Cache("pkg");
         var gateway = new Gateway(fs, Win);
 
-        GatewayStepResult result = gateway.Execute(Step($@"{Root}\pkg\1.0.0", installerOwned: true));
+        GatewayStepResult result = await gateway.Execute(Step($@"{Root}\pkg\1.0.0", installerOwned: true));
 
         Assert.False(result.Succeeded);
         Assert.Equal(GatewayRefusal.InstallerOwned, result.Refusal);
@@ -391,13 +394,13 @@ public sealed class GatewayTests
     }
 
     [Fact]
-    public void A_manual_tier_native_command_is_refused_rather_than_attempted()
+    public async Task A_manual_tier_native_command_is_refused_rather_than_attempted()
     {
         // S-7: v1 never elevates. Attempting it and half-completing would be worse than refusing.
         FakeFileSystem fs = Cache("pkg");
         var gateway = new Gateway(fs, Win);
 
-        GatewayStepResult result = gateway.Execute(Step(
+        GatewayStepResult result = await gateway.Execute(Step(
             $@"{Root}\pkg\1.0.0",
             risk: Risk.Manual,
             action: RemovalAction.Native("dotnet tool uninstall pkg")));
@@ -407,12 +410,12 @@ public sealed class GatewayTests
     }
 
     [Fact]
-    public void A_report_only_action_never_mutates()
+    public async Task A_report_only_action_never_mutates()
     {
         FakeFileSystem fs = Cache("pkg");
         var gateway = new Gateway(fs, Win);
 
-        GatewayStepResult result = gateway.Execute(Step(
+        GatewayStepResult result = await gateway.Execute(Step(
             $@"{Root}\pkg\1.0.0",
             action: RemovalAction.ReportOnly("use the Visual Studio Installer")));
 
@@ -421,12 +424,12 @@ public sealed class GatewayTests
     }
 
     [Fact]
-    public void An_unknown_action_kind_is_refused_rather_than_guessed()
+    public async Task An_unknown_action_kind_is_refused_rather_than_guessed()
     {
         FakeFileSystem fs = Cache("pkg");
         var gateway = new Gateway(fs, Win);
 
-        GatewayStepResult result = gateway.Execute(Step(
+        GatewayStepResult result = await gateway.Execute(Step(
             $@"{Root}\pkg\1.0.0",
             action: new RemovalAction((RemovalKind)99, CommandLine: "rm -rf /")));
 
@@ -437,38 +440,38 @@ public sealed class GatewayTests
     // ---- E-10: relative-path injection --------------------------------------------------------------------
 
     [Fact]
-    public void E10_A_relative_path_in_a_plan_is_refused()
+    public async Task E10_A_relative_path_in_a_plan_is_refused()
     {
-        // A hand-edited or hostile plan naming "..\\..\\Windows\\System32\\config". Containment canonicalizes
+        // A hand-edited or hostile plan naming "..\..\Windows\System32\config". Containment canonicalizes
         // it and then correctly reports it outside the root — the point is that it gets there at all.
         FakeFileSystem fs = Cache("pkg");
         fs.AddDirectoryOfSize(@"C:\Windows\System32\config", 1024);
 
         var gateway = new Gateway(fs, Win);
-        GatewayStepResult result = gateway.Execute(Step($@"{Root}\..\Windows\System32\config"));
+        GatewayStepResult result = await gateway.Execute(Step($@"{Root}\..\Windows\System32\config"));
 
         Assert.False(result.Succeeded);
         Assert.True(fs.DirectoryExists(@"C:\Windows\System32\config"));
     }
 
     [Fact]
-    public void E10_A_bare_relative_path_is_refused()
+    public async Task E10_A_bare_relative_path_is_refused()
     {
         FakeFileSystem fs = Cache("pkg");
         var gateway = new Gateway(fs, Win);
 
-        GatewayStepResult result = gateway.Execute(Step("pkg\\1.0.0"));
+        GatewayStepResult result = await gateway.Execute(Step("pkg\\1.0.0"));
 
         Assert.False(result.Succeeded);
     }
 
     [Fact]
-    public void E10_an_empty_path_is_refused()
+    public async Task E10_an_empty_path_is_refused()
     {
         FakeFileSystem fs = Cache("pkg");
         var gateway = new Gateway(fs, Win);
 
-        GatewayStepResult result = gateway.Execute(Step(string.Empty));
+        GatewayStepResult result = await gateway.Execute(Step(string.Empty));
 
         Assert.False(result.Succeeded);
     }
@@ -480,14 +483,14 @@ public sealed class GatewayTests
     [InlineData(@"C:\Windows\System32", false)]
     [InlineData("/etc/passwd", false)]
     [InlineData("C:relative-without-separator", false)]
-    public void E10_no_relative_path_ever_reaches_a_mutation(string path, bool shouldSucceed)
+    public async Task E10_no_relative_path_ever_reaches_a_mutation(string path, bool shouldSucceed)
     {
         var fs = new FakeFileSystem(Win);
         fs.AddDirectory(Root);
         fs.AddDirectoryOfSize($@"{Root}\pkg\1.0.0", 4096);
 
         var gateway = new Gateway(fs, Win);
-        GatewayStepResult result = gateway.Execute(Step(path));
+        GatewayStepResult result = await gateway.Execute(Step(path));
 
         Assert.Equal(shouldSucceed, result.Succeeded);
     }

@@ -1,4 +1,5 @@
 using System.Text;
+using Coppice.Core.Gateway;
 using Coppice.Ports;
 
 namespace Coppice.Tests.Support;
@@ -292,10 +293,15 @@ public sealed class FakeFileSystem : IFileSystem
         var identities = new HashSet<string>(StringComparer.Ordinal);
         ulong total = 0;
 
+        // Quarantine content is coppice's own bookkeeping, not cache bytes (T-032): a root pinned at a
+        // parent of another root's quarantine must not size the quarantined tree into its items. The
+        // fake must agree with PhysicalFileSystem here, or a test can pass against one and fail on the
+        // other.
         foreach ((string child, Node childNode) in _nodes)
         {
             if (childNode.Kind == EntryKind.File
                 && child.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                && !QuarantinePath.IsUnderQuarantine(child[full.Length..])
                 && identities.Add(childNode.FileIdentity ?? child))
             {
                 total += (ulong)childNode.Content!.LongLength;

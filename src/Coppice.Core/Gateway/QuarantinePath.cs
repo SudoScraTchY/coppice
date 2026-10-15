@@ -80,6 +80,34 @@ public static class QuarantinePath
         return result is "." or ".." or "" ? "_" : result;
     }
 
+    /// <summary>
+    /// True when any segment of <paramref name="path"/> is coppice's own state directory.
+    /// <para>
+    /// Quarantine lives at <c>&lt;root-parent&gt;/.coppice/quarantine/…</c>, which is OUTSIDE every
+    /// scanned root by construction — unless a user pins a root at a parent of another root's
+    /// quarantine (pinning <c>~/go</c> while <c>~/go/pkg/mod</c> is also a root). In that case the
+    /// outer root's scan must not inventory the inner root's quarantined bytes: they are coppice's
+    /// own bookkeeping, not cache content (T-032), so enumeration and sizing skip them.
+    /// </para>
+    /// </summary>
+    public static bool IsUnderQuarantine(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            return false;
+        }
+
+        foreach (string segment in path.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (segment == DirectoryName)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static char Sep(string path) => path.Contains('\\') ? '\\' : '/';
 
     private static string ParentOf(string path, char sep)

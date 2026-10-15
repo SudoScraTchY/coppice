@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using Coppice.Core.Gateway;
 using Coppice.Ports;
 
 namespace Coppice.Adapters;
@@ -223,6 +224,14 @@ public sealed class PhysicalFileSystem : IFileSystem
 
         foreach (FileEntry entry in EnumerateEntries(path, new EnumerationRequest { FollowLinks = false }))
         {
+            // Coppice's own state directory is not cache content (T-032): a root that CONTAINS another
+            // root's quarantine would otherwise size the quarantined bytes into its own items, and the
+            // fingerprint would then move with every apply.
+            if (IsQuarantineContent(path, entry.Path))
+            {
+                continue;
+            }
+
             if (entry.Kind == EntryKind.File)
             {
                 string identity = entry.FileIdentity ?? entry.Path;
@@ -245,6 +254,15 @@ public sealed class PhysicalFileSystem : IFileSystem
 
         return total;
     }
+
+    /// <summary>
+    /// True when <paramref name="candidate"/> sits inside a <c>.coppice</c> directory relative to the
+    /// measured root. The check runs on the RELATIVE segments, so measuring a root that is itself
+    /// inside <c>.coppice</c> still works.
+    /// </summary>
+    private static bool IsQuarantineContent(string measuredRoot, string candidate) =>
+        QuarantinePath.IsUnderQuarantine(
+            candidate.Length > measuredRoot.Length ? candidate[measuredRoot.Length..] : string.Empty);
 
     public LockState ProbeLock(string path)
     {

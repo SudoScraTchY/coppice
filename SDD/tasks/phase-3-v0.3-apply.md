@@ -24,10 +24,10 @@ Exit criteria per 12-roadmap.
 - Same-volume rename-in-place to `<root-parent>/.coppice/quarantine/<location-id>/…`; index file (original path, timestamps, item id); `coppice quarantine list|restore|prune`; scans skip quarantine dirs.
 
 **Acceptance**
-- [ ] Restore is byte-identical (hash equality) on fixture trees
-- [ ] Index survives process restart; restore works cross-run
-- [ ] Scan never inventories quarantine content (fingerprint ignores it)
-- [ ] Cross-volume attempt → safe fallback path or refusal, never copy-delete surprise
+- [x] Restore is byte-identical (hash equality) on fixture trees
+- [x] Index survives process restart; restore works cross-run
+- [x] Scan never inventories quarantine content (fingerprint ignores it)
+- [x] Cross-volume attempt → safe fallback path or refusal, never copy-delete surprise
 
 ### T-033 · Native runner
 **Refs** FR-15, S-15 · **Depends** T-031 · **Effort** M

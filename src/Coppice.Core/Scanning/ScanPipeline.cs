@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Coppice.Core.Domain;
+using Coppice.Core.Gateway;
 using Coppice.Ports;
 
 namespace Coppice.Core.Scanning;
@@ -58,10 +59,18 @@ public sealed class ScanPipeline
         _maxConcurrency = maxConcurrency > 0 ? maxConcurrency : Math.Clamp(Environment.ProcessorCount, 2, 8);
     }
 
+    /// <summary>
+    /// Convenience overload for callers with nothing to cancel. The token-taking overload is the real
+    /// entry point; this one exists so read-only call sites do not have to mention a cancellation token
+    /// they never use.
+    /// </summary>
+    public Task<ScanResult> RunAsync(IReadOnlyList<ScanRoot> roots, IScanProgress? progress = null) =>
+        RunAsync(roots, progress, CancellationToken.None);
+
     public async Task<ScanResult> RunAsync(
         IReadOnlyList<ScanRoot> roots,
-        IScanProgress? progress = null,
-        CancellationToken cancellationToken = default)
+        IScanProgress? progress,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(roots);
 
@@ -158,6 +167,19 @@ public sealed class ScanPipeline
                             root.LocationId,
                             "ITEM-ESCAPES-ROOT",
                             $"Enumerator '{enumerator.Id}' produced '{item.Path}', which is outside '{root.Path}'. It was dropped.",
+                            item.Path));
+                        continue;
+                    }
+
+                    // Coppice's own quarantine is not inventory (T-032): an enumerator that reports
+                    // items from under a .coppice directory is reporting the tool's own bookkeeping
+                    // back to itself, and a plan built from it would try to quarantine the quarantine.
+                    if (QuarantinePath.IsUnderQuarantine(item.Path))
+                    {
+                        issues.Add(new ScanIssue(
+                            root.LocationId,
+                            "QUARANTINE-SKIPPED",
+                            $"Enumerator '{enumerator.Id}' produced '{item.Path}', which is inside coppice's own quarantine state. It was skipped.",
                             item.Path));
                         continue;
                     }

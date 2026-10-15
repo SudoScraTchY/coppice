@@ -40,6 +40,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`*.csproj`, `go.mod`, `Cargo.toml`, `package.json`, …) instead of walking the filesystem, which
   is what keeps adding an ecosystem free of core changes. Vendored and quarantined trees are skipped
   during descent, not after.
+- T-032 quarantine + restore: quarantine moves record a per-entry index (original path, where it
+  landed, timestamps, item id, and a content hash of the tree taken BEFORE the rename — taken after,
+  a "verified restore" would compare the quarantine copy against itself), and `QuarantineRestore`
+  puts items back byte-identically after re-checking the hash, the destination's containment and its
+  occupancy. Cross-volume restores are refused rather than copied, and pruning removes content and
+  index rows together. Scans and sizing ignore `.coppice` state dirs, so a root pinned over another
+  root's quarantine cannot inventory the quarantined bytes. Gateway `Execute` is async now — the
+  index is written through the state store, after the move, so it only ever records a move that
+  happened.
 
 ### Fixed
 - Fingerprints are now opt-in per location, as 09-ecosystems specifies. Previously every location
