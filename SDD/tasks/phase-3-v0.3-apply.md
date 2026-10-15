@@ -36,9 +36,9 @@ Exit criteria per 12-roadmap.
 - Run native commands (`go clean -modcache`, `dotnet workload clean`, `rustup toolchain uninstall`, `dotnet tool uninstall -g`) with neutral cwd, startup env, timeout, captured output; failures become failed steps.
 
 **Acceptance**
-- [ ] Sandboxed fake tools execute and are audited with exit codes
-- [ ] Hanging fake tool → timeout, step failed, no hang (NFR-07)
-- [ ] Native steps only allowed for Safe tier + fingerprint-valid root + `--yes` (06 asymmetry rule)
+- [x] Sandboxed fake tools execute and are audited with exit codes
+- [x] Hanging fake tool → timeout, step failed, no hang (NFR-07)
+- [x] Native steps only allowed for Safe tier + fingerprint-valid root + `--yes` (06 asymmetry rule)
 
 ### T-034 · `apply` command — confirmation, crash-safety, resume
 **Refs** FR-12, FR-16, S-1, S-16 · **Depends** T-031, T-032, T-033 · **Effort** L · **Safety card**

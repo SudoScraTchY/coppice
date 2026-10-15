@@ -266,12 +266,17 @@ public sealed class ReadOnlyAuditTests
     // ---- 2. no mutating verb on the command surface ----
 
     /// <summary>
-    /// The Gateway is the ONLY type in Core permitted to call a mutator.
+    /// The Gateway is the ONLY type in Core permitted to call a mutator — with ONE deliberate exception
+    /// widened by T-032: <c>QuarantineRestore</c>. A restore is the quarantine move run backwards (the
+    /// same rename, the opposite direction), and prune is the one operation in the project that discards
+    /// data permanently; both are mutations by definition, and squeezing them into the Gateway would
+    /// blur exactly the boundary this test draws. They live in their own type so the allowance names
+    /// them, and this test still fails if any OTHER type in Core reaches a mutator.
     /// <para>
     /// <c>AssembliesThatMayMutate</c> allows Core as a whole, because refusing the whole assembly would
     /// mean forbidding the one place that is supposed to mutate. That is a blunt instrument, and a blunt
     /// allowance becomes a blanket permission the moment someone adds a second call site. So this pins the
-    /// permission to a TYPE: if a new type in Core starts deleting files, this fails and the allowance has
+    /// permission to TYPES: if a new type in Core starts deleting files, this fails and the allowance has
     /// to be widened deliberately rather than inherited.
     /// </para>
     /// </summary>
@@ -284,8 +289,12 @@ public sealed class ReadOnlyAuditTests
 
         foreach (Type type in SafeGetTypes(core))
         {
-            // The gateway's own type is the permission, not a violation of it.
-            if (type.FullName is "Coppice.Core.Gateway.Gateway")
+            // Prefix, not equality: async methods compile to nested state-machine types ("Gateway
+            // +<QuarantineAsync>d13"), and the mutator calls live in the state machine's MoveNext. A
+            // nested type of an allowed type IS that type's implementation.
+            if (type.FullName is not null
+                && (type.FullName.StartsWith("Coppice.Core.Gateway.Gateway", StringComparison.Ordinal)
+                    || type.FullName.StartsWith("Coppice.Core.Quarantine.QuarantineRestore", StringComparison.Ordinal)))
             {
                 continue;
             }

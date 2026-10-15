@@ -114,7 +114,7 @@ public sealed class QuarantineRestoreTests
     {
         // The hash is taken BEFORE the move. Taken after, it would hash the quarantine directory — which
         // would make restore's verification a check of the move, not of what was moved.
-        (_, QuarantineIndex index, FakeFileSystem fs, _,_) = await QuarantineOneAsync();
+        (_, QuarantineIndex index, FakeFileSystem fs, _, _) = await QuarantineOneAsync();
 
         QuarantineEntry entry = Assert.Single(await index.ListAsync());
 
@@ -124,7 +124,7 @@ public sealed class QuarantineRestoreTests
     [Fact]
     public async Task Restoring_removes_the_index_entry()
     {
-        (_, QuarantineIndex index, FakeFileSystem fs, _,_) = await QuarantineOneAsync();
+        (_, QuarantineIndex index, FakeFileSystem fs, _, _) = await QuarantineOneAsync();
 
         QuarantineEntry entry = Assert.Single(await index.ListAsync());
 
@@ -139,7 +139,7 @@ public sealed class QuarantineRestoreTests
     [Fact]
     public async Task The_quarantined_tree_is_gone_from_quarantine_after_restore()
     {
-        (_, QuarantineIndex index, FakeFileSystem fs, _,_) = await QuarantineOneAsync();
+        (_, QuarantineIndex index, FakeFileSystem fs, _, _) = await QuarantineOneAsync();
 
         QuarantineEntry entry = Assert.Single(await index.ListAsync());
 
@@ -215,7 +215,7 @@ public sealed class QuarantineRestoreTests
     {
         // The one genuinely destructive thing a restore could do. "The user probably does not care" is
         // not a reason to overwrite whatever is there.
-        (_, QuarantineIndex index, FakeFileSystem fs, _,_) = await QuarantineOneAsync();
+        (_, QuarantineIndex index, FakeFileSystem fs, _, _) = await QuarantineOneAsync();
         QuarantineEntry entry = Assert.Single(await index.ListAsync());
 
         // Something now occupies the original path.
@@ -238,7 +238,7 @@ public sealed class QuarantineRestoreTests
     {
         // Verified BEFORE the move. Checking afterwards would mean telling the user "restored, though it was
         // different" — and the version they were trying to recover is now gone from both places.
-        (_, QuarantineIndex index, FakeFileSystem fs, _,_) = await QuarantineOneAsync();
+        (_, QuarantineIndex index, FakeFileSystem fs, _, _) = await QuarantineOneAsync();
         QuarantineEntry entry = Assert.Single(await index.ListAsync());
 
         fs.AddFile(
@@ -256,7 +256,7 @@ public sealed class QuarantineRestoreTests
     [Fact]
     public async Task Restoring_content_that_was_pruned_by_hand_is_refused_with_a_reason()
     {
-        (_, QuarantineIndex index, FakeFileSystem fs, _,_) = await QuarantineOneAsync();
+        (_, QuarantineIndex index, FakeFileSystem fs, _, _) = await QuarantineOneAsync();
         QuarantineEntry entry = Assert.Single(await index.ListAsync());
 
         fs.DeleteFile(entry.QuarantinePath, recursive: true);
@@ -273,7 +273,7 @@ public sealed class QuarantineRestoreTests
     {
         // The symmetry that matters: if the world changed between the move and the restore, the restore
         // refuses exactly as the original deletion would have.
-        (_, QuarantineIndex index, FakeFileSystem fs, _,_) = await QuarantineOneAsync();
+        (_, QuarantineIndex index, FakeFileSystem fs, _, _) = await QuarantineOneAsync();
         QuarantineEntry entry = Assert.Single(await index.ListAsync());
 
         // Re-point the entry's root at a denylisted location.

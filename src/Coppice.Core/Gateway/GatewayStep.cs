@@ -50,6 +50,25 @@ public enum GatewayRefusal
 
     /// <summary>The plan itself failed validation, so no step in it is trustworthy.</summary>
     PlanInvalid,
+
+    /// <summary>
+    /// A native command was declined because the caller did not confirm it (06's asymmetry rule: native
+    /// removals are not restorable, so they require explicit <c>--yes</c>). T-033.
+    /// </summary>
+    NeedsConfirmation,
+
+    /// <summary>
+    /// A native command was killed at its deadline (S-15, NFR-07). The command started, so this is a
+    /// failure reason rather than a skip reason: whatever the tool half-did is its own doing and is not
+    /// restorable. T-033.
+    /// </summary>
+    TimedOut,
+
+    /// <summary>
+    /// A native command was declined because no process runner is configured in this context — the
+    /// gateway was built without the capability to spawn processes. T-033.
+    /// </summary>
+    NativeUnavailable,
 }
 
 /// <summary>The outcome of one step.</summary>
@@ -70,6 +89,22 @@ public sealed record GatewayStepResult(
     string Message)
 {
     public bool Succeeded => Result is GatewayOutcome.Quarantined or GatewayOutcome.Executed;
+
+    /// <summary>
+    /// Captured standard output of a native command (T-033). Empty for path steps. Carried on the result
+    /// because the audit log's value is being able to answer "what did the tool actually say" without a
+    /// second run.
+    /// </summary>
+    public string Output { get; init; } = string.Empty;
+
+    /// <summary>Captured standard error of a native command (T-033). Empty for path steps.</summary>
+    public string Error { get; init; } = string.Empty;
+
+    /// <summary>The native command's exit code. 0 for path steps, which have no process to exit.</summary>
+    public int ExitCode { get; init; }
+
+    /// <summary>How long a native command ran before it exited or was killed. Zero for path steps.</summary>
+    public TimeSpan Duration { get; init; }
 }
 
 /// <summary>What actually happened to a step.</summary>
@@ -83,6 +118,14 @@ public enum GatewayOutcome
 
     /// <summary>A native command ran (e.g. <c>go clean -modcache</c>). Not restorable — the tool owns it.</summary>
     Executed,
+
+    /// <summary>
+    /// A native command ran and did NOT succeed — non-zero exit or killed at the deadline (T-033, FR-15
+    /// "failures become failed steps, never crashes"). Distinct from <see cref="Skipped"/> because the
+    /// command DID run: the audit records the attempt, its exit code and its output, and the caller
+    /// knows the tool may have half-finished something.
+    /// </summary>
+    Failed,
 }
 
 /// <summary>

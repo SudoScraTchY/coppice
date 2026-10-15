@@ -49,6 +49,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   root's quarantine cannot inventory the quarantined bytes. Gateway `Execute` is async now — the
   index is written through the state store, after the move, so it only ever records a move that
   happened.
+- T-033 native runner: native removal commands (`go clean -modcache`, `dotnet workload clean`,
+  `rustup toolchain uninstall`, `dotnet tool uninstall -g`) run through the process-runner port with
+  a neutral working directory, a 15-minute hard deadline, and captured output. The 06 asymmetry rule
+  is enforced in the gateway: native steps leave the path-safety chain (the tool owns the mutation)
+  and instead require the tier policy, an always-on fingerprint-valid root check — there is no
+  `--strict` softening, because there is no quarantine to undo a mistake with — and explicit
+  confirmation (`--yes`). Failures (non-zero exit, timeout kill) become failed steps carrying exit
+  code, output, error and duration for the T-035 audit log, never crashes.
 
 ### Fixed
 - Fingerprints are now opt-in per location, as 09-ecosystems specifies. Previously every location

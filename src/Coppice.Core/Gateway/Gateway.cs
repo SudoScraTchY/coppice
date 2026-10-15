@@ -1,5 +1,6 @@
 using System.Diagnostics;
 
+using Coppice.Core.Native;
 using Coppice.Core.PathSafety;
 using Coppice.Core.Quarantine;
 using Coppice.Ports;
@@ -34,18 +35,27 @@ public sealed class Gateway
     private readonly OperatingSystemKind _os;
     private readonly QuarantineIndex? _quarantine;
     private readonly IClock _clock;
+    private readonly IProcessRunner? _processes;
+
+    /// <summary>
+    /// The hard deadline for one native command (S-15, NFR-07). Generous enough for a real
+    /// <c>go clean -modcache</c> over a large cache; short enough that a hung tool cannot hang an apply.
+    /// </summary>
+    public static readonly TimeSpan NativeCommandTimeout = TimeSpan.FromMinutes(15);
 
     public Gateway(
         IFileSystem fs,
         OperatingSystemKind os,
         QuarantineIndex? quarantine = null,
-        IClock? clock = null)
+        IClock? clock = null,
+        IProcessRunner? processes = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         _fs = fs;
         _os = os;
         _quarantine = quarantine;
         _clock = clock ?? new DefaultClock();
+        _processes = processes;
     }
 
     /// <summary>
@@ -57,7 +67,7 @@ public sealed class Gateway
     /// the crash window between the two.
     /// </para>
     /// </summary>
-    public async Task<GatewayStepResult> Execute(GatewayStep step, bool strict = false)
+    public async Task<GatewayStepResult> Execute(GatewayStep step, bool strict = false, bool confirmed = false)
     {
         ArgumentNullException.ThrowIfNull(step);
 
@@ -68,6 +78,16 @@ public sealed class Gateway
             return Skip(step, GatewayRefusal.InstallerOwned,
                 $"'{step.Path}' belongs to an installer. Reinstall or use the installer's own removal path; "
                     + "Coppice will not delete it.");
+        }
+
+        // Native commands leave the path-safety chain HERE (06's asymmetry note): the tool owns the
+        // operation, so there is no path for coppice to move, and the gates that check a path —
+        // allowlist, containment, lock probe, TOCTOU — have nothing to check. What must hold instead is
+        // the tier policy, an explicit confirmation and a fingerprint-valid root, enforced in
+        // RunNativeAsync, plus the S-15 deadline once the command runs.
+        if (step.Action.Kind == RemovalKind.NativeCommand)
+        {
+            return await RunNativeAsync(step, confirmed).ConfigureAwait(false);
         }
 
         // 2. Allowlist (06 step 2). Before containment, because a path that is not shaped like a cache entry
@@ -89,16 +109,7 @@ public sealed class Gateway
             return Skip(step, RefusalFor(containment.Reason), containment.Message);
         }
 
-        // 4. Elevation (S-7): v1 never elevates, so an elevated action is refused outright rather than
-        //    attempted and half-done.
-        if (step.Action.Kind == RemovalKind.NativeCommand && step.Risk >= Risk.Manual)
-        {
-            return Skip(step, GatewayRefusal.NeedsElevation,
-                $"'{step.Path}' is {step.Risk} tier and its removal is a native command. "
-                    + "Coppice does not elevate; handle this one yourself.");
-        }
-
-        // 5. Lock probe (S-10). Skipped, never forced — a running build server holds a package open, and
+        // 4. Lock probe (S-10). Skipped, never forced — a running build server holds a package open, and
         //    removing it anyway is how a user's restore breaks mid-build.
         // "lock" is a C# keyword; the local is named lockState.
         LockState lockState = _fs.ProbeLock(step.Path);
@@ -109,7 +120,7 @@ public sealed class Gateway
                 $"'{step.Path}' is {lockState}. Close whatever is using it and re-run; Coppice does not force locks.");
         }
 
-        // 6. Drift check (S-2), under --strict. Per step, so one drifted package aborts itself and the rest
+        // 5. Drift check (S-2), under --strict. Per step, so one drifted package aborts itself and the rest
         //    of the plan still runs.
         if (strict)
         {
@@ -120,7 +131,7 @@ public sealed class Gateway
             }
         }
 
-        // 7. TOCTOU re-verify (06 step 6). The WHOLE chain, again, immediately before the mutation. This is
+        // 6. TOCTOU re-verify (06 step 6). The WHOLE chain, again, immediately before the mutation. This is
         //    the point of the design: the race being guarded against is something changing between the
         //    first check and the write, so a check performed anywhere earlier would not catch it.
         ContainmentResult recheck = ContainmentCheck.Check(paths, step.Root, step.Path);
@@ -141,14 +152,16 @@ public sealed class Gateway
                 $"'{step.Path}' became locked between the plan and the apply. It was not touched.");
         }
 
-        // 8. Mutate. Path deletes go to quarantine (S-11); native commands are run and audited.
+        // 7. Mutate. Path deletes go to quarantine (S-11). Native commands never reach this switch: they
+        //    leave at the asymmetry gate above, because a tool-owned mutation has no path to re-verify.
         return step.Action.Kind switch
         {
             RemovalKind.PathDelete => await QuarantineAsync(step).ConfigureAwait(false),
-            RemovalKind.NativeCommand => RunNative(step),
             RemovalKind.ReportOnly => Skip(step, GatewayRefusal.InstallerOwned,
                 $"'{step.Path}' is report-only; no removal was performed."),
 
+            // NativeCommand lands here only if the asymmetry gate above was bypassed; refused rather
+            // than guessed at, like any other kind the gateway does not recognize.
             _ => Skip(step, GatewayRefusal.NotAllowlisted,
                 $"Unknown removal action '{step.Action.Kind}' for '{step.Path}'; nothing was done."),
         };
@@ -162,7 +175,7 @@ public sealed class Gateway
     /// is independent and every result is returned.
     /// </para>
     /// </summary>
-    public async Task<IReadOnlyList<GatewayStepResult>> ExecuteAll(IEnumerable<GatewayStep> steps, bool strict = false)
+    public async Task<IReadOnlyList<GatewayStepResult>> ExecuteAll(IEnumerable<GatewayStep> steps, bool strict = false, bool confirmed = false)
     {
         ArgumentNullException.ThrowIfNull(steps);
 
@@ -170,7 +183,7 @@ public sealed class Gateway
 
         foreach (GatewayStep step in steps)
         {
-            results.Add(await Execute(step, strict).ConfigureAwait(false));
+            results.Add(await Execute(step, strict, confirmed).ConfigureAwait(false));
         }
 
         return results;
@@ -274,17 +287,183 @@ public sealed class Gateway
     }
 
     /// <summary>
-    /// Runs a native removal command with a timeout (S-15).
+    /// Runs a native removal command (T-033, FR-15, S-15).
     /// <para>
-    /// Not quarantinable and not restorable — the tool owns the operation (06's asymmetry note), which is
-    /// why the caller must have already established Safe tier, a fingerprint-valid root and explicit
-    /// confirmation.
+    /// Native commands follow 06's asymmetry note: the TOOL owns the operation, so the command is not
+    /// quarantined and not restorable, and coppice's path-safety chain has no path to check. What the
+    /// gateway enforces instead is exactly what 06 demands — the tier policy (S-7: never Manual, v1
+    /// does not elevate), an explicit confirmation from the caller (<c>--yes</c> at the command line),
+    /// and a fingerprint-valid root. A native command acts on a whole cache, and acting on a cache that
+    /// changed since the snapshot is how a tool "cleans" something the user just created — so unlike a
+    /// path delete, the drift check here is NOT softened by <c>--strict</c>: there is no quarantine to
+    /// undo a mistake with.
+    /// </para>
+    /// <para>
+    /// Every command runs with a neutral working directory and a hard deadline (<see cref="NativeCommandTimeout"/>,
+    /// S-15, NFR-07): a hanging <c>go clean</c> is killed and reported as a failed step, never a hung
+    /// apply. The command goes through the <see cref="IProcessRunner"/> port, so core never touches
+    /// <c>System.Diagnostics.Process</c> and the architecture test keeps holding.
+    /// </para>
+    /// <para>
+    /// Whatever the outcome, the result carries the captured output, the error stream, the exit code and
+    /// the duration — the fields the audit log (T-035) records for a native step.
     /// </para>
     /// </summary>
-    private GatewayStepResult RunNative(GatewayStep step)
+    private async Task<GatewayStepResult> RunNativeAsync(GatewayStep step, bool confirmed)
     {
-        return Skip(step, GatewayRefusal.NeedsElevation,
-            $"Native command '{step.Action.CommandLine}' requires the native runner (T-033); not executed here.");
+        // 1. Tier (S-7). v1 never elevates, so a Manual-tier native command is refused whatever the user
+        //    confirmed — confirmation is consent, not an elevation grant.
+        if (step.Risk >= Risk.Manual)
+        {
+            return Skip(step, GatewayRefusal.NeedsElevation,
+                $"'{step.Path}' is {step.Risk} tier and its removal is a native command. "
+                    + "Coppice does not elevate; handle this one yourself.");
+        }
+
+        // 2. Explicit confirmation (06 asymmetry). A path delete can be undone from quarantine; a native
+        //    command cannot, so it does not run on a bare `coppice apply`.
+        if (!confirmed)
+        {
+            return Skip(step, GatewayRefusal.NeedsConfirmation,
+                $"Native command '{step.Action.CommandLine}' is not restorable, so it needs explicit "
+                    + "confirmation (`coppice apply --yes`). It was not run.");
+        }
+
+        // 3. Fingerprint-valid root (S-2), always for native. No --strict softening: there is no
+        //    quarantine to undo a mistake with.
+        GatewayStepResult? drift = CheckNativeDrift(step);
+
+        if (drift is not null)
+        {
+            return drift;
+        }
+
+        // 4. The runner. Absent means the gateway was built without the capability to spawn processes
+        //    (tests, or a caller that has not wired the adapter) — a configuration gap rather than a
+        //    safety refusal, but the step still does not run.
+        if (_processes is null)
+        {
+            return Skip(step, GatewayRefusal.NativeUnavailable,
+                $"Native command '{step.Action.CommandLine}' cannot run: no process runner is configured. "
+                    + "Nothing was executed.");
+        }
+
+        string commandLine = step.Action.CommandLine ?? string.Empty;
+        (string fileName, IReadOnlyList<string> arguments) = NativeCommandLine.Split(commandLine);
+
+        if (fileName.Length == 0)
+        {
+            return Skip(step, GatewayRefusal.PlanInvalid,
+                $"Step for '{step.ItemId}' carries no runnable native command ('{commandLine}'). Nothing was executed.");
+        }
+
+        // WorkingDirectory and Environment are deliberately unset: the ADAPTER owns neutrality (a temp
+        // working directory, no ambient coppice state), and the tool needs the user's normal session
+        // environment to find its own configuration. The gateway does not shape either.
+        var request = new ProcessRequest
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            Timeout = NativeCommandTimeout,
+        };
+
+        DateTimeOffset started = _clock.UtcNow;
+        ProcessResult run = await _processes.RunAsync(request).ConfigureAwait(false);
+        TimeSpan duration = _clock.UtcNow - started;
+
+        string command = $"{fileName} {string.Join(' ', arguments)}";
+
+        if (run.TimedOut)
+        {
+            // Killed at the deadline. The command STARTED, so this is a failed step rather than a skip:
+            // whatever the tool half-did is its own doing, and no quarantine exists to undo it.
+            return new GatewayStepResult(
+                step.ItemId,
+                GatewayOutcome.Failed,
+                GatewayRefusal.TimedOut,
+                QuarantinePath: null,
+                $"Native command '{command}' was killed after {NativeCommandTimeout.TotalMinutes:0} minutes (S-15). "
+                    + "Any partial effects belong to the tool and are not restorable; re-run `coppice scan` before planning again.")
+            {
+                Output = run.StandardOutput,
+                Error = run.StandardError,
+                ExitCode = run.ExitCode,
+                Duration = duration,
+            };
+        }
+
+        if (run.ExitCode != 0)
+        {
+            // FR-15: failures become failed steps, never crashes. The plan's other steps are unaffected.
+            return new GatewayStepResult(
+                step.ItemId,
+                GatewayOutcome.Failed,
+                GatewayRefusal.None,
+                QuarantinePath: null,
+                $"Native command '{command}' failed with exit code {run.ExitCode}. {FirstErrorLine(run.StandardError)}")
+            {
+                Output = run.StandardOutput,
+                Error = run.StandardError,
+                ExitCode = run.ExitCode,
+                Duration = duration,
+            };
+        }
+
+        return new GatewayStepResult(
+            step.ItemId,
+            GatewayOutcome.Executed,
+            GatewayRefusal.None,
+            QuarantinePath: null,
+            $"Native command '{command}' completed (exit 0).")
+        {
+            Output = run.StandardOutput,
+            Error = run.StandardError,
+            ExitCode = run.ExitCode,
+            Duration = duration,
+        };
+    }
+
+    /// <summary>
+    /// The S-2 drift check for native steps. Unlike a path delete — where "gone" is the goal state — a
+    /// native command is justified by a snapshot of a cache that EXISTS, so a missing root is drift too.
+    /// </summary>
+    private GatewayStepResult? CheckNativeDrift(GatewayStep step)
+    {
+        string path = step.Action.CanonicalPath ?? step.Path;
+        FileEntry? entry = _fs.GetEntry(path);
+
+        if (entry is null)
+        {
+            return Skip(step, GatewayRefusal.Drifted,
+                $"'{step.Path}' no longer exists, so the plan no longer describes this machine. "
+                    + "Re-run `coppice scan` before running native commands.");
+        }
+
+        ulong liveSize = entry.Kind == EntryKind.Directory ? _fs.MeasureSize(path) : (ulong)Math.Max(0, entry.Length);
+
+        if (liveSize == step.Fingerprint.Size && entry.LastWriteTimeUtc == step.Fingerprint.LastWriteTimeUtc)
+        {
+            return null;
+        }
+
+        return Skip(step, GatewayRefusal.Drifted,
+            $"'{step.Path}' has changed since the scan (expected {step.Fingerprint.Size} bytes / "
+                + $"{step.Fingerprint.LastWriteTimeUtc:O}, found {liveSize} bytes / {entry.LastWriteTimeUtc:O}). "
+                + "Native commands are not restorable, so a drifted root is refused; re-run `coppice scan`.");
+    }
+
+    /// <summary>The first non-empty line of a tool's error stream, trimmed for a result message.</summary>
+    private static string FirstErrorLine(string standardError)
+    {
+        string? line = standardError
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault();
+        if (line is null)
+        {
+            return string.Empty;
+        }
+
+        return line.Length <= 200 ? line : line[..200] + "…";
     }
 
     /// <summary>The S-2 drift check: does live state still match the snapshot?</summary>
