@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Coppice.Core.Apply;
 using Coppice.Core.Domain;
 using Coppice.Ports;
 
@@ -74,24 +75,39 @@ public sealed class FileSystemStateStore : IStateStore
     {
     }
 
-    private static string GetDefaultRoot(IEnvironment env)
-    {
-        if (env.OS == OperatingSystemKind.Windows)
-        {
-            string? local = env.GetVariable("LOCALAPPDATA");
-            return Path.Combine(local ?? Path.GetTempPath(), "coppice");
-        }
+    private static string GetDefaultRoot(IEnvironment env) => StateRoot.Default(env);
 
-        string? home = env.HomeDirectory;
-        string xdg = env.GetVariable("XDG_DATA_HOME") ?? Path.Combine(home ?? Path.GetTempPath(), ".local", "share");
-        return Path.Combine(xdg, "coppice");
-    }
-
+    /// <summary>
+    /// Writes via a temp file and a rename, so a kill mid-write leaves the previous document or the new
+    /// one, never half of either. Apply writes quarantine entries and plans while it mutates the disk, and a
+    /// torn index entry is a quarantined item <c>restore</c> cannot find.
+    /// </summary>
     public async Task<string> WriteAsync(string key, string contentType, string json, CancellationToken cancellationToken = default)
     {
         string path = PathFor(key);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await File.WriteAllTextAsync(path, json, cancellationToken).ConfigureAwait(false);
+
+        string temp = path + "." + Guid.NewGuid().ToString("N") + TempSuffix;
+        try
+        {
+            await using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            await using (var writer = new StreamWriter(stream))
+            {
+                await writer.WriteAsync(json.AsMemory(), cancellationToken).ConfigureAwait(false);
+                await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+                stream.Flush(flushToDisk: true);
+            }
+
+            File.Move(temp, path, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temp))
+            {
+                File.Delete(temp);
+            }
+        }
+
         return key;
     }
 
@@ -120,6 +136,7 @@ public sealed class FileSystemStateStore : IStateStore
         }
 
         return [.. Directory.EnumerateFiles(_root, "*", SearchOption.AllDirectories)
+            .Where(p => !p.EndsWith(TempSuffix, StringComparison.Ordinal))
             .Select(p => KeyFor(p))
             .Where(k => k.StartsWith(prefix, StringComparison.Ordinal))
             .OrderBy(k => k, StringComparer.Ordinal)];
@@ -136,18 +153,86 @@ public sealed class FileSystemStateStore : IStateStore
         return Task.CompletedTask;
     }
 
-    private string PathFor(string key)
+    private string PathFor(string key) => StateRoot.Resolve(_root, key);
+
+    private string KeyFor(string fullPath) =>
+        Path.GetRelativePath(_root, fullPath).Replace(Path.DirectorySeparatorChar, '/');
+
+    private const string TempSuffix = ".coppice-tmp";
+}
+
+/// <summary>Where state lives, and the guard that keeps every key inside it.</summary>
+internal static class StateRoot
+{
+    /// <summary>{LocalAppData}/coppice on Windows; $XDG_DATA_HOME (or ~/.local/share)/coppice elsewhere.</summary>
+    public static string Default(IEnvironment env)
+    {
+        if (env.OS == OperatingSystemKind.Windows)
+        {
+            string? local = env.GetVariable("LOCALAPPDATA");
+            return Path.Combine(local ?? Path.GetTempPath(), "coppice");
+        }
+
+        string? home = env.HomeDirectory;
+        string xdg = env.GetVariable("XDG_DATA_HOME") ?? Path.Combine(home ?? Path.GetTempPath(), ".local", "share");
+        return Path.Combine(xdg, "coppice");
+    }
+
+    public static string Resolve(string root, string key)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
-        string full = Path.GetFullPath(Path.Combine(_root, key.Replace('/', Path.DirectorySeparatorChar)));
-        if (!full.StartsWith(Path.GetFullPath(_root), StringComparison.OrdinalIgnoreCase))
+        string full = Path.GetFullPath(Path.Combine(root, key.Replace('/', Path.DirectorySeparatorChar)));
+        string fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)) + Path.DirectorySeparatorChar;
+        if (!full.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
         {
             throw new ArgumentException($"State key '{key}' escapes the state root.", nameof(key));
         }
 
         return full;
     }
+}
 
-    private string KeyFor(string fullPath) =>
-        Path.GetRelativePath(_root, fullPath).Replace(Path.DirectorySeparatorChar, '/');
+/// <summary>
+/// The durable append log under the state root (T-034 journal). Each line is flushed to disk before the
+/// call returns: a write-ahead record that is still in a buffer when the process dies was never written.
+/// </summary>
+public sealed class FileAppendLog : IAppendLog
+{
+    private readonly string _root;
+
+    public FileAppendLog(string root)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(root);
+        _root = root;
+    }
+
+    public FileAppendLog(IEnvironment env)
+        : this(StateRoot.Default(env))
+    {
+    }
+
+    public async Task AppendLineAsync(string key, string line)
+    {
+        ArgumentNullException.ThrowIfNull(line);
+        string path = StateRoot.Resolve(_root, key);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(line + "\n");
+        await using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
+        await stream.WriteAsync(bytes).ConfigureAwait(false);
+        stream.Flush(flushToDisk: true);
+    }
+
+    public async Task<string?> ReadAllTextAsync(string key)
+    {
+        string path = StateRoot.Resolve(_root, key);
+        if (!File.Exists(path))
+        {
+            return null;
+        }
+
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+        return await reader.ReadToEndAsync().ConfigureAwait(false);
+    }
 }

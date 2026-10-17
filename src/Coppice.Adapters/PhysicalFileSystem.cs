@@ -95,25 +95,32 @@ public sealed class PhysicalFileSystem : IFileSystem
         try
         {
             FileAttributes attrs = File.GetAttributes(path);
-            var info = new FileInfo(path);
             bool isDir = (attrs & FileAttributes.Directory) != 0;
             bool isReparse = (attrs & FileAttributes.ReparsePoint) != 0;
+
+            // FileInfo.Exists is FALSE for a directory, so asking a FileInfo about one reports the entry
+            // as missing and every timestamp as the epoch. --strict's drift check reads mtime through here,
+            // and an epoch mtime for every package directory means it never detects a change.
+            FileSystemInfo info = isDir ? new DirectoryInfo(path) : new FileInfo(path);
+            bool exists = info.Exists;
 
             EntryKind kind = isReparse
                 ? isDir ? EntryKind.Junction : EntryKind.Symlink
                 : isDir ? EntryKind.Directory : EntryKind.File;
+
+            long length = isDir ? 0 : exists ? ((FileInfo)info).Length : 0;
 
             return new FileEntry
             {
                 Path = path,
                 Name = info.Name,
                 Kind = kind,
-                Length = isDir ? 0 : info.Exists ? info.Length : 0,
-                LastWriteTimeUtc = info.Exists ? new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero) : DateTimeOffset.MinValue,
+                Length = length,
+                LastWriteTimeUtc = exists ? new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero) : DateTimeOffset.MinValue,
                 Attributes = DescribeAttributes(attrs),
                 Lock = LockState.Unknown,
                 LinkTarget = isReparse ? TryReadLinkTarget(path) : null,
-                FileIdentity = isDir ? null : $"{info.Length}:{info.LastWriteTimeUtc.Ticks}:{info.Name}",
+                FileIdentity = isDir ? null : $"{length}:{info.LastWriteTimeUtc.Ticks}:{info.Name}",
             };
         }
         catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
@@ -268,10 +275,23 @@ public sealed class PhysicalFileSystem : IFileSystem
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
+            // A directory cannot be opened as a file stream on Windows, so probing it directly would report
+            // every cache directory as locked and apply would quarantine nothing. The handle probe 06 asks
+            // for is per FILE, so a directory is probed through the files inside it.
+            if ((File.GetAttributes(path) & FileAttributes.Directory) != 0)
+            {
+                return ProbeDirectoryLock(path);
+            }
+
             try
             {
                 // Best-effort: an exclusive open on a locked file fails even with FileShare.None readers.
                 using FileStream stream = new(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                return LockState.Unlocked;
+            }
+            catch (FileNotFoundException)
+            {
+                // Vanished between the enumeration and the probe. Not locked; the move will report the truth.
                 return LockState.Unlocked;
             }
             catch (IOException)
@@ -284,7 +304,40 @@ public sealed class PhysicalFileSystem : IFileSystem
             }
         }
 
-        return LockState.Unknown;
+        // POSIX has no mandatory locking, so there is no handle to take and nothing to report: an open
+        // succeeds whether or not a process is reading the file. That is best-effort by 06's own wording,
+        // and reporting Locked here would refuse every removal on Linux and macOS.
+        return LockState.Unlocked;
+    }
+
+    private LockState ProbeDirectoryLock(string path)
+    {
+        // Bounded: a package cache can hold tens of thousands of files, and an open per file is real time.
+        // The probe is best-effort by contract (06 step 5), so a partial answer beats an unbounded walk.
+        const int fileBudget = 20_000;
+
+        try
+        {
+            int probed = 0;
+            foreach (string file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+            {
+                if (++probed > fileBudget)
+                {
+                    break;
+                }
+
+                if (ProbeLock(file) == LockState.Locked)
+                {
+                    return LockState.Locked;
+                }
+            }
+
+            return LockState.Unlocked;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FileNotFoundException or DirectoryNotFoundException)
+        {
+            return LockState.Locked;
+        }
     }
 
     public void CreateDirectory(string path) => Directory.CreateDirectory(path);

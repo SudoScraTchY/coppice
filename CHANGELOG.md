@@ -57,8 +57,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--strict` softening, because there is no quarantine to undo a mistake with — and explicit
   confirmation (`--yes`). Failures (non-zero exit, timeout kill) become failed steps carrying exit
   code, output, error and duration for the T-035 audit log, never crashes.
+- T-034 `apply` command: the one verb that changes the machine. A plan is bound to the roots resolved
+  THIS run — never the roots it asserts — so a plan from another machine or a moved cache binds to
+  nothing rather than to a path it merely names. Every step runs through the gateway behind a
+  write-ahead journal (`state/journal/<planId>.jsonl`): an intent is durable before the mutation and an
+  outcome follows it, so a `kill -9` leaves at most one step in flight and `--resume` finishes it by
+  asking the filesystem which side of the intent the item landed on, rebuilding a lost quarantine index
+  entry from the moved tree when it has to. Confirmation follows 07 (a non-TTY without both `--yes` and
+  `--plan` is a usage error, checked before any state is read); `--strict` refuses a step whose recorded
+  mtime is missing or moved; exit 4 signals a partial apply. Plans are single-use: a completed journal
+  refuses a second apply, an unfinished one refuses to restart without `--resume`.
 
 ### Fixed
+- `PhysicalFileSystem.GetEntry` used a `FileInfo` even for directories, so `FileInfo.Exists` was false
+  and every directory reported its last-write time as the epoch. `--strict`'s drift check reads mtime
+  through here, so it never detected a changed package directory. Directories now read through a
+  `DirectoryInfo`.
+- `PhysicalFileSystem.ProbeLock` opened a directory as a file stream, which fails on Windows, so every
+  cache directory probed as `Locked` and `apply` would have quarantined nothing; on POSIX it returned
+  `Unknown`, which the gateway also refuses. A directory is now probed through the files inside it
+  (bounded), and POSIX — which has no mandatory locking to probe — reports `Unlocked` rather than
+  refusing every removal.
 - Fingerprints are now opt-in per location, as 09-ecosystems specifies. Previously every location
   inherited a 0.8 layout ratio, which marked real caches (`dotnet-tools`, `nuget-http-cache`) as
   uncleanable — a false positive that makes the tool look broken and talks the user out of it.

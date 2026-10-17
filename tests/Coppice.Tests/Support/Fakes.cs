@@ -148,8 +148,19 @@ public sealed class FakeStateStore : IStateStore
 
     public List<string> Writes { get; } = [];
 
+    /// <summary>
+    /// Key prefix whose next write kills the run instead of storing anything. Models the process dying
+    /// between the quarantine move and the index entry (T-034's crash matrix).
+    /// </summary>
+    public string? FailWhenPrefix { get; set; }
+
     public Task<string> WriteAsync(string key, string contentType, string json, CancellationToken cancellationToken = default)
     {
+        if (FailWhenPrefix is { } prefix && key.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            throw new SimulatedCrash($"state write '{key}'");
+        }
+
         _documents[key] = new StateDocument
         {
             Key = key,

@@ -80,10 +80,16 @@ public sealed class FakeFileSystem : IFileSystem
     /// at all.
     /// </para>
     /// </summary>
-    public FakeFileSystem AddDirectoryOfSize(string path, int sizeInBytes, LockState lockState = LockState.Unlocked)
+    public FakeFileSystem AddDirectoryOfSize(string path, int sizeInBytes, LockState lockState = LockState.Unlocked, DateTimeOffset? lastWrite = null)
     {
         string full = Normalize(path);
         AddDirectory(full, lockState);
+
+        if (lastWrite is { } at)
+        {
+            _nodes[full] = _nodes[full] with { LastWrite = at };
+        }
+
         AddFileOfSize(Normalize(full + _separator + "payload.bin"), sizeInBytes);
         return this;
     }
@@ -332,6 +338,10 @@ public sealed class FakeFileSystem : IFileSystem
             throw new FileNotFoundException("Move source not found.", sourcePath);
         }
 
+        // Fires BEFORE anything changes, so a crash test can kill the run with the intent durable and the
+        // filesystem still whole — the exact state a write-ahead log has to survive.
+        OnBeforeMove?.Invoke(sourcePath, destinationPath);
+
         string prefix = source + _separator;
         var moved = _nodes.Where(p => p.Key == source || p.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             .ToDictionary(p => destination + p.Key[source.Length..], p => p.Value, StringComparer.OrdinalIgnoreCase);
@@ -347,6 +357,10 @@ public sealed class FakeFileSystem : IFileSystem
         }
 
         EnsureParentDirectories(destination);
+
+        // Invoked AFTER the move: a crash test needs the filesystem in the state the real one would be in
+        // when the process dies at this point, not before it.
+        OnMove?.Invoke(sourcePath, destinationPath);
     }
 
     public void DeleteFile(string path, bool recursive)
@@ -380,6 +394,15 @@ public sealed class FakeFileSystem : IFileSystem
     /// empty for any read-only stage: resolution and scanning must never write anything.
     /// </summary>
     public List<string> Writes { get; } = [];
+
+    /// <summary>
+    /// Called after every move, so a crash test can kill the run at exactly the point a real kill -9 would
+    /// land: after the rename, before the index entry, before the journal outcome.
+    /// </summary>
+    public Action<string, string>? OnMove { get; set; }
+
+    /// <summary>Called before a move changes anything, to model a kill between the intent and the rename.</summary>
+    public Action<string, string>? OnBeforeMove { get; set; }
 
     // ---- Path helpers ----
 

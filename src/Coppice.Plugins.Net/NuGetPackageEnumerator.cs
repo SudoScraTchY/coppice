@@ -1,3 +1,4 @@
+using System.Globalization;
 using Coppice.Core.Domain;
 using Coppice.Core.Scanning;
 using Coppice.Ports;
@@ -121,6 +122,11 @@ public sealed class NuGetPackageEnumerator : IEntryEnumerator
             new("metadataPresent", metadataPresent ? "true" : "false"),
             new("signaturePresent", signaturePresent ? "true" : "false"),
             new("nuspecPresent", nuspecPresent ? "true" : "false"),
+
+            // The mtime the drift check compares against. Recorded in round-trip form so a plan written on
+            // one machine binds the same instant on another; an item without it cannot be drift-checked, and
+            // --strict refuses rather than treating an unknown mtime as "unchanged".
+            new("lastWriteUtc", versionDirectory.LastWriteTimeUtc.ToString("O", CultureInfo.InvariantCulture)),
         ]);
     }
 

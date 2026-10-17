@@ -5,19 +5,20 @@ using Xunit;
 namespace Coppice.ArchitectureTests;
 
 /// <summary>
-/// v0.1 is read-only, and that has to be an enforced property rather than a claim (T-019,
-/// NFR-02, 06-safety-model).
+/// The command surface and the mutation boundary are enforced properties, not claims (T-019, widened by
+/// T-034; NFR-02, 06-safety-model).
 /// <para>
-/// "Coppice does not delete anything in v0.1" is easy to write in a README and easy to break in a
-/// commit — someone adds a cleanup path, wires it to a new command, and the README becomes a lie. The
-/// only version of the claim worth anything is one a test re-checks.
+/// "Coppice does not delete anything on its own" is easy to write in a README and easy to break in a commit —
+/// someone adds a cleanup path, wires it to a new command, and the README becomes a lie. The only version of
+/// the claim worth anything is one a test re-checks.
 /// </para>
 /// <para>
-/// It asserts two things here, both statically: no assembly outside <c>Coppice.Adapters</c> calls a
-/// filesystem mutator, and the CLI exposes no verb that could imply mutation. The dynamic half —
-/// actually running the commands and proving they write nothing — lives in
-/// <c>Coppice.Tests.ReadOnlyCommandTests</c>, because it needs the fake filesystem this project does
-/// not reference.
+/// It asserts two things here, both statically: no assembly outside <c>Coppice.Adapters</c> and
+/// <c>Coppice.Core</c>'s two pinned mutating types calls a filesystem mutator, and the CLI dispatches
+/// exactly the verbs this pin names — <c>apply</c> among them, as the one verb that mutates (S-1). The
+/// dynamic half — actually running the read-only commands and proving they write nothing — lives in
+/// <c>Coppice.Tests.ReadOnlyCommandTests</c>, because it needs the fake filesystem this project does not
+/// reference.
 /// </para>
 /// </summary>
 public sealed class ReadOnlyAuditTests
@@ -25,45 +26,21 @@ public sealed class ReadOnlyAuditTests
     private static readonly string[] MutatorMethods = ["DeleteFile", "Move", "CreateDirectory"];
 
     /// <summary>
-    /// Loads a sibling assembly, or null when this project does not reference it.
-    /// </summary>
-    /// <remarks>
-    /// Returning null is right for an unreferenced sibling — this project does not reference Adapters,
-    /// and demanding it would report a violation that does not exist.
+    /// The CLI must be loadable for the audits below to mean anything. This exists because AssemblyName was
+    /// changed to `coppice` for the published binary, and <c>Assembly.Load("Coppice.Cli")</c> silently began
+    /// returning null for it — two audits kept passing, having checked nothing.
     /// <para>
-    /// It is NOT right for an assembly that MUST be audited. The CLI is the assembly where mutation
-    /// matters most, and a null here means the audit silently passes without looking at it. That is
-    /// not a false positive, it is a false pass — the outcome an audit cannot be allowed to have.
-    /// <see cref="The_cli_assembly_is_present_to_audit"/> pins the CLI's presence so this stays honest.
+    /// Resolving from the type rather than by name is what makes the old failure impossible to repeat, and
+    /// the verb-table assertion makes a missing table an error rather than an empty pass.
     /// </para>
-    /// </remarks>
-    private static Assembly? TryLoad(string name)
-    {
-        try
-        {
-            return Assembly.Load(name);
-        }
-        catch (System.IO.FileNotFoundException)
-        {
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// The CLI must be loadable for the mutation audit to mean anything. This exists because
-    /// AssemblyName was changed to `coppice` for the published binary, and the loader silently began
-    /// returning null for it — the audit kept passing, having checked nothing.
     /// </summary>
     [Fact]
     public void The_cli_assembly_is_present_to_audit()
     {
-        // The published binary is `coppice`, so AssemblyName was set to match. Resolve the assembly
-        // from the type we actually audit rather than by string, so a rename cannot silently blind us.
-        Type? app = typeof(Coppice.Cli.CoppiceApp);
-        Assert.NotNull(app.Assembly);
-        Assert.Contains(
-            SafeGetTypes(app.Assembly),
-            t => t.FullName == "Coppice.Cli.CoppiceApp");
+        Assembly cli = typeof(Coppice.Cli.CoppiceApp).Assembly;
+
+        Assert.Contains(cli.GetTypes(), t => t.FullName == "Coppice.Cli.CoppiceApp");
+        Assert.NotNull(cli.GetType("Coppice.Cli.CoppiceApp")!.GetProperty("Verbs", BindingFlags.Public | BindingFlags.Static));
     }
 
     /// <summary>
@@ -79,14 +56,16 @@ public sealed class ReadOnlyAuditTests
 
     /// <summary>
     /// Every assembly that must NOT reach a mutator. Adapters is excluded on purpose: it IS the
-    /// mutator, and asserting it does not use its own methods would be nonsense.
+    /// mutator, and asserting it does not use its own methods would be nonsense. Core is excluded because
+    /// it does mutate — in exactly two types — and <see cref="The_gateway_is_the_only_type_in_core_that_mutates"/>
+    /// pins WHICH two. Listing Core here as well would be a blanket allowance that contradicts the pinned one.
     /// </summary>
     public static TheoryData<string> AssembliesThatMayNotMutate
     {
         get
         {
             var data = new TheoryData<string>();
-            foreach (string name in new[] { "Coppice.Core", "Coppice.Ports", "Coppice.Plugins.Net", "Coppice.Manifests", "Coppice.Cli" })
+            foreach (string name in new[] { "Coppice.Ports", "Coppice.Plugins.Net", "Coppice.Manifests", "Coppice.Cli" })
             {
                 data.Add(name);
             }
@@ -101,13 +80,9 @@ public sealed class ReadOnlyAuditTests
     [MemberData(nameof(AssembliesThatMayNotMutate))]
     public void Only_the_adapters_layer_calls_a_filesystem_mutator(string assemblyName)
     {
-        Assembly? assembly = TryLoad(assemblyName);
-        if (assembly is null)
-        {
-            // Not referenced by this test project, so not on disk next to it. Its absence here says
-            // nothing about the boundary; Coppice.Tests covers the CLI layer.
-            return;
-        }
+        Assembly assembly = assemblyName == "Coppice.Cli"
+            ? typeof(Coppice.Cli.CoppiceApp).Assembly
+            : Assembly.Load(assemblyName);
 
         var offenders = new List<string>();
 
@@ -115,7 +90,10 @@ public sealed class ReadOnlyAuditTests
         {
             foreach (MethodInfo method in SafeGetMethods(type))
             {
-                foreach (MethodInfo mutator in MutatorMethodsIn(assembly))
+                // The PORT's mutators, not "the mutators this assembly declares". Filtering to the audited
+                // assembly's own definitions made this test vacuous for every consumer of the port: they
+                // declare none, so there was nothing to look for and nothing could ever be found.
+                foreach (MethodInfo mutator in Mutators)
                 {
                     if (CallsToken(method, mutator))
                     {
@@ -133,17 +111,6 @@ public sealed class ReadOnlyAuditTests
     private static IReadOnlyList<MethodInfo> Mutators =>
         [.. Assembly.Load("Coppice.Ports").GetType("Coppice.Ports.IFileSystem")!.GetMethods()
             .Where(m => MutatorMethods.Contains(m.Name, StringComparer.Ordinal))];
-
-    /// <summary>
-    /// The mutators that are DEFINED in <paramref name="assembly"/>'s own module.
-    /// <para>
-    /// Every mutator lives on the <c>IFileSystem</c> interface in Ports, so for an assembly that only
-    /// CONSUMES the port this is empty — and the audit is then correctly checking that nothing calls
-    /// them. For Adapters it is all three, which is the definition side rather than the call side.
-    /// </para>
-    /// </summary>
-    private static IReadOnlyList<MethodInfo> MutatorMethodsIn(Assembly assembly) =>
-        [.. Mutators.Where(m => string.Equals(m.Module.Assembly.GetName().Name, assembly.GetName().Name, StringComparison.Ordinal))];
 
     /// <summary>
     /// True when <paramref name="method"/>'s IL contains a call to <paramref name="target"/>.
@@ -326,111 +293,40 @@ public sealed class ReadOnlyAuditTests
     [Fact]
     public void The_cli_exposes_no_command_that_could_imply_mutation()
     {
-        // A verb that implies mutation does not exist yet. If one is added, this fails — which is the
-        // point, because adding it should be a deliberate act with a spec change, not a side effect.
-        string[] forbidden = ["apply", "clean", "delete", "remove", "prune", "purge", "uninstall", "rm"];
+        // T-034 widens this pin deliberately: `apply` is the one verb that mutates, it is in the table
+        // because the product needs it, and this assertion is what makes adding a SECOND one a spec
+        // conversation rather than a side effect. Everything else on the surface still only reads.
+        string[] forbidden = ["clean", "delete", "remove", "prune", "purge", "uninstall", "rm"];
 
-        Assembly? cli = TryLoad("Coppice.Cli");
-        if (cli is null)
-        {
-            return;
-        }
-
-        Type? app = cli.GetType("Coppice.Cli.CoppiceApp");
-        if (app is null)
-        {
-            return;
-        }
-
-        string[] dispatched = CommandVerbs(app);
+        string[] dispatched = CommandVerbs(typeof(Coppice.Cli.CoppiceApp));
 
         foreach (string verb in forbidden)
         {
             Assert.DoesNotContain(verb, dispatched);
         }
 
-        // And the surface is exactly the three read-only commands. A FOURTH verb, even a harmless
-        // one, means the DoD needs re-reading before it ships.
-        Assert.Equal(["doctor", "roots", "scan"], dispatched.Order(StringComparer.Ordinal));
+        Assert.Equal(["apply", "doctor", "roots", "scan"], dispatched.Order(StringComparer.Ordinal));
     }
 
     /// <summary>
-    /// The command verbs the CLI dispatches, read from the dispatch table's own string constants.
+    /// The command verbs the CLI dispatches, read from the dispatch table itself.
     /// <para>
-    /// Read reflectively rather than by reading the source, so the list cannot drift from the code
-    /// while the assertion keeps claiming it covers the surface.
+    /// The earlier version of this audit read every string literal in the assembly's user-string heap and
+    /// asserted the result equalled the three read-only verbs. That could never hold — the heap contains
+    /// help text, format strings and the not-yet-available names too — and it was combined with a
+    /// <c>TryLoad("Coppice.Cli")</c> that returned null because the published assembly is named
+    /// <c>coppice</c>. The test therefore checked nothing at all while reporting a pass. Reading the table
+    /// the dispatcher actually consults is both accurate and immune to unrelated strings.
     /// </para>
     /// </summary>
     private static string[] CommandVerbs(Type app)
     {
-        // Every string constant in the assembly's metadata user-string heap that looks like a command
-        // verb. Reading the heap rather than the dispatch method's IL is deliberate: the surface that
-        // matters is what the binary can be ASKED to do, and a verb added anywhere in the file still
-        // lands in this heap.
-        var verbs = new SortedSet<string>(StringComparer.Ordinal);
+        PropertyInfo verbs = app.GetProperty("Verbs", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("CoppiceApp.Verbs is gone; the audit has nothing to read.");
 
-        foreach (Type type in SafeGetTypes(app.Assembly).Where(t => t.FullName?.StartsWith("Coppice.Cli", StringComparison.Ordinal) == true))
-        {
-            foreach (MethodInfo method in SafeGetMethods(type))
-            {
-                foreach (string literal in StringLiteralsIn(method))
-                {
-                    verbs.Add(literal);
-                }
-            }
-        }
+        var table = (System.Collections.IDictionary)verbs.GetValue(null)!;
 
-        return [.. verbs];
-    }
-
-    /// <summary>
-    /// The string constants a method's IL loads with <c>ldstr</c>.
-    /// <para>
-    /// Only <c>ldstr</c> (0x72) is decoded, and its operand is a metadata token whose table is fixed,
-    /// so there is no variable-length operand to desynchronise. The token is resolved through the
-    /// module rather than parsed out of the bytes.
-    /// </para>
-    /// </summary>
-    private static IEnumerable<string> StringLiteralsIn(MethodInfo method)
-    {
-        byte[] il;
-
-        try
-        {
-            il = method.GetMethodBody()?.GetILAsByteArray() ?? [];
-        }
-        catch (Exception ex) when (ex is InvalidOperationException or NotSupportedException)
-        {
-            yield break;
-        }
-
-        for (int i = 0; i + 4 < il.Length; i++)
-        {
-            if (il[i] != 0x72)
-            {
-                continue;
-            }
-
-            int token = BitConverter.ToInt32(il, i + 1);
-
-            // yield is not allowed inside a try with a catch, so the value is resolved first and
-            // returned afterwards.
-            string? resolved = null;
-
-            try
-            {
-                resolved = method.Module.ResolveString(token);
-            }
-            catch (Exception ex) when (ex is ArgumentOutOfRangeException or BadImageFormatException)
-            {
-                // Not a user-string token; a false positive in the opcode scan, not a problem.
-            }
-
-            if (!string.IsNullOrEmpty(resolved))
-            {
-                yield return resolved;
-            }
-        }
+        return [.. table.Keys.Cast<string>().Order(StringComparer.Ordinal)];
     }
 
     // ---- reflection helpers ----

@@ -47,9 +47,9 @@ Exit criteria per 12-roadmap.
 - Confirmation UX per 07 (summary by tier/ecosystem); `--yes`, `--strict`, `--resume`; write-ahead journal (`state/journal/<planId>.jsonl`, one intent record per step before execution); kill -9 recovery on next run.
 
 **Acceptance**
-- [ ] kill -9 mid-apply in test → `--resume` completes; no partial item state
-- [ ] Journal + audit reconcile after crash
-- [ ] Non-TTY `apply` without `--yes` → exit 2 (07 contract)
+- [x] kill -9 mid-apply in test → `--resume` completes; no partial item state
+- [ ] Journal + audit reconcile after crash — deferred to T-035: reconcile needs the audit log, which this card does not build. The journal side is proven (every intent has an outcome after resume, in-process crash matrix + a real `Kill(entireProcessTree)` child); the audit half lands with T-035.
+- [x] Non-TTY `apply` without `--yes` → exit 2 (07 contract)
 
 ### T-035 · Audit log + `audit verify`
 **Refs** FR-17, S-12 · **Depends** T-031 · **Effort** M · **Safety card**

@@ -64,26 +64,39 @@ public sealed class PlanStore
             return PlanLoadResult.Fail(PlanLoadFailure.NotFound, $"No plan named '{planId}'.");
         }
 
+        return Parse(document.Json, $"Plan '{planId}'");
+    }
+
+    /// <summary>
+    /// Validates a plan document that did not come from the store — <c>coppice apply --plan file.json</c>.
+    /// The rules are the store's own, not a looser copy: a plan handed in on the command line is exactly as
+    /// able to name the wrong files as one read from state.
+    /// </summary>
+    public static PlanLoadResult Parse(string json, string source)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        ArgumentException.ThrowIfNullOrWhiteSpace(source);
+
         Plan? plan;
         try
         {
-            plan = DomainJson.Deserialize<Plan>(document.Json);
+            plan = DomainJson.Deserialize<Plan>(json);
         }
         catch (System.Text.Json.JsonException ex)
         {
-            return PlanLoadResult.Fail(PlanLoadFailure.Malformed, $"Plan '{planId}' is not valid JSON: {ex.Message}");
+            return PlanLoadResult.Fail(PlanLoadFailure.Malformed, $"{source} is not valid JSON: {ex.Message}");
         }
 
         if (plan is null)
         {
-            return PlanLoadResult.Fail(PlanLoadFailure.Malformed, $"Plan '{planId}' deserialized to nothing.");
+            return PlanLoadResult.Fail(PlanLoadFailure.Malformed, $"{source} deserialized to nothing.");
         }
 
         if (plan.SchemaVersion != CurrentSchemaVersion)
         {
             return PlanLoadResult.Fail(
                 PlanLoadFailure.UnsupportedSchemaVersion,
-                $"Plan '{planId}' has schema version {plan.SchemaVersion}; this build understands {CurrentSchemaVersion}. "
+                $"{source} has schema version {plan.SchemaVersion}; this build understands {CurrentSchemaVersion}. "
                     + "It was not loaded rather than guessed at.");
         }
 
@@ -93,7 +106,7 @@ public sealed class PlanStore
         {
             return PlanLoadResult.Fail(
                 PlanLoadFailure.ChecksumMismatch,
-                $"Plan '{planId}' failed its checksum. The file has been modified since it was written, so it "
+                $"{source} failed its checksum. The file has been modified since it was written, so it "
                     + "was not executed. Re-create it from the snapshot rather than editing it.");
         }
 
@@ -102,7 +115,7 @@ public sealed class PlanStore
         {
             return PlanLoadResult.Fail(
                 PlanLoadFailure.Invalid,
-                $"Plan '{planId}' is checksummed but structurally invalid: {invalid.Value}.");
+                $"{source} is checksummed but structurally invalid: {invalid.Value}.");
         }
 
         return PlanLoadResult.Success(plan);

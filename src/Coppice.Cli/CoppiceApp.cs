@@ -12,20 +12,36 @@ namespace Coppice.Cli;
 /// The CLI entry point (07).
 /// <para>
 /// Argument parsing is hand-rolled and tiny on purpose: v0.1 needs a handful of flags, and a parser
-/// dependency would be the largest thing in the tool. Commands dispatch to services that cannot
-/// mutate anything, so <c>doctor</c> and <c>roots</c> are safe by construction rather than by
-/// promise.
+/// dependency would be the largest thing in the tool. Every verb except <c>apply</c> dispatches to a
+/// service that cannot mutate anything, so <c>doctor</c>, <c>roots</c> and <c>scan</c> are safe by
+/// construction rather than by promise; <c>apply</c> mutates through the gateway alone, behind a
+/// confirmation and a write-ahead journal (T-034).
 /// </para>
 /// <para>
-/// Exit codes follow 07 exactly: 0 success, 1 runtime error, 2 usage error, 3 safety abort.
+/// Exit codes follow 07 exactly: 0 success, 1 runtime error, 2 usage error, 3 safety abort, 4 partial
+/// apply.
 /// </para>
 /// </summary>
 public static class CoppiceApp
 {
-    private const int ExitSuccess = 0;
-    private const int ExitRuntimeError = 1;
-    private const int ExitUsageError = 2;
-    private const int ExitSafetyAbort = 3;
+    private const int ExitSuccess = ExitCodes.Success;
+    private const int ExitRuntimeError = ExitCodes.RuntimeError;
+    private const int ExitUsageError = ExitCodes.UsageError;
+    private const int ExitSafetyAbort = ExitCodes.SafetyAbort;
+
+    /// <summary>
+    /// The command surface, as a table rather than a switch: the read-only audit reads these keys
+    /// reflectively, so what the binary can be ASKED to do and what the audit pins are the same list.
+    /// <c>apply</c> is the one mutating verb (S-1) and is here deliberately; everything else only reads.
+    /// </summary>
+    public static IReadOnlyDictionary<string, Func<string[], int>> Verbs { get; } =
+        new Dictionary<string, Func<string[], int>>(StringComparer.Ordinal)
+        {
+            ["doctor"] = RunDoctor,
+            ["roots"] = RunRoots,
+            ["scan"] = RunScan,
+            ["apply"] = RunApply,
+        };
 
     public static int Run(string[] args)
     {
@@ -34,18 +50,25 @@ public static class CoppiceApp
         try
         {
             string command = args.Length > 0 ? args[0] : "help";
-            var flags = CommandFlags.Parse(args.AsSpan(1));
 
-            return command switch
+            if (command is "version" or "--version")
             {
-                "doctor" => RunDoctor(flags),
-                "roots" => RunRoots(flags),
-                "scan" => RunScan(flags),
-                "plan" or "apply" or "clean" or "report" => NotYetAvailable(command),
-                "version" or "--version" => PrintVersion(),
-                "help" or "--help" or "-h" => PrintHelp(),
-                _ => Usage($"unknown command '{command}'"),
-            };
+                return PrintVersion();
+            }
+
+            if (command is "help" or "--help" or "-h")
+            {
+                return PrintHelp();
+            }
+
+            if (Verbs.TryGetValue(command, out Func<string[], int>? verb))
+            {
+                return verb(args.AsSpan(1).ToArray());
+            }
+
+            return command is "plan" or "clean" or "report"
+                ? NotYetAvailable(command)
+                : Usage($"unknown command '{command}'");
         }
         catch (ArgumentException ex)
         {
@@ -57,6 +80,22 @@ public static class CoppiceApp
             return ExitRuntimeError;
         }
     }
+
+    private static int RunApply(string[] args) =>
+        new ApplyCommand(
+            new PhysicalFileSystem(),
+            new SystemProcessRunner(),
+            new SystemEnvironment(),
+            new FileSystemStateStore(new PhysicalFileSystem(), new SystemEnvironment()),
+            new FileAppendLog(new SystemEnvironment()),
+            new SystemApplyConsole())
+            .Run(args);
+
+    private static int RunDoctor(string[] args) => RunDoctor(CommandFlags.Parse(args));
+
+    private static int RunRoots(string[] args) => RunRoots(CommandFlags.Parse(args));
+
+    private static int RunScan(string[] args) => RunScan(CommandFlags.Parse(args));
 
     private static int RunDoctor(CommandFlags flags)
     {
@@ -251,11 +290,16 @@ public static class CoppiceApp
         Console.WriteLine("Commands:");
         Console.WriteLine("  doctor [--json]     resolve locations and report what was found");
         Console.WriteLine("  roots  [--json]     show each location, how it was resolved, and its validity");
+        Console.WriteLine("  scan   [--json]     inventory the caches and store a snapshot");
+        Console.WriteLine("  apply  [--plan <file>] [--yes] [--strict] [--resume] [--json]");
+        Console.WriteLine("                      execute a plan: path steps MOVE to quarantine, native steps run a tool");
         Console.WriteLine("  version             print the build version");
         Console.WriteLine();
         Console.WriteLine("Flags: --json, --no-color");
         Console.WriteLine();
-        Console.WriteLine("Nothing here deletes anything. plan and apply arrive in v0.2 and v0.3.");
+        Console.WriteLine("Exit codes: 0 ok · 1 runtime · 2 usage · 3 safety abort · 4 partial apply.");
+        Console.WriteLine();
+        Console.WriteLine("apply is the only command that changes anything, and it asks first unless --yes is given.");
         return ExitSuccess;
     }
 
@@ -267,12 +311,14 @@ public static class CoppiceApp
     }
 
     private static int NotYetAvailable(string command) =>
-        Usage($"'{command}' is not available yet; v0.1 is read-only");
+        Usage($"'{command}' is not available in this build");
 }
 
-/// <summary>The global flags v0.1 accepts. Unknown flags are rejected rather than ignored (07).</summary>
+/// <summary>The global flags the read-only verbs accept. Unknown flags are rejected rather than ignored (07).</summary>
 public sealed record CommandFlags(bool Json)
 {
+    public static CommandFlags Parse(string[] args) => Parse(args.AsSpan());
+
     public static CommandFlags Parse(ReadOnlySpan<string> args)
     {
         bool json = false;
