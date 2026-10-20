@@ -55,6 +55,10 @@ public sealed class AuditCommand
                 case "--json":
                     json = true;
                     break;
+                case "--ci":
+                    // FR-21: CI mode is machine-readable.
+                    json = true;
+                    break;
                 case "--no-color":
                     // Accepted and ignored: this renderer never emits color, which is the point.
                     break;

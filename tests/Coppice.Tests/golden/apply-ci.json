@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "status": "Completed",
+  "ok": 1,
+  "failed": 0,
+  "skippedUnsafe": 0,
+  "reported": 0,
+  "reclaimedBytes": 4096,
+  "steps": [
+    {
+      "stepId": "70c2394f2ba7656d",
+      "result": "quarantined",
+      "refusal": "None",
+      "bytes": 4096,
+      "message": "Moved to quarantine at \u0027C:\\.coppice\\quarantine\\cache\\newtonsoft.json\\1.0.0\u0027. Restore with \u0060coppice quarantine restore\u0060."
+    }
+  ]
+}

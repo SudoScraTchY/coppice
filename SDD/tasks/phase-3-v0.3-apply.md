@@ -81,8 +81,8 @@ Exit criteria per 12-roadmap.
 - Non-interactive mode: machine-readable output, no spinners/color; documented exit codes 0–4.
 
 **Acceptance**
-- [ ] Exit-code contract tests for all five codes
-- [ ] CI-mode output stable across runs (golden)
+- [x] Exit-code contract tests for all five codes
+- [x] CI-mode output stable across runs (golden)
 
 ### T-038 · v0.3 release + user docs
 **Refs** 12-roadmap · **Depends** T-031…T-037 · **Effort** M

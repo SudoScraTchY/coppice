@@ -56,7 +56,7 @@ public sealed class SystemApplyConsole : IApplyConsole
     public string? ReadLine() => Console.In.ReadLine();
 }
 
-public sealed record ApplyFlags(string? PlanFile, bool Yes, bool Strict, bool Resume, bool Json)
+public sealed record ApplyFlags(string? PlanFile, bool Yes, bool Strict, bool Resume, bool Json, bool Ci)
 {
     public static ApplyFlags Parse(string[] args)
     {
@@ -67,6 +67,7 @@ public sealed record ApplyFlags(string? PlanFile, bool Yes, bool Strict, bool Re
         bool strict = false;
         bool resume = false;
         bool json = false;
+        bool ci = false;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -92,6 +93,11 @@ public sealed record ApplyFlags(string? PlanFile, bool Yes, bool Strict, bool Re
                 case "--json":
                     json = true;
                     break;
+                case "--ci":
+                    // FR-21: machine-readable and non-interactive. The non-interactive half is enforced where
+                    // the confirmation gate decides whether it may ask; the machine-readable half is its own.
+                    ci = true;
+                    break;
                 case "--no-color":
                     break;
                 default:
@@ -99,7 +105,7 @@ public sealed record ApplyFlags(string? PlanFile, bool Yes, bool Strict, bool Re
             }
         }
 
-        return new ApplyFlags(planFile, yes, strict, resume, json);
+        return new ApplyFlags(planFile, yes, strict, resume, json, ci);
     }
 }
 
@@ -172,12 +178,16 @@ public sealed class ApplyCommand
             return Usage(ex.Message);
         }
 
-        // 07: in a non-TTY, apply without BOTH --yes and a plan file is a usage error. Checked before any
-        // state is read and before a gateway exists, so a scripted run cannot reach a mutation by accident —
-        // at this point there is nothing to reach.
-        if (!_console.IsInteractive && (!flags.Yes || flags.PlanFile is null))
+        // 07: in a non-TTY — or under --ci, which is non-interactive by definition — apply without BOTH
+        // --yes and a plan file is a usage error. Checked before any state is read and before a gateway
+        // exists, so a scripted run cannot reach a mutation by accident: at this point there is nothing to
+        // reach.
+        bool canAsk = _console.IsInteractive && !flags.Ci;
+        if (!canAsk && (!flags.Yes || flags.PlanFile is null))
         {
-            return Usage("apply needs --yes and --plan <file> when it cannot ask (stdin or stdout is redirected).");
+            return Usage(flags.Ci
+                ? "apply --ci needs --yes and --plan <file>; it never prompts."
+                : "apply needs --yes and --plan <file> when it cannot ask (stdin or stdout is redirected).");
         }
 
         try
@@ -214,7 +224,8 @@ public sealed class ApplyCommand
         DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS).Inspect();
         IReadOnlyList<BoundStep> bound = PlanBinder.Bind(plan, snapshot, BindingRoots(roots), _env.OS, flags.Strict);
 
-        if (!flags.Yes && !Confirm(plan, snapshot, bound))
+        bool canAsk = _console.IsInteractive && !flags.Ci;
+        if (canAsk && !flags.Yes && !Confirm(plan, snapshot, bound))
         {
             _console.WriteLine("Declined. Nothing was moved.");
             return ExitCodes.Success;
@@ -361,7 +372,7 @@ public sealed class ApplyCommand
                 : Abort(summary.Message);
         }
 
-        if (flags.Json)
+        if (flags.Json || flags.Ci)
         {
             _console.WriteLine(JsonSerializer.Serialize(
                 new

@@ -67,6 +67,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--plan` is a usage error, checked before any state is read); `--strict` refuses a step whose recorded
   mtime is missing or moved; exit 4 signals a partial apply. Plans are single-use: a completed journal
   refuses a second apply, an unfinished one refuses to restart without `--resume`.
+- T-037 `--ci` mode: a global flag that forces machine-readable output and never prompts. For the
+  read-only verbs and `audit` it implies `--json`; for `apply` it forces the non-interactive path, so
+  `apply --ci` without both `--yes` and `--plan` is exit 2 before anything is read. The exit-code
+  contract (0 ok, 1 runtime, 2 usage, 3 safety abort, 4 partial apply) is covered by one test per code
+  driven through the command surface, and a two-run byte-equality test pins CI output against a
+  committed golden.
 - T-035 audit log + `audit verify`: the mutation ledger. Every mutation the gateway, a restore or a prune
   performs appends one hash-chained JSONL line to `audit/audit.jsonl` — a sequence number, the hash of the
   line before it, and a SHA-256 over the line's own content — so editing, reordering or dropping a written

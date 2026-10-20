@@ -306,9 +306,11 @@ public static class CoppiceApp
         Console.WriteLine("                      show the mutation log, or replay it against the quarantine index");
         Console.WriteLine("  version             print the build version");
         Console.WriteLine();
-        Console.WriteLine("Flags: --json, --no-color");
+        Console.WriteLine("Flags: --json, --ci, --no-color");
         Console.WriteLine();
         Console.WriteLine("Exit codes: 0 ok · 1 runtime · 2 usage · 3 safety abort · 4 partial apply.");
+        Console.WriteLine();
+        Console.WriteLine("--ci forces machine-readable output and never prompts; apply --ci needs --yes and --plan.");
         Console.WriteLine();
         Console.WriteLine("apply is the only command that changes anything, and it asks first unless --yes is given.");
         return ExitSuccess;
@@ -339,6 +341,12 @@ public sealed record CommandFlags(bool Json)
             switch (arg)
             {
                 case "--json":
+                    json = true;
+                    break;
+                case "--ci":
+                    // FR-21: CI mode is machine-readable. Every read-only verb already renders JSON under
+                    // --json, and the CLI never emits color or spinners, so forcing the machine form is the
+                    // whole of "no spinners/color" here.
                     json = true;
                     break;
                 case "--no-color":
