@@ -78,6 +78,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   append log now rolls at a size cap without discarding, and the chain verifies across the roll.
 
 ### Fixed
+- T-034 box 2 (journal + audit reconcile): a `--resume` that rebuilds a quarantine index entry after a
+  kill now also writes the audit line for that move when the log lacks it — and only then, so a kill
+  after the gateway's audit append but before the index save rebuilds the entry without duplicating the
+  line. Without this, the resume itself created an `unlogged-mutation` that `audit verify` correctly
+  flagged, making crash recovery contradict the ledger.
 - `PhysicalFileSystem.GetEntry` used a `FileInfo` even for directories, so `FileInfo.Exists` was false
   and every directory reported its last-write time as the epoch. `--strict`'s drift check reads mtime
   through here, so it never detected a changed package directory. Directories now read through a

@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Coppice.Core.Audit;
 using Coppice.Core.Domain;
 using Coppice.Core.Gateway;
 using Coppice.Core.Quarantine;
@@ -89,8 +90,15 @@ public sealed partial class ApplyRunner
     private readonly IAppendLog _log;
     private readonly QuarantineIndex? _quarantine;
     private readonly IClock _clock;
+    private readonly AuditLog? _audit;
 
-    public ApplyRunner(GatewayEngine gateway, IFileSystem fs, IAppendLog log, QuarantineIndex? quarantine, IClock clock)
+    public ApplyRunner(
+        GatewayEngine gateway,
+        IFileSystem fs,
+        IAppendLog log,
+        QuarantineIndex? quarantine,
+        IClock clock,
+        AuditLog? audit = null)
     {
         ArgumentNullException.ThrowIfNull(gateway);
         ArgumentNullException.ThrowIfNull(fs);
@@ -102,6 +110,7 @@ public sealed partial class ApplyRunner
         _log = log;
         _quarantine = quarantine;
         _clock = clock;
+        _audit = audit;
     }
 
     /// <summary>
@@ -183,7 +192,7 @@ public sealed partial class ApplyRunner
             }
 
             ApplyStepReport report = state.Intents.TryGetValue(stepId, out JournalRecord? orphan)
-                ? await ReconcileAsync(bound, orphan, options).ConfigureAwait(false)
+                ? await ReconcileAsync(bound, orphan, options, plan.PlanId).ConfigureAwait(false)
                 : await RunStepAsync(journal, bound, options).ConfigureAwait(false);
 
             await journal.AppendAsync(OutcomeRecord(report)).ConfigureAwait(false);
@@ -248,7 +257,7 @@ public sealed partial class ApplyRunner
     /// destination, so for a path step the filesystem answers the question: exactly one of them holds the
     /// item, or something outside coppice intervened and the step is refused rather than guessed at.
     /// </summary>
-    private async Task<ApplyStepReport> ReconcileAsync(BoundStep bound, JournalRecord intent, ApplyOptions options)
+    private async Task<ApplyStepReport> ReconcileAsync(BoundStep bound, JournalRecord intent, ApplyOptions options, string planId)
     {
         string stepId = bound.PlanStep.ItemId;
         string from = intent.From ?? string.Empty;
@@ -280,7 +289,7 @@ public sealed partial class ApplyRunner
 
         if (!sourcePresent && destinationPresent)
         {
-            return await RecoverAsync(bound, intent, from, to).ConfigureAwait(false);
+            return await RecoverAsync(bound, intent, from, to, planId).ConfigureAwait(false);
         }
 
         if (!sourcePresent)
@@ -296,13 +305,21 @@ public sealed partial class ApplyRunner
     /// <summary>
     /// The move landed but the run stopped before the outcome — possibly before the index entry too. The
     /// entry is written now, from the quarantined tree itself, so <c>quarantine restore</c> can find it.
+    /// <para>
+    /// This is also where the journal and the audit log are reconciled (T-034 box 2). The gateway writes
+    /// its audit line between the rename and the index save, so a kill in that window leaves quarantined
+    /// content with neither record; rebuilding the index entry without the line would make
+    /// <c>audit verify</c> report an unlogged mutation the resume itself created. The line is appended
+    /// only when the log does not already have it, so a crash AFTER the audit append does not duplicate.
+    /// </para>
     /// </summary>
-    private async Task<ApplyStepReport> RecoverAsync(BoundStep bound, JournalRecord intent, string from, string to)
+    private async Task<ApplyStepReport> RecoverAsync(BoundStep bound, JournalRecord intent, string from, string to, string planId)
     {
         string stepId = bound.PlanStep.ItemId;
 
         if (_quarantine is null)
         {
+            await EnsureQuarantineAuditedAsync(planId, bound, from, to, _fs.MeasureSize(to)).ConfigureAwait(false);
             return Report(stepId, "recovered", GatewayRefusal.None,
                 $"'{from}' was moved to quarantine at '{to}' before the interruption.", _fs.MeasureSize(to), ApplyStepClass.Ok);
         }
@@ -312,6 +329,9 @@ public sealed partial class ApplyRunner
 
         if (existing is not null)
         {
+            // The entry survived, so the gateway's own audit line preceded it. Ensure it anyway: the line is
+            // idempotent and a log edited between runs must not be able to hide behind a resume.
+            await EnsureQuarantineAuditedAsync(planId, bound, from, to, existing.SizeBytes).ConfigureAwait(false);
             return Report(stepId, "quarantined", GatewayRefusal.None,
                 $"'{from}' was quarantined at '{to}' before the interruption; its index entry is intact.", existing.SizeBytes, ApplyStepClass.Ok);
         }
@@ -320,6 +340,8 @@ public sealed partial class ApplyRunner
         DateTimeOffset now = _clock.UtcNow;
         ulong size = _fs.MeasureSize(to);
         Item? item = bound.Item;
+
+        await EnsureQuarantineAuditedAsync(planId, bound, from, to, size).ConfigureAwait(false);
 
         await _quarantine.SaveAsync(new QuarantineEntry
         {
@@ -340,6 +362,50 @@ public sealed partial class ApplyRunner
 
         return Report(stepId, "recovered", GatewayRefusal.None,
             $"'{from}' was moved to quarantine at '{to}' before the interruption; its index entry was rebuilt.", size, ApplyStepClass.Ok);
+    }
+
+    /// <summary>
+    /// Appends the audit line for a move the resume has established, unless the log already has one for
+    /// that destination. Best effort: the content is already safe and the index is the thing restore reads;
+    /// a log that cannot be written is reported by <c>audit verify</c> from the other side.
+    /// </summary>
+    private async Task EnsureQuarantineAuditedAsync(string planId, BoundStep bound, string from, string to, ulong size)
+    {
+        if (_audit is null)
+        {
+            return;
+        }
+
+        try
+        {
+            string? text = await _audit.ReadAllTextAsync().ConfigureAwait(false);
+            bool logged = AuditLines.Parse(text).Records.Any(record =>
+                record.Action == AuditRecord.QuarantineAction
+                && record.Result == AuditRecord.OkResult
+                && string.Equals(record.To, to, StringComparison.Ordinal));
+
+            if (logged)
+            {
+                return;
+            }
+
+            await _audit.AppendAsync(new AuditRecord
+            {
+                PlanId = planId,
+                StepId = bound.PlanStep.ItemId,
+                Eco = bound.Item?.Ecosystem,
+                Kind = bound.Item?.Kind,
+                Action = AuditRecord.QuarantineAction,
+                From = from,
+                To = to,
+                Bytes = size,
+                Result = AuditRecord.OkResult,
+            }).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            // The content is safe; the missing line is what audit verify reports.
+        }
     }
 
     private bool Exists(string path) => _fs.DirectoryExists(path) || _fs.FileExists(path);

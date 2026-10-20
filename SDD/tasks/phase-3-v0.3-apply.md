@@ -48,7 +48,7 @@ Exit criteria per 12-roadmap.
 
 **Acceptance**
 - [x] kill -9 mid-apply in test → `--resume` completes; no partial item state
-- [ ] Journal + audit reconcile after crash — deferred to T-035: reconcile needs the audit log, which this card does not build. The journal side is proven (every intent has an outcome after resume, in-process crash matrix + a real `Kill(entireProcessTree)` child); the audit half lands with T-035.
+- [x] Journal + audit reconcile after crash — `--resume` rebuilds a lost index entry AND appends the quarantine audit line when the log lacks it (and only then, so a crash after the audit append does not duplicate). Proven by two crash-matrix tests: kill between rename and audit line → one line, verify clean; kill after audit line before index → entry rebuilt, line not duplicated, verify clean.
 - [x] Non-TTY `apply` without `--yes` → exit 2 (07 contract)
 
 ### T-035 · Audit log + `audit verify`

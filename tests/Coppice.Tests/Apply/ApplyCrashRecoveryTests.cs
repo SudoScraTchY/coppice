@@ -1,5 +1,6 @@
 using System.Globalization;
 using Coppice.Core.Apply;
+using Coppice.Core.Audit;
 using Coppice.Core.Domain;
 using Coppice.Core.Gateway;
 using Coppice.Core.Plans;
@@ -60,9 +61,19 @@ public sealed class ApplyCrashRecoveryTests
         public ApplyRunner NewRunner()
         {
             var clock = new FakeClock(Stamp);
-            var gateway = new GatewayEngine(Fs, Win, Index, clock, new FakeProcessRunner());
-            return new ApplyRunner(gateway, Fs, Log, Index, clock);
+            var audit = new AuditLog(Log, clock);
+            var gateway = new GatewayEngine(Fs, Win, Index, clock, new FakeProcessRunner(), audit);
+            return new ApplyRunner(gateway, Fs, Log, Index, clock, audit);
         }
+
+        public Task<AuditVerifyReport> VerifyAsync() => new AuditVerifier(Log, Index, Fs).VerifyAsync();
+
+        /// <summary>The quarantine lines the ledger holds, so a reconcile can be checked for duplicates.</summary>
+        public IReadOnlyList<AuditRecord> QuarantineLines() =>
+            [.. AuditLines.Parse(string.IsNullOrEmpty(Text(AuditLog.Key)) ? null : Text(AuditLog.Key)).Records
+                .Where(r => r.Action == AuditRecord.QuarantineAction)];
+
+        public string? Text(string key) => Log.ReadAllTextAsync(key).GetAwaiter().GetResult();
 
         public IReadOnlyList<BoundStep> Bind() =>
             PlanBinder.Bind(Plan, Snapshot, [new BindingRoot("nuget-packages", Root, true, false, "*/*")], Win, strict: false);
@@ -161,6 +172,61 @@ public sealed class ApplyCrashRecoveryTests
         ApplySummary resumed = await world.NewRunner().RunAsync(world.Plan, world.Bind(), new ApplyOptions(false, true, true));
 
         Assert.Equal(ApplyStatus.Completed, resumed.Status);
+        await AssertNoPartialItem(world);
+    }
+
+    [Fact]
+    public async Task A_kill_between_the_rename_and_the_audit_line_is_reconciled_on_resume()
+    {
+        World world = BuildWorld();
+        world.Fs.OnMove = (_, _) => throw new SimulatedCrash("after rename, before the audit line");
+
+        await Assert.ThrowsAsync<SimulatedCrash>(() => world.NewRunner().RunAsync(world.Plan, world.Bind(), new ApplyOptions(false, false, true)));
+
+        // Moved, with neither an index entry nor an audit line: the window between the rename and the
+        // gateway's first record of it.
+        Assert.True(world.Fs.DirectoryExists(world.QuarantinePath));
+        Assert.Empty(await world.Index.ListAsync());
+        Assert.Empty(world.QuarantineLines());
+
+        world.Fs.OnMove = null;
+        ApplySummary resumed = await world.NewRunner().RunAsync(world.Plan, world.Bind(), new ApplyOptions(false, true, true));
+
+        Assert.Equal(ApplyStatus.Completed, resumed.Status);
+
+        // The resume rebuilt the index entry AND the line, so verify sees one story, not an unlogged mutation.
+        Assert.Single(world.QuarantineLines());
+        AuditVerifyReport report = await world.VerifyAsync();
+        Assert.True(report.Ok, string.Join("; ", report.Findings.Select(f => f.Message)));
+        Assert.Empty(report.Findings);
+        await AssertNoPartialItem(world);
+    }
+
+    [Fact]
+    public async Task A_kill_after_the_audit_line_before_the_index_entry_does_not_duplicate_it()
+    {
+        World world = BuildWorld();
+        world.State.FailWhenPrefix = "quarantine";
+
+        await Assert.ThrowsAsync<SimulatedCrash>(() => world.NewRunner().RunAsync(world.Plan, world.Bind(), new ApplyOptions(false, false, true)));
+
+        // The move and its audit line happened; the index write is what died.
+        Assert.True(world.Fs.DirectoryExists(world.QuarantinePath));
+        Assert.Single(world.QuarantineLines());
+        Assert.Empty(await world.Index.ListAsync());
+
+        world.State.FailWhenPrefix = null;
+        ApplySummary resumed = await world.NewRunner().RunAsync(world.Plan, world.Bind(), new ApplyOptions(false, true, true));
+
+        Assert.Equal(ApplyStatus.Completed, resumed.Status);
+
+        // The entry is rebuilt, but the line already existed and must not be written twice.
+        Assert.Single(world.QuarantineLines());
+        Assert.Single(await world.Index.ListAsync());
+
+        AuditVerifyReport report = await world.VerifyAsync();
+        Assert.True(report.Ok, string.Join("; ", report.Findings.Select(f => f.Message)));
+        Assert.Empty(report.Findings);
         await AssertNoPartialItem(world);
     }
 

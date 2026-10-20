@@ -226,7 +226,7 @@ public sealed class ApplyCommand
         // append theirs, and `coppice audit verify` (T-035) later replays it against the index.
         var audit = new AuditLog(_log, _clock);
         var gateway = new GatewayEngine(_fs, _env.OS, index, _clock, _runner, audit);
-        var runner = new ApplyRunner(gateway, _fs, _log, index, _clock);
+        var runner = new ApplyRunner(gateway, _fs, _log, index, _clock, audit);
 
         ApplySummary summary = runner
             .RunAsync(plan, bound, new ApplyOptions(flags.Strict, flags.Resume, flags.Yes))
