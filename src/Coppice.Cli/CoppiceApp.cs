@@ -41,6 +41,7 @@ public static class CoppiceApp
             ["roots"] = RunRoots,
             ["scan"] = RunScan,
             ["apply"] = RunApply,
+            ["audit"] = RunAudit,
         };
 
     public static int Run(string[] args)
@@ -86,6 +87,14 @@ public static class CoppiceApp
             new PhysicalFileSystem(),
             new SystemProcessRunner(),
             new SystemEnvironment(),
+            new FileSystemStateStore(new PhysicalFileSystem(), new SystemEnvironment()),
+            new FileAppendLog(new SystemEnvironment()),
+            new SystemApplyConsole())
+            .Run(args);
+
+    private static int RunAudit(string[] args) =>
+        new AuditCommand(
+            new PhysicalFileSystem(),
             new FileSystemStateStore(new PhysicalFileSystem(), new SystemEnvironment()),
             new FileAppendLog(new SystemEnvironment()),
             new SystemApplyConsole())
@@ -293,6 +302,8 @@ public static class CoppiceApp
         Console.WriteLine("  scan   [--json]     inventory the caches and store a snapshot");
         Console.WriteLine("  apply  [--plan <file>] [--yes] [--strict] [--resume] [--json]");
         Console.WriteLine("                      execute a plan: path steps MOVE to quarantine, native steps run a tool");
+        Console.WriteLine("  audit  show|verify [--json]");
+        Console.WriteLine("                      show the mutation log, or replay it against the quarantine index");
         Console.WriteLine("  version             print the build version");
         Console.WriteLine();
         Console.WriteLine("Flags: --json, --no-color");

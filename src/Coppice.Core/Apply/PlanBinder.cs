@@ -53,10 +53,10 @@ public static class PlanBinder
             items.TryAdd(item.ItemId, item);
         }
 
-        return [.. plan.Steps.Select(step => BindOne(step, items, roots, os, strict))];
+        return [.. plan.Steps.Select(step => BindOne(step, plan.PlanId, items, roots, os, strict))];
     }
 
-    private static BoundStep BindOne(PlanStep step, Dictionary<string, Item> items, IReadOnlyList<BindingRoot> roots, OperatingSystemKind os, bool strict)
+    private static BoundStep BindOne(PlanStep step, string planId, Dictionary<string, Item> items, IReadOnlyList<BindingRoot> roots, OperatingSystemKind os, bool strict)
     {
         if (!items.TryGetValue(step.ItemId, out Item? item))
         {
@@ -127,6 +127,7 @@ public static class PlanBinder
             Kind = item.Kind,
             Name = item.Name,
             Version = item.Version,
+            PlanId = planId,
         };
 
         return new BoundStep(step, item, gatewayStep, GatewayRefusal.None, string.Empty);

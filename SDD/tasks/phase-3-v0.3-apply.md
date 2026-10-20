@@ -58,9 +58,9 @@ Exit criteria per 12-roadmap.
 - Append-only JSONL per 10; `coppice audit show|verify` replays against quarantine state and flags unlogged mutations or orphaned quarantine entries.
 
 **Acceptance**
-- [ ] Test harness finds zero unlogged mutations across the full suite
-- [ ] `verify` detects a deliberately tampered log line
-- [ ] Log rotates safely (size cap) without losing entries
+- [x] Test harness finds zero unlogged mutations across the full suite
+- [x] `verify` detects a deliberately tampered log line
+- [x] Log rotates safely (size cap) without losing entries
 
 ### T-036 · TUI screens
 **Refs** FR-20, 07-cli-tui · **Depends** T-034, T-015 · **Effort** XL

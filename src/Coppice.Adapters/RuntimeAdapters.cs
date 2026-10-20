@@ -82,7 +82,10 @@ public sealed class FileSystemStateStore : IStateStore
     /// one, never half of either. Apply writes quarantine entries and plans while it mutates the disk, and a
     /// torn index entry is a quarantined item <c>restore</c> cannot find.
     /// </summary>
-    public async Task<string> WriteAsync(string key, string contentType, string json, CancellationToken cancellationToken = default)
+    public Task<string> WriteAsync(string key, string contentType, string json) =>
+        WriteAsync(key, contentType, json, CancellationToken.None);
+
+    public async Task<string> WriteAsync(string key, string contentType, string json, CancellationToken cancellationToken)
     {
         string path = PathFor(key);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -111,7 +114,9 @@ public sealed class FileSystemStateStore : IStateStore
         return key;
     }
 
-    public async Task<StateDocument?> ReadAsync(string key, CancellationToken cancellationToken = default)
+    public Task<StateDocument?> ReadAsync(string key) => ReadAsync(key, CancellationToken.None);
+
+    public async Task<StateDocument?> ReadAsync(string key, CancellationToken cancellationToken)
     {
         string path = PathFor(key);
         if (!File.Exists(path))
@@ -142,7 +147,9 @@ public sealed class FileSystemStateStore : IStateStore
             .OrderBy(k => k, StringComparer.Ordinal)];
     }
 
-    public Task DeleteAsync(string key, CancellationToken cancellationToken = default)
+    public Task DeleteAsync(string key) => DeleteAsync(key, CancellationToken.None);
+
+    public Task DeleteAsync(string key, CancellationToken cancellationToken)
     {
         string path = PathFor(key);
         if (File.Exists(path))
@@ -193,22 +200,39 @@ internal static class StateRoot
 }
 
 /// <summary>
-/// The durable append log under the state root (T-034 journal). Each line is flushed to disk before the
-/// call returns: a write-ahead record that is still in a buffer when the process dies was never written.
+/// The durable append log under the state root (T-034 journal, T-035 audit). Each line is flushed to disk
+/// before the call returns: a write-ahead record that is still in a buffer when the process dies was never
+/// written.
+/// <para>
+/// Segments roll at a size cap: when the current file would exceed the cap, it is renamed aside and appends
+/// continue in a fresh one. A roll NEVER discards — the cap bounds a segment, not the log — and
+/// <see cref="ReadAllTextAsync"/> returns every segment oldest-first, so a hash chain laid down across a
+/// roll still verifies end to end (T-035: "rotates safely without losing entries").
+/// </para>
 /// </summary>
 public sealed class FileAppendLog : IAppendLog
 {
+    /// <summary>Segment cap. Large enough that years of normal use do not roll; small enough to test.</summary>
+    public const long DefaultSegmentBytes = 16 * 1024 * 1024;
+
     private readonly string _root;
+    private readonly long _maxSegmentBytes;
 
     public FileAppendLog(string root)
+        : this(root, DefaultSegmentBytes)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(root);
-        _root = root;
     }
 
     public FileAppendLog(IEnvironment env)
-        : this(StateRoot.Default(env))
+        : this(StateRoot.Default(env), DefaultSegmentBytes)
     {
+    }
+
+    public FileAppendLog(string root, long maxSegmentBytes)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(root);
+        _root = root;
+        _maxSegmentBytes = maxSegmentBytes;
     }
 
     public async Task AppendLineAsync(string key, string line)
@@ -216,6 +240,15 @@ public sealed class FileAppendLog : IAppendLog
         ArgumentNullException.ThrowIfNull(line);
         string path = StateRoot.Resolve(_root, key);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+        if (_maxSegmentBytes > 0 && File.Exists(path))
+        {
+            long incoming = System.Text.Encoding.UTF8.GetByteCount(line) + 1;
+            if (new FileInfo(path).Length + incoming > _maxSegmentBytes)
+            {
+                Roll(path);
+            }
+        }
 
         byte[] bytes = System.Text.Encoding.UTF8.GetBytes(line + "\n");
         await using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
@@ -226,13 +259,66 @@ public sealed class FileAppendLog : IAppendLog
     public async Task<string?> ReadAllTextAsync(string key)
     {
         string path = StateRoot.Resolve(_root, key);
-        if (!File.Exists(path))
+
+        // Rolled segments first, oldest to newest, then the current file: the order the lines were written
+        // in. A log that never rolled reads exactly as it did before rotation existed.
+        string? combined = null;
+        foreach (string segment in SegmentsInOrder(path))
         {
-            return null;
+            await using var stream = new FileStream(segment, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+            string text = await reader.ReadToEndAsync().ConfigureAwait(false);
+            combined = combined is null ? text : combined + text;
         }
 
-        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
-        return await reader.ReadToEndAsync().ConfigureAwait(false);
+        return combined;
+    }
+
+    private IEnumerable<string> SegmentsInOrder(string path)
+    {
+        string directory = Path.GetDirectoryName(path)!;
+        string name = Path.GetFileName(path);
+
+        var rolled = new List<(int Order, string Path)>();
+        if (Directory.Exists(directory))
+        {
+            foreach (string file in Directory.GetFiles(directory, name + ".*"))
+            {
+                string suffix = file[(file.LastIndexOf('.') + 1)..];
+                if (int.TryParse(suffix, out int order))
+                {
+                    rolled.Add((order, file));
+                }
+            }
+        }
+
+        foreach ((_, string file) in rolled.OrderBy(segment => segment.Order))
+        {
+            yield return file;
+        }
+
+        if (File.Exists(path))
+        {
+            yield return path;
+        }
+    }
+
+    /// <summary>Renames the current segment aside; the next append starts a fresh file. Nothing is discarded.</summary>
+    private void Roll(string path)
+    {
+        string directory = Path.GetDirectoryName(path)!;
+        string name = Path.GetFileName(path);
+        int next = 1;
+
+        foreach (string file in Directory.GetFiles(directory, name + ".*"))
+        {
+            string suffix = file[(file.LastIndexOf('.') + 1)..];
+            if (int.TryParse(suffix, out int order) && order >= next)
+            {
+                next = order + 1;
+            }
+        }
+
+        File.Move(path, $"{path}.{next:0000}");
     }
 }

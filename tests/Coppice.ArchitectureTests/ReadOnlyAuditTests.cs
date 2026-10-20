@@ -295,7 +295,9 @@ public sealed class ReadOnlyAuditTests
     {
         // T-034 widens this pin deliberately: `apply` is the one verb that mutates, it is in the table
         // because the product needs it, and this assertion is what makes adding a SECOND one a spec
-        // conversation rather than a side effect. Everything else on the surface still only reads.
+        // conversation rather than a side effect. T-035 widens it again for `audit` — which only READS
+        // the log and the index, and exists so the mutation ledger is inspectable without touching the
+        // filesystem it describes. Everything else on the surface still only reads.
         string[] forbidden = ["clean", "delete", "remove", "prune", "purge", "uninstall", "rm"];
 
         string[] dispatched = CommandVerbs(typeof(Coppice.Cli.CoppiceApp));
@@ -305,7 +307,7 @@ public sealed class ReadOnlyAuditTests
             Assert.DoesNotContain(verb, dispatched);
         }
 
-        Assert.Equal(["apply", "doctor", "roots", "scan"], dispatched.Order(StringComparer.Ordinal));
+        Assert.Equal(["apply", "audit", "doctor", "roots", "scan"], dispatched.Order(StringComparer.Ordinal));
     }
 
     /// <summary>

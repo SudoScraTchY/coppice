@@ -181,6 +181,9 @@ public sealed record GatewayStep
 
     /// <summary>The item's version, recorded in the quarantine index (T-032).</summary>
     public string? Version { get; init; }
+
+    /// <summary>The plan this step came from, recorded in the audit log (T-035). Null outside an apply run.</summary>
+    public string? PlanId { get; init; }
 }
 
 /// <summary>

@@ -1,3 +1,4 @@
+using Coppice.Core.Audit;
 using Coppice.Core.Gateway;
 using Coppice.Core.PathSafety;
 using Coppice.Ports;
@@ -23,8 +24,9 @@ public sealed class QuarantineRestore
     private readonly IFileSystem _fs;
     private readonly OperatingSystemKind _os;
     private readonly QuarantineIndex _index;
+    private readonly AuditLog? _audit;
 
-    public QuarantineRestore(IFileSystem fs, OperatingSystemKind os, QuarantineIndex index)
+    public QuarantineRestore(IFileSystem fs, OperatingSystemKind os, QuarantineIndex index, AuditLog? audit = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(index);
@@ -32,6 +34,7 @@ public sealed class QuarantineRestore
         _fs = fs;
         _os = os;
         _index = index;
+        _audit = audit;
     }
 
     /// <summary>
@@ -42,7 +45,11 @@ public sealed class QuarantineRestore
     /// and look for a version that no longer exists in either place.
     /// </para>
     /// </summary>
-    public async Task<RestoreResult> RestoreAsync(string entryId, CancellationToken cancellationToken = default)
+    /// <summary>Restores one entry by id; the cancellation-free form most callers want.</summary>
+    public Task<RestoreResult> RestoreAsync(string entryId) => RestoreAsync(entryId, CancellationToken.None);
+
+    /// <summary>The same restore, for callers already flowing a cancellation signal.</summary>
+    public async Task<RestoreResult> RestoreAsync(string entryId, CancellationToken cancellationToken)
     {
         QuarantineEntry? entry = await _index.GetAsync(entryId, cancellationToken).ConfigureAwait(false);
 
@@ -108,6 +115,19 @@ public sealed class QuarantineRestore
 
         await _index.DeleteAsync(entryId, cancellationToken).ConfigureAwait(false);
 
+        // A restore is a mutation, not an undo of one (S-11): the item moved again, so the log records it.
+        await AppendAuditBestEffortAsync(new AuditRecord
+        {
+            StepId = entry.ItemId,
+            Eco = entry.Ecosystem,
+            Kind = entry.Kind,
+            Action = AuditRecord.RestoreAction,
+            From = entry.QuarantinePath,
+            To = entry.OriginalPath,
+            Bytes = entry.SizeBytes,
+            Result = AuditRecord.OkResult,
+        }).ConfigureAwait(false);
+
         return RestoreResult.Ok(
             entry.OriginalPath,
             $"Restored '{entry.Name} {entry.Version}' to '{entry.OriginalPath}'.");
@@ -122,9 +142,13 @@ public sealed class QuarantineRestore
     /// restore that fails for a reason the user cannot act on.
     /// </para>
     /// </summary>
+    /// <summary>Removes entries older than <paramref name="age"/>; the cancellation-free form most callers want.</summary>
+    public Task<IReadOnlyList<QuarantineEntry>> PruneAsync(TimeSpan age) => PruneAsync(age, CancellationToken.None);
+
+    /// <summary>The same prune, for callers already flowing a cancellation signal.</summary>
     public async Task<IReadOnlyList<QuarantineEntry>> PruneAsync(
         TimeSpan age,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
         IReadOnlyList<QuarantineEntry> all = await _index.ListAsync(cancellationToken).ConfigureAwait(false);
 
@@ -145,6 +169,21 @@ public sealed class QuarantineRestore
                 }
 
                 await _index.DeleteAsync(entry.EntryId, cancellationToken).ConfigureAwait(false);
+
+                // The discard happened; the audit line records it (S-12). A failed append must not turn a
+                // completed prune into a reported failure — the index row is already gone, and `audit
+                // verify` reports the gap from the log's side.
+                await AppendAuditBestEffortAsync(new AuditRecord
+                {
+                    StepId = entry.ItemId,
+                    Eco = entry.Ecosystem,
+                    Kind = entry.Kind,
+                    Action = AuditRecord.PruneAction,
+                    From = entry.QuarantinePath,
+                    Bytes = entry.SizeBytes,
+                    Result = AuditRecord.OkResult,
+                }).ConfigureAwait(false);
+
                 pruned.Add(entry);
             }
             catch (System.IO.IOException)
@@ -197,5 +236,26 @@ public sealed class QuarantineRestore
         // On unix the whole filesystem is one namespace for rename purposes; a mount point is the real
         // boundary, and determining one portably is not possible from a path string alone.
         return "/";
+    }
+
+    /// <summary>
+    /// Records one mutation in the audit log. A failed append must not fail a mutation that already
+    /// happened; the resulting gap is exactly what `audit verify` detects from the other side.
+    /// </summary>
+    private async Task AppendAuditBestEffortAsync(AuditRecord record)
+    {
+        if (_audit is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _audit.AppendAsync(record).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            // The mutation stands; the log carries a gap that verify reports.
+        }
     }
 }

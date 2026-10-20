@@ -1,5 +1,6 @@
 using System.Diagnostics;
 
+using Coppice.Core.Audit;
 using Coppice.Core.Native;
 using Coppice.Core.PathSafety;
 using Coppice.Core.Quarantine;
@@ -36,6 +37,7 @@ public sealed class Gateway
     private readonly QuarantineIndex? _quarantine;
     private readonly IClock _clock;
     private readonly IProcessRunner? _processes;
+    private readonly AuditLog? _audit;
 
     /// <summary>
     /// The hard deadline for one native command (S-15, NFR-07). Generous enough for a real
@@ -48,7 +50,8 @@ public sealed class Gateway
         OperatingSystemKind os,
         QuarantineIndex? quarantine = null,
         IClock? clock = null,
-        IProcessRunner? processes = null)
+        IProcessRunner? processes = null,
+        AuditLog? audit = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         _fs = fs;
@@ -56,6 +59,7 @@ public sealed class Gateway
         _quarantine = quarantine;
         _clock = clock ?? new DefaultClock();
         _processes = processes;
+        _audit = audit;
     }
 
     /// <summary>
@@ -256,6 +260,26 @@ public sealed class Gateway
                 $"Not permitted to move '{step.Action.CanonicalPath}': {ex.Message}");
         }
 
+        // The move happened, so the audit line records THAT before anything else can fail (S-11, S-12): a
+        // failed index write leaves content the index cannot see, and `audit verify` flags that orphan from
+        // the line's side — the line is what makes the gap detectable rather than invisible.
+        string? auditNote = await AppendAuditAsync(new AuditRecord
+        {
+            PlanId = step.PlanId,
+            StepId = step.ItemId,
+            Eco = step.Ecosystem,
+            Kind = step.Kind,
+            Action = AuditRecord.QuarantineAction,
+            From = step.Action.CanonicalPath,
+            To = destination,
+            Bytes = entry?.SizeBytes,
+            Result = AuditRecord.OkResult,
+        }).ConfigureAwait(false);
+
+        string Note(string message) => auditNote is null
+            ? message
+            : $"{message} (the audit line for this move could not be written: {auditNote})";
+
         if (_quarantine is not null && entry is not null)
         {
             try
@@ -273,8 +297,8 @@ public sealed class Gateway
                     GatewayOutcome.Quarantined,
                     GatewayRefusal.None,
                     destination,
-                    $"Moved to quarantine at '{destination}', but the quarantine index could not be updated ({ex.Message}). "
-                        + "The item is safe, but `coppice quarantine restore` will not list it.");
+                    Note($"Moved to quarantine at '{destination}', but the quarantine index could not be updated ({ex.Message}). "
+                        + "The item is safe, but `coppice quarantine restore` will not list it."));
             }
         }
 
@@ -283,7 +307,7 @@ public sealed class Gateway
             GatewayOutcome.Quarantined,
             GatewayRefusal.None,
             destination,
-            $"Moved to quarantine at '{destination}'. Restore with `coppice quarantine restore`.");
+            Note($"Moved to quarantine at '{destination}'. Restore with `coppice quarantine restore`."));
     }
 
     /// <summary>
@@ -373,6 +397,27 @@ public sealed class Gateway
 
         string command = $"{fileName} {string.Join(' ', arguments)}";
 
+        // The command ran — executed, failed, or killed at the deadline — so the audit gets exactly one
+        // line with what ran and how it ended (S-11 audits a native mutation instead of quarantining it;
+        // FR-17). Refusals above never reach here: they did not mutate anything.
+        string? auditNote = await AppendAuditAsync(new AuditRecord
+        {
+            PlanId = step.PlanId,
+            StepId = step.ItemId,
+            Eco = step.Ecosystem,
+            Kind = step.Kind,
+            Action = AuditRecord.NativeAction,
+            From = step.Path,
+            Result = run.TimedOut || run.ExitCode != 0 ? AuditRecord.FailedResult : AuditRecord.OkResult,
+            ExitCode = run.ExitCode,
+            DurationMs = (long)duration.TotalMilliseconds,
+            Command = command,
+        }).ConfigureAwait(false);
+
+        string Note(string message) => auditNote is null
+            ? message
+            : $"{message} (the audit line for this run could not be written: {auditNote})";
+
         if (run.TimedOut)
         {
             // Killed at the deadline. The command STARTED, so this is a failed step rather than a skip:
@@ -382,8 +427,8 @@ public sealed class Gateway
                 GatewayOutcome.Failed,
                 GatewayRefusal.TimedOut,
                 QuarantinePath: null,
-                $"Native command '{command}' was killed after {NativeCommandTimeout.TotalMinutes:0} minutes (S-15). "
-                    + "Any partial effects belong to the tool and are not restorable; re-run `coppice scan` before planning again.")
+                Note($"Native command '{command}' was killed after {NativeCommandTimeout.TotalMinutes:0} minutes (S-15). "
+                    + "Any partial effects belong to the tool and are not restorable; re-run `coppice scan` before planning again."))
             {
                 Output = run.StandardOutput,
                 Error = run.StandardError,
@@ -400,7 +445,7 @@ public sealed class Gateway
                 GatewayOutcome.Failed,
                 GatewayRefusal.None,
                 QuarantinePath: null,
-                $"Native command '{command}' failed with exit code {run.ExitCode}. {FirstErrorLine(run.StandardError)}")
+                Note($"Native command '{command}' failed with exit code {run.ExitCode}. {FirstErrorLine(run.StandardError)}"))
             {
                 Output = run.StandardOutput,
                 Error = run.StandardError,
@@ -414,7 +459,7 @@ public sealed class Gateway
             GatewayOutcome.Executed,
             GatewayRefusal.None,
             QuarantinePath: null,
-            $"Native command '{command}' completed (exit 0).")
+            Note($"Native command '{command}' completed (exit 0)."))
         {
             Output = run.StandardOutput,
             Error = run.StandardError,
@@ -464,6 +509,30 @@ public sealed class Gateway
         }
 
         return line.Length <= 200 ? line : line[..200] + "…";
+    }
+
+    /// <summary>
+    /// Records one mutation in the audit log. A failed append must not crash a run whose mutation already
+    /// happened, and must not be hidden either: the caller adds the returned note to its result message,
+    /// and `audit verify` reports the same gap from the log's side. S-12's "verifiable" cuts both ways —
+    /// a missing line is a detectable event, not a silent one.
+    /// </summary>
+    private async Task<string?> AppendAuditAsync(AuditRecord record)
+    {
+        if (_audit is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            await _audit.AppendAsync(record).ConfigureAwait(false);
+            return null;
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            return ex.Message;
+        }
     }
 
     /// <summary>The S-2 drift check: does live state still match the snapshot?</summary>

@@ -67,6 +67,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--plan` is a usage error, checked before any state is read); `--strict` refuses a step whose recorded
   mtime is missing or moved; exit 4 signals a partial apply. Plans are single-use: a completed journal
   refuses a second apply, an unfinished one refuses to restart without `--resume`.
+- T-035 audit log + `audit verify`: the mutation ledger. Every mutation the gateway, a restore or a prune
+  performs appends one hash-chained JSONL line to `audit/audit.jsonl` — a sequence number, the hash of the
+  line before it, and a SHA-256 over the line's own content — so editing, reordering or dropping a written
+  line is detectable, and a torn append from a kill is a tolerated gap the verifier reports rather than a
+  chain it cannot continue. `coppice audit show|verify` reads it: `verify` replays the log against the
+  quarantine index and the filesystem — no index entry without its line (an unlogged mutation is an error),
+  no quarantined content the log cannot account for (the failed-index-write orphan the gateway warns about
+  in its result resurfaces here as a finding) — and exits 1 when the chain itself does not verify. The
+  append log now rolls at a size cap without discarding, and the chain verifies across the roll.
 
 ### Fixed
 - `PhysicalFileSystem.GetEntry` used a `FileInfo` even for directories, so `FileInfo.Exists` was false

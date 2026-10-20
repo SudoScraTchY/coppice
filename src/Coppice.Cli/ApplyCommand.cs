@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Coppice.Adapters;
 using Coppice.Core.Apply;
+using Coppice.Core.Audit;
 using Coppice.Core.Domain;
 using Coppice.Core.Gateway;
 using Coppice.Core.Plans;
@@ -220,7 +221,11 @@ public sealed class ApplyCommand
         }
 
         var index = new QuarantineIndex(_state);
-        var gateway = new GatewayEngine(_fs, _env.OS, index, _clock, _runner);
+
+        // One audit stream for the whole run: the gateway appends a line per mutation, restore and prune
+        // append theirs, and `coppice audit verify` (T-035) later replays it against the index.
+        var audit = new AuditLog(_log, _clock);
+        var gateway = new GatewayEngine(_fs, _env.OS, index, _clock, _runner, audit);
         var runner = new ApplyRunner(gateway, _fs, _log, index, _clock);
 
         ApplySummary summary = runner
