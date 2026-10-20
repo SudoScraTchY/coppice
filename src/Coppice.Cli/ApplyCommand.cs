@@ -1,15 +1,11 @@
 using System.Text.Json;
 using Coppice.Adapters;
 using Coppice.Core.Apply;
-using Coppice.Core.Audit;
 using Coppice.Core.Domain;
 using Coppice.Core.Gateway;
 using Coppice.Core.Plans;
-using Coppice.Core.Quarantine;
 using Coppice.Core.Snapshots;
-using Coppice.Plugins.Net;
 using Coppice.Ports;
-using GatewayEngine = Coppice.Core.Gateway.Gateway;
 
 namespace Coppice.Cli;
 
@@ -121,15 +117,6 @@ public sealed record ApplyFlags(string? PlanFile, bool Yes, bool Strict, bool Re
 /// </summary>
 public sealed class ApplyCommand
 {
-    /// <summary>
-    /// The entry shapes a location's cache may have, for the gateway's allowlist. Only the NuGet
-    /// global-packages cache declares one: it is the only location whose contents are re-downloadable, which
-    /// is what makes it the only tier a default policy may act on. A location with no pattern here binds no
-    /// path delete at all.
-    /// </summary>
-    private static readonly IReadOnlyDictionary<string, string> Allowlists =
-        new Dictionary<string, string>(StringComparer.Ordinal) { ["nuget-packages"] = "*/*" };
-
     /// <summary>A plan file is JSON and small; 8 MB is generous and keeps the read bounded.</summary>
     private const int PlanFileLimit = 8 * 1024 * 1024;
 
@@ -222,7 +209,7 @@ public sealed class ApplyCommand
         Snapshot snapshot = snapshotResult.Snapshot!;
 
         DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS).Inspect();
-        IReadOnlyList<BoundStep> bound = PlanBinder.Bind(plan, snapshot, BindingRoots(roots), _env.OS, flags.Strict);
+        IReadOnlyList<BoundStep> bound = PlanBinder.Bind(plan, snapshot, ApplyWiring.BindingRoots(roots), _env.OS, flags.Strict);
 
         bool canAsk = _console.IsInteractive && !flags.Ci;
         if (canAsk && !flags.Yes && !Confirm(plan, snapshot, bound))
@@ -231,15 +218,12 @@ public sealed class ApplyCommand
             return ExitCodes.Success;
         }
 
-        var index = new QuarantineIndex(_state);
-
         // One audit stream for the whole run: the gateway appends a line per mutation, restore and prune
-        // append theirs, and `coppice audit verify` (T-035) later replays it against the index.
-        var audit = new AuditLog(_log, _clock);
-        var gateway = new GatewayEngine(_fs, _env.OS, index, _clock, _runner, audit);
-        var runner = new ApplyRunner(gateway, _fs, _log, index, _clock, audit);
+        // append theirs, and `coppice audit verify` (T-035) later replays it against the index. The wiring
+        // is shared with the TUI (ApplyWiring) so the two frontends cannot bind or log differently.
+        ApplyServices services = ApplyWiring.Create(_fs, _runner, _env, _state, _log, _clock);
 
-        ApplySummary summary = runner
+        ApplySummary summary = services.Runner
             .RunAsync(plan, bound, new ApplyOptions(flags.Strict, flags.Resume, flags.Yes))
             .GetAwaiter()
             .GetResult();
@@ -297,25 +281,6 @@ public sealed class ApplyCommand
             : PlanDecision.Refuse(ExitCodes.SafetyAbort, loaded.Message ?? $"Plan '{newest}' was refused.");
     }
 
-    private static IReadOnlyList<BindingRoot> BindingRoots(DoctorReport report)
-    {
-        var roots = new List<BindingRoot>();
-
-        foreach (RootReport root in report.Roots)
-        {
-            NetLocation? location = NetProfile.Find(root.LocationId);
-
-            roots.Add(new BindingRoot(
-                root.LocationId,
-                root.Root.RealPath,
-                root.Root.IsCleanable,
-                location?.Owner == InstallOwner.Msi,
-                Allowlists.GetValueOrDefault(root.LocationId)));
-        }
-
-        return roots;
-    }
-
     /// <summary>
     /// 07's confirmation gate: the summary a human reads before agreeing, and one word that has to be typed
     /// in full. Anything else — including an empty line and end of input — is a decline, because the cost of
@@ -365,7 +330,7 @@ public sealed class ApplyCommand
 
     private int Report(ApplySummary summary, ApplyFlags flags)
     {
-        if (summary.Status is not (ApplyStatus.Completed or ApplyStatus.Partial))
+        if (summary.Status is not (ApplyStatus.Completed or ApplyStatus.Partial or ApplyStatus.Cancelled))
         {
             return summary.Status is ApplyStatus.AlreadyApplied or ApplyStatus.NothingToResume
                 ? Usage(summary.Message)
@@ -408,9 +373,16 @@ public sealed class ApplyCommand
             {
                 _console.WriteLine($"  ! {step.StepId}: {step.Message}");
             }
+
+            if (summary.Status == ApplyStatus.Cancelled)
+            {
+                _console.WriteLine(summary.Message);
+            }
         }
 
-        return summary.Status == ApplyStatus.Partial ? ExitCodes.PartialApply : ExitCodes.Success;
+        return summary.Status is ApplyStatus.Partial or ApplyStatus.Cancelled
+            ? ExitCodes.PartialApply
+            : ExitCodes.Success;
     }
 
     /// <summary>The dominant failure reason, so "2 failed (locked)" says something a user can act on.</summary>

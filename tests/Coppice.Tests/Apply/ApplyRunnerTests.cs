@@ -390,6 +390,86 @@ public sealed class ApplyRunnerTests
         Assert.True(world.Fs.DirectoryExists($@"{Root}\newtonsoft.json\1.0.0"));
     }
 
+    // ---- cancellation (T-036) ---------------------------------------------------------------------
+
+    /// <summary>
+    /// Cancel is honoured BETWEEN steps and only there. The first step is journaled exactly as an
+    /// uninterrupted run would, the second never starts, and the journal is left open — which is the state
+    /// `--resume` accepts. A cancel that appended `end` would abandon the remaining steps and call the plan
+    /// finished.
+    /// </summary>
+    [Fact]
+    public async Task Cancelling_between_steps_stops_before_the_next_intent_and_leaves_a_resumable_journal()
+    {
+        World world = BuildWorld("newtonsoft.json", "serilog");
+        using var cancellation = new CancellationTokenSource();
+        var events = new List<ApplyStepProgress>();
+
+        var progress = new InlineProgress<ApplyStepProgress>(update =>
+        {
+            events.Add(update);
+            if (update.Report is not null && events.Count(e => e.Report is not null) == 1)
+            {
+                // The first outcome is already durable when its report arrives, so the loop's next
+                // cancellation check is exactly the boundary a user's Esc lands on.
+                cancellation.Cancel();
+            }
+        });
+
+        ApplySummary summary = await world.Apply.RunAsync(
+            world.Plan, world.Bound, Options(), progress, cancellation.Token);
+
+        Assert.Equal(ApplyStatus.Cancelled, summary.Status);
+        Assert.Contains("resume", summary.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(summary.Steps);
+        Assert.DoesNotContain(events, e => e.StepId == world.Plan.Steps[1].ItemId && e.Report is null);
+
+        IReadOnlyList<string> lines = world.Log.Lines(world.JournalKey);
+        Assert.Equal(1, lines.Count(l => PhaseOf(l) == "outcome"));
+        Assert.Equal(1, lines.Count(l => PhaseOf(l) == "intent"));
+        Assert.DoesNotContain(lines, l => PhaseOf(l) == "end");
+        Assert.Equal(1, lines.Count(l => PhaseOf(l) == "begin"));
+
+        // One item moved, the other did not. Nothing half-moved: the gateway was never entered for step 2.
+        Assert.Equal(1, new[] { $@"{Root}\newtonsoft.json\1.0.0", $@"{Root}\serilog\1.0.0" }.Count(world.Fs.DirectoryExists));
+
+        ApplySummary resumed = await world.Apply.RunAsync(world.Plan, world.Bound, Options(resume: true));
+
+        Assert.Equal(ApplyStatus.Completed, resumed.Status);
+        Assert.Equal(2, resumed.Ok);
+        Assert.Contains(world.Log.Lines(world.JournalKey), l => PhaseOf(l) == "end");
+    }
+
+    /// <summary>
+    /// A cancel already set before the run starts performs no mutation at all, but the attempt is still
+    /// journaled so a later `--resume` knows the plan was begun rather than never tried.
+    /// </summary>
+    [Fact]
+    public async Task A_cancel_before_the_first_step_moves_nothing_and_still_resumes()
+    {
+        World world = BuildWorld("newtonsoft.json");
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        ApplySummary summary = await world.Apply.RunAsync(
+            world.Plan, world.Bound, Options(), progress: null, cancellation.Token);
+
+        Assert.Equal(ApplyStatus.Cancelled, summary.Status);
+        Assert.Empty(summary.Steps);
+        Assert.DoesNotContain(world.Log.Lines(world.JournalKey), l => PhaseOf(l) == "intent");
+        Assert.True(world.Fs.DirectoryExists($@"{Root}\newtonsoft.json\1.0.0"));
+
+        ApplySummary resumed = await world.Apply.RunAsync(world.Plan, world.Bound, Options(resume: true));
+
+        Assert.Equal(ApplyStatus.Completed, resumed.Status);
+    }
+
+    /// <summary>Reports on the calling thread, like the TUI's progress adapter; `Progress&lt;T&gt;` would race.</summary>
+    private sealed class InlineProgress<T>(Action<T> report) : IProgress<T>
+    {
+        public void Report(T value) => report(value);
+    }
+
     private static int IndexOfPhase(IReadOnlyList<string> lines, string phase)
     {
         for (int i = 0; i < lines.Count; i++)

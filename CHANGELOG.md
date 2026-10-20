@@ -67,6 +67,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--plan` is a usage error, checked before any state is read); `--strict` refuses a step whose recorded
   mtime is missing or moved; exit 4 signals a partial apply. Plans are single-use: a completed journal
   refuses a second apply, an unfinished one refuses to restart without `--resume`.
+- T-036 TUI screens + `tui` command: seven keyboard-driven screens — Dashboard, Roots, Items, Problems,
+  Plan review, Apply progress, Quarantine — rendered with Spectre.Console (decision 003). Tab order is
+  fixed and documented in 07: Dashboard → Roots → Items → Problems → Plan review → Quarantine. Plan review
+  builds its preview with the same `RetentionEngine` and `PlanBuilder` `apply` uses, toggles steps with
+  space, and needs a second `a` before running the kept subset through the same gateway, journal and audit
+  wiring as `apply` (extracted to `ApplyWiring`). Apply progress shows each step live; `esc` cancels
+  BETWEEN steps — a step already in flight is never interrupted, the journal stays open, and
+  `coppice apply --resume` finishes it. Quarantine restore goes through `QuarantineRestore` and requires
+  `y` after the content hash and destination have been checked. When stdout or stdin is redirected, or
+  under `--ci`/`--once`, the Dashboard is rendered once as plain text with no escape sequences (NFR-09);
+  every screen is built from labeled blocks so that path and a screen reader get the same labels. The
+  manual screen-reader smoke pass (T-036 box 4) has not been run, so that box stays open.
 - T-037 `--ci` mode: a global flag that forces machine-readable output and never prompts. For the
   read-only verbs and `audit` it implies `--json`; for `apply` it forces the non-interactive path, so
   `apply --ci` without both `--yes` and `--plan` is exit 2 before anything is read. The exit-code

@@ -69,10 +69,13 @@ Exit criteria per 12-roadmap.
 - Screens per 07: Dashboard, Roots (pin), Items (filter/sort/inspect), Problems, Plan review (space toggles, `a` apply), Apply progress (esc = safe cancel), Quarantine.
 
 **Acceptance**
-- [ ] Fully keyboard-operable; tab order documented
-- [ ] Cancel at any point leaves consistent state
-- [ ] Piped stdout → plain output (no ANSI) (NFR-09)
+- [x] Fully keyboard-operable; tab order documented
+- [x] Cancel at any point leaves consistent state
+- [x] Piped stdout → plain output (no ANSI) (NFR-09)
 - [ ] Screen reader smoke pass with labeled elements
+
+> T-036: every screen is built from labeled blocks and the plain renderer is tested, but the manual
+> screen-reader smoke pass has not been run — box 4 stays open until someone does it.
 
 ### T-037 · `--ci` mode + exit-code contract
 **Refs** FR-21, 07-cli-tui · **Depends** T-034 · **Effort** S

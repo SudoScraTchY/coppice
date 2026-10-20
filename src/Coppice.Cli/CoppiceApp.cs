@@ -1,10 +1,5 @@
 using Coppice.Adapters;
 using Coppice.Core.Domain;
-using Coppice.Core.Scanning;
-using Coppice.Plugins.Net;
-using Coppice.Ports;
-using CoreScanRoot = Coppice.Core.Scanning.ScanRoot;
-using Net = Coppice.Plugins.Net;
 
 namespace Coppice.Cli;
 
@@ -32,7 +27,8 @@ public static class CoppiceApp
     /// <summary>
     /// The command surface, as a table rather than a switch: the read-only audit reads these keys
     /// reflectively, so what the binary can be ASKED to do and what the audit pins are the same list.
-    /// <c>apply</c> is the one mutating verb (S-1) and is here deliberately; everything else only reads.
+    /// <c>apply</c> and <c>tui</c> are the mutating verbs (S-1): the TUI's apply goes through the same
+    /// gateway, journal and audit as <c>apply</c>, and its restore through <c>QuarantineRestore</c>.
     /// </summary>
     public static IReadOnlyDictionary<string, Func<string[], int>> Verbs { get; } =
         new Dictionary<string, Func<string[], int>>(StringComparer.Ordinal)
@@ -42,6 +38,7 @@ public static class CoppiceApp
             ["scan"] = RunScan,
             ["apply"] = RunApply,
             ["audit"] = RunAudit,
+            ["tui"] = RunTui,
         };
 
     public static int Run(string[] args)
@@ -99,6 +96,8 @@ public static class CoppiceApp
             new FileAppendLog(new SystemEnvironment()),
             new SystemApplyConsole())
             .Run(args);
+
+    private static int RunTui(string[] args) => Tui.TuiCommand.RunSystem(args);
 
     private static int RunDoctor(string[] args) => RunDoctor(CommandFlags.Parse(args));
 
@@ -170,18 +169,8 @@ public static class CoppiceApp
         DoctorReport report = service.Inspect();
 
         // Only scan locations that are Valid and have Clean rights. Ambiguous/Missing/Denied are not scanned.
-        var roots = report.Roots
-            .Where(r => r.Root.Validity == Core.Domain.RootValidity.Ok
-                     && r.Root.Role != Core.Domain.RootRole.Inactive)
-            .Select(r => new Ports.ScanRoot(
-                r.LocationId,
-                r.Root.RealPath,
-                NetProfile.Find(r.LocationId)?.Kind.ToString() ?? "unknown",
-                ToPortRole(r.Root.Role),
-                FingerprintSpecFor(r.LocationId),
-                NetProfile.Find(r.LocationId)?.Owner.ToString() ?? "unknown",
-                ToPortRisk(NetProfile.Find(r.LocationId)?.Tier ?? Core.Domain.Risk.Review)))
-            .ToList();
+        // The mapping lives in ScanWiring so the TUI scans exactly the same set.
+        var roots = ScanWiring.FromDoctor(report);
 
         // Project roots come from config.toml [projects] or --projects flag. For v0.1 we accept none.
         var projectRoots = Array.Empty<string>();
@@ -243,44 +232,6 @@ public static class CoppiceApp
     private static string ScanReportToJson(ScanReport r) =>
         System.Text.Json.JsonSerializer.Serialize(r, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
 
-    /// <summary>
-    /// Core owns the domain enums; Ports declares its own so the plugin boundary stays free of
-    /// Core types (NFR-08). These two switches are the whole translation cost, kept in one place
-    /// so adding a member to either enum fails the build here rather than silently in a plugin.
-    /// </summary>
-    private static Ports.RootRole ToPortRole(Core.Domain.RootRole role) => role switch
-    {
-        Core.Domain.RootRole.Active => Ports.RootRole.Active,
-        Core.Domain.RootRole.Additional => Ports.RootRole.Additional,
-        Core.Domain.RootRole.Inactive => Ports.RootRole.Inactive,
-        _ => Ports.RootRole.Inactive,
-    };
-
-    private static Ports.Risk ToPortRisk(Core.Domain.Risk risk) => risk switch
-    {
-        Core.Domain.Risk.Safe => Ports.Risk.Safe,
-        Core.Domain.Risk.Review => Ports.Risk.Review,
-        Core.Domain.Risk.Manual => Ports.Risk.Manual,
-        _ => Ports.Risk.Manual,
-    };
-
-    /// <summary>
-    /// The fingerprint a location id declares in the 09 table, in the portable shape plugins see.
-    /// Unknown ids get an empty spec, which means "no layout gate" — never a reject.
-    /// </summary>
-    private static Ports.FingerprintSpec FingerprintSpecFor(string locationId)
-    {
-        Net.FingerprintSpec? fingerprint = NetProfile.Find(locationId)?.Fingerprint;
-        return fingerprint is null
-            ? new Ports.FingerprintSpec()
-            : new Ports.FingerprintSpec
-            {
-                RequiredPaths = fingerprint.RequiredPaths,
-                EntryPatterns = fingerprint.EntryPatterns,
-                LayoutRatio = fingerprint.LayoutRatio,
-            };
-    }
-
     private static DoctorService BuildService() =>
         new(new PhysicalFileSystem(), new SystemProcessRunner(), new SystemEnvironment());
 
@@ -304,6 +255,8 @@ public static class CoppiceApp
         Console.WriteLine("                      execute a plan: path steps MOVE to quarantine, native steps run a tool");
         Console.WriteLine("  audit  show|verify [--json]");
         Console.WriteLine("                      show the mutation log, or replay it against the quarantine index");
+        Console.WriteLine("  tui    [--once] [--no-color]");
+        Console.WriteLine("                      keyboard-driven screens: dashboard, roots, items, problems, plan, apply, quarantine");
         Console.WriteLine("  version             print the build version");
         Console.WriteLine();
         Console.WriteLine("Flags: --json, --ci, --no-color");
@@ -312,7 +265,7 @@ public static class CoppiceApp
         Console.WriteLine();
         Console.WriteLine("--ci forces machine-readable output and never prompts; apply --ci needs --yes and --plan.");
         Console.WriteLine();
-        Console.WriteLine("apply is the only command that changes anything, and it asks first unless --yes is given.");
+        Console.WriteLine("apply and tui are the only commands that change anything; both ask before acting.");
         return ExitSuccess;
     }
 

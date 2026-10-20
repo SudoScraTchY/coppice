@@ -36,7 +36,20 @@ public enum ApplyStatus
 
     /// <summary>The plan id is not a safe state key. Nothing was done.</summary>
     InvalidPlanId,
+
+    /// <summary>
+    /// The user cancelled between steps. Everything that happened is journaled and the journal is open,
+    /// so <c>--resume</c> continues from the first step that did not start. A step already in flight is
+    /// never interrupted — a rename halfway is worse than a slower cancel.
+    /// </summary>
+    Cancelled,
 }
+
+/// <summary>
+/// One step's transition, for a live frontend (T-036's apply-progress screen). A progress with a null
+/// <see cref="Report"/> says the step is starting; with a report, it has finished.
+/// </summary>
+public sealed record ApplyStepProgress(int Index, int Total, string StepId, ApplyStepReport? Report);
 
 public enum ApplyStepClass
 {
@@ -68,7 +81,7 @@ public sealed record ApplySummary(ApplyStatus Status, string Message, IReadOnlyL
     public ulong ReclaimedBytes => Steps.Where(s => s.Class == ApplyStepClass.Ok).Aggregate(0UL, (sum, s) => sum + s.Bytes);
 
     /// <summary>True when the run executed (fully or partly) rather than being refused up front.</summary>
-    public bool Ran => Status is ApplyStatus.Completed or ApplyStatus.Partial;
+    public bool Ran => Status is ApplyStatus.Completed or ApplyStatus.Partial or ApplyStatus.Cancelled;
 }
 
 /// <summary>
@@ -119,7 +132,20 @@ public sealed partial class ApplyRunner
     /// </summary>
     public static bool IsSafePlanId(string planId) => SafeId().IsMatch(planId);
 
-    public async Task<ApplySummary> RunAsync(Plan plan, IReadOnlyList<BoundStep> steps, ApplyOptions options)
+    public Task<ApplySummary> RunAsync(Plan plan, IReadOnlyList<BoundStep> steps, ApplyOptions options) =>
+        RunAsync(plan, steps, options, progress: null, CancellationToken.None);
+
+    /// <summary>
+    /// The same run, with live progress and a cancellation signal. The token is observed ONLY between
+    /// steps: once an intent is durable, the gateway call it precedes must finish or be reconciled, so a
+    /// cancel cannot tear a move. That is the whole of "esc = safe cancel" (T-036).
+    /// </summary>
+    public async Task<ApplySummary> RunAsync(
+        Plan plan,
+        IReadOnlyList<BoundStep> steps,
+        ApplyOptions options,
+        IProgress<ApplyStepProgress>? progress,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(steps);
@@ -180,16 +206,30 @@ public sealed partial class ApplyRunner
         }).ConfigureAwait(false);
 
         var reports = new List<ApplyStepReport>(steps.Count);
+        bool cancelled = false;
 
-        foreach (BoundStep bound in steps)
+        for (int index = 0; index < steps.Count; index++)
         {
+            BoundStep bound = steps[index];
             string stepId = bound.PlanStep.ItemId;
 
             if (state.Outcomes.TryGetValue(stepId, out JournalRecord? done))
             {
-                reports.Add(FromRecord(done));
+                ApplyStepReport replayed = FromRecord(done);
+                reports.Add(replayed);
+                progress?.Report(new ApplyStepProgress(index, steps.Count, stepId, replayed));
                 continue;
             }
+
+            // An intent means a mutation may already be on disk, so it must be reconciled before a cancel
+            // is honoured. Only a step that has not started is skippable.
+            if (cancellationToken.IsCancellationRequested && !state.Intents.ContainsKey(stepId))
+            {
+                cancelled = true;
+                break;
+            }
+
+            progress?.Report(new ApplyStepProgress(index, steps.Count, stepId, null));
 
             ApplyStepReport report = state.Intents.TryGetValue(stepId, out JournalRecord? orphan)
                 ? await ReconcileAsync(bound, orphan, options, plan.PlanId).ConfigureAwait(false)
@@ -197,6 +237,18 @@ public sealed partial class ApplyRunner
 
             await journal.AppendAsync(OutcomeRecord(report)).ConfigureAwait(false);
             reports.Add(report);
+            progress?.Report(new ApplyStepProgress(index, steps.Count, stepId, report));
+        }
+
+        if (cancelled)
+        {
+            // No `end` line on purpose: the journal stays open, which is exactly the state `--resume`
+            // accepts. Writing end here would make the plan single-use and abandon the unstarted steps.
+            return new ApplySummary(
+                ApplyStatus.Cancelled,
+                $"Cancelled before step {reports.Count + 1} of {steps.Count}. The journal is open; "
+                    + "run 'coppice apply --resume' to finish it.",
+                reports);
         }
 
         var summary = new ApplySummary(ApplyStatus.Completed, string.Empty, reports);

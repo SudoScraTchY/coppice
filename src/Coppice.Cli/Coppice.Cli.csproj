@@ -7,6 +7,13 @@
     <ProjectReference Include="..\Coppice.Manifests\Coppice.Manifests.csproj" />
 
   </ItemGroup>
+  <ItemGroup>
+    <!--
+      The TUI renderer, and only the TUI. Decision 003 fixes Spectre.Console as the frontend; the
+      read-only CLI output stays hand-rendered and ANSI-free because it is golden-tested (NFR-09).
+    -->
+    <PackageReference Include="Spectre.Console" Version="0.57.2" />
+  </ItemGroup>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!--

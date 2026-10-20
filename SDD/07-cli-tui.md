@@ -58,6 +58,32 @@ Post-apply summary uses the one approved brand term:
 | Apply progress | Live progress, per-step result, failures | esc = safe cancel |
 | Quarantine | Quarantined items with sizes | select, restore |
 
+### Tab order and keys
+
+`tab` and `shift+tab` visit, in this order:
+
+Dashboard → Roots → Items → Problems → Plan review → Quarantine → Dashboard
+
+Apply progress is deliberately **not** in the cycle: it is entered by `a` in plan review and left with
+`esc` (or `enter`) once the run has finished, because it is the one screen during which a mutation is in
+flight. `esc` during the run requests cancellation; the runner stops before the next step, never inside a
+move, and leaves the journal open for `coppice apply --resume`.
+
+| Screen | Keys |
+|---|---|
+| Any browse screen | `tab`/`shift+tab` next/previous · `↑↓` or `k`/`j` select · `s` scan · `q` quit |
+| Dashboard | `enter` open the selected screen |
+| Roots | `enter` expand details · `p` show the `[pins]` line for `config.toml` |
+| Items | `enter` inspect · `f` cycle filter · `o` cycle sort |
+| Problems | `enter` details |
+| Plan review | `space` toggle · `a` apply (a second `a` confirms) · `p` policy · `r` rebuild · `esc` back |
+| Apply progress | `esc` cancel while running; `esc`/`enter` back to the dashboard afterwards |
+| Quarantine | `r` restore · `y` confirm restore · `enter` details |
+
+When stdout or stdin is redirected — or under `--ci`/`--once` — the command renders the Dashboard once
+as plain text and exits. That path emits no escape sequences (NFR-09). Every screen is built from
+labeled blocks, so the plain rendering and a screen reader get the same labels as the interactive one.
+
 ## Sample console report (mock, normative for layout)
 
 ```

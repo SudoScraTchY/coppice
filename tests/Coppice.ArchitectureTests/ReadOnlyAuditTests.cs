@@ -297,7 +297,9 @@ public sealed class ReadOnlyAuditTests
         // because the product needs it, and this assertion is what makes adding a SECOND one a spec
         // conversation rather than a side effect. T-035 widens it again for `audit` — which only READS
         // the log and the index, and exists so the mutation ledger is inspectable without touching the
-        // filesystem it describes. Everything else on the surface still only reads.
+        // filesystem it describes. T-036 widens it for `tui`, whose screens reach the machine only through
+        // the same ApplyWiring (gateway + journal + audit) and QuarantineRestore the commands use; it
+        // cannot mutate on its own, and its plan review asks for a second `a` before applying.
         string[] forbidden = ["clean", "delete", "remove", "prune", "purge", "uninstall", "rm"];
 
         string[] dispatched = CommandVerbs(typeof(Coppice.Cli.CoppiceApp));
@@ -307,7 +309,7 @@ public sealed class ReadOnlyAuditTests
             Assert.DoesNotContain(verb, dispatched);
         }
 
-        Assert.Equal(["apply", "audit", "doctor", "roots", "scan"], dispatched.Order(StringComparer.Ordinal));
+        Assert.Equal(["apply", "audit", "doctor", "roots", "scan", "tui"], dispatched.Order(StringComparer.Ordinal));
     }
 
     /// <summary>
