@@ -59,7 +59,7 @@ public sealed class ApplyRealProcessKillTests
 
     private static async Task<(bool Caught, string? Error)> AttemptAsync(int packageCount)
     {
-        string temp = Path.Combine(Path.GetTempPath(), "coppice-kill-" + Guid.NewGuid().ToString("N"));
+        string temp = Path.Combine(KillTestRoot(), "coppice-kill-" + Guid.NewGuid().ToString("N"));
         string stateParent = Path.Combine(temp, "state");
         string stateDir = Path.Combine(stateParent, "coppice");
         string cacheDir = Path.Combine(temp, "cache");
@@ -106,19 +106,25 @@ public sealed class ApplyRealProcessKillTests
             string journalPath = Path.Combine(stateDir, "journal", plan.PlanId + ".jsonl");
 
             // ---- first run: kill it mid-apply ----
-            using Process child = Launch(planPath, stateParent, cacheDir, resume: false, redirect: false);
+            using Process child = Launch(planPath, stateParent, cacheDir, resume: false, redirect: true);
             child.Start();
+            Task<string> childOut = child.StandardOutput.ReadToEndAsync();
+            Task<string> childErr = child.StandardError.ReadToEndAsync();
 
             if (!WaitForIntent(journalPath, child))
             {
                 // It finished (or never started writing) before we could catch it. Not a failure of the
                 // product; a failure of THIS attempt to create the race. Escalate.
                 child.WaitForExit(60_000);
-                return (false, $"run of {packageCount} items completed before an intent was observed");
+                string failedOut = await childOut;
+                string failedErr = await childErr;
+                return (false, $"run of {packageCount} items exited {child.ExitCode} before an intent was observed; stdout: {failedOut}; stderr: {failedErr}");
             }
 
             child.Kill(entireProcessTree: true);
             child.WaitForExit(30_000);
+            await childOut;
+            await childErr;
 
             // Pre-resume invariant: at most one intent may lack an outcome — the single step that was in
             // flight when the process died. Two orphans would mean the journal under-reported.
@@ -183,6 +189,26 @@ public sealed class ApplyRealProcessKillTests
         }
     }
 
+    /// <summary>
+    /// A temp root the product will actually consider cleanable. An elevated shell often reports
+    /// <c>C:\Windows\TEMP</c> as its temp directory; the denylist correctly refuses every path under
+    /// the Windows directory, so a test tree there would be refused before a single intent and prove
+    /// nothing. Fall back to the test output directory, which is neither a system nor a home root.
+    /// </summary>
+    private static string KillTestRoot()
+    {
+        string temp = Path.GetTempPath();
+        string windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+
+        if (!string.IsNullOrEmpty(windows)
+            && temp.StartsWith(windows, StringComparison.OrdinalIgnoreCase))
+        {
+            return Path.Combine(AppContext.BaseDirectory, "kill-tests");
+        }
+
+        return temp;
+    }
+
     private static Process Launch(string planPath, string stateParent, string cacheDir, bool resume, bool redirect)
     {
         string host = ResolveHost();
@@ -194,6 +220,7 @@ public sealed class ApplyRealProcessKillTests
             FileName = host,
             WorkingDirectory = Path.GetTempPath(),
             RedirectStandardOutput = redirect,
+            RedirectStandardError = redirect,
             UseShellExecute = false,
         };
 
@@ -256,7 +283,13 @@ public sealed class ApplyRealProcessKillTests
             {
                 try
                 {
-                    foreach (string line in File.ReadLines(journalPath))
+                    // FileShare.ReadWrite is load-bearing: the default read share mode denies the child's
+                    // append and makes THIS poller the reason the child dies. A journal observer must never
+                    // be able to stop the writer it is observing.
+                    using var stream = new FileStream(
+                        journalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                    using var reader = new StreamReader(stream);
+                    while (reader.ReadLine() is { } line)
                     {
                         if (line.Contains("\"phase\":\"intent\"", StringComparison.Ordinal))
                         {
@@ -264,7 +297,7 @@ public sealed class ApplyRealProcessKillTests
                         }
                     }
                 }
-                catch (IOException)
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
                     // The child holds the file open in append mode; a sharing violation here just means
                     // "not yet", and the next poll retries.

@@ -157,3 +157,21 @@ Exit criteria per 12-roadmap.
 - [x] A scan with no project roots stays `Unknown` and plans nothing
 - [x] `scan` and `tui` parse repeated `--projects` paths; a missing value is a usage error
 - [x] Help and 07 list the flag, and the 07 text states that cwd auto-discovery is not performed
+### T-046 · Kill test: a temp root the denylist does not refuse
+**Refs** 11-testing · **Depends** T-034 · **Effort** S
+
+> Found by the T-038 release gate. When the shell's TEMP is `C:\Windows\TEMP` (common in an elevated
+> session), the real kill test built its cache under the Windows directory, the denylist correctly
+> refused every step, and the test failed for the right product behavior and the wrong fixture.
+
+**Build**
+- Choose the kill test's temp root outside the Windows directory, falling back to the test output
+  directory, so an elevated shell's TEMP cannot make the test vacuous.
+- Poll the journal with `FileShare.ReadWrite | FileShare.Delete`. A journal observer must never deny
+  the writer's append, which was killing the child before its first durable intent.
+- Capture the child's stdout/stderr and report its exit code and output when no intent is observed.
+
+**Acceptance**
+- [x] The kill test passes when `Path.GetTempPath()` is under the Windows directory
+- [x] Journal polling cannot cause the child's append to fail
+- [x] A run that exits before an intent reports the child's exit code and output
