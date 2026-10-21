@@ -248,6 +248,61 @@
     },
     {
       "Ecosystem": "dotnet",
+      "Code": "DOTNET_TOOL_BROKEN_SHIM",
+      "Severity": 1,
+      "Summary": "\u0027dotnet-drbaosp\u0027 is in the tool directory but \u0027dotnet tool list -g\u0027 does not list it. The shim is dead: it will not run and uninstall will not remove it.",
+      "Path": "/home/dev/.dotnet/tools/dotnet-drbaosp",
+      "Detail": {
+        "locationId": "dotnet-tools",
+        "toolId": "dotnet-drbaosp"
+      }
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Code": "DOTNET_TOOL_BROKEN_SHIM",
+      "Severity": 1,
+      "Summary": "\u0027dotnet-kgav\u0027 is in the tool directory but \u0027dotnet tool list -g\u0027 does not list it. The shim is dead: it will not run and uninstall will not remove it.",
+      "Path": "/home/dev/.dotnet/tools/dotnet-kgav",
+      "Detail": {
+        "locationId": "dotnet-tools",
+        "toolId": "dotnet-kgav"
+      }
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Code": "DOTNET_TOOL_BROKEN_SHIM",
+      "Severity": 1,
+      "Summary": "\u0027dotnet-ltuhsw\u0027 is in the tool directory but \u0027dotnet tool list -g\u0027 does not list it. The shim is dead: it will not run and uninstall will not remove it.",
+      "Path": "/home/dev/.dotnet/tools/dotnet-ltuhsw",
+      "Detail": {
+        "locationId": "dotnet-tools",
+        "toolId": "dotnet-ltuhsw"
+      }
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Code": "DOTNET_TOOL_BROKEN_SHIM",
+      "Severity": 1,
+      "Summary": "\u0027dotnet-oqfw\u0027 is in the tool directory but \u0027dotnet tool list -g\u0027 does not list it. The shim is dead: it will not run and uninstall will not remove it.",
+      "Path": "/home/dev/.dotnet/tools/dotnet-oqfw",
+      "Detail": {
+        "locationId": "dotnet-tools",
+        "toolId": "dotnet-oqfw"
+      }
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Code": "DOTNET_TOOL_BROKEN_SHIM",
+      "Severity": 1,
+      "Summary": "\u0027dotnet-orphaned\u0027 is in the tool directory but \u0027dotnet tool list -g\u0027 does not list it. The shim is dead: it will not run and uninstall will not remove it.",
+      "Path": "/home/dev/.dotnet/tools/dotnet-orphaned",
+      "Detail": {
+        "locationId": "dotnet-tools",
+        "toolId": "dotnet-orphaned"
+      }
+    },
+    {
+      "Ecosystem": "dotnet",
       "Code": "SDK_PREVIEW_SUPERSEDED",
       "Severity": 1,
       "Summary": "Preview SDK 9.0.100-preview.7 is superseded by GA 9.0.100 in the same feature band (9.0.100).",
@@ -307,6 +362,6 @@
   ],
   "ProjectCount": 0,
   "OnboardingHints": [
-    "No projects were found. Reference resolution needs project roots: pass --projects \u003Cpath\u003E or set [projects] roots in config.toml. Until then every package is Unknown and nothing is Safe."
+    "No projects were found. Reference resolution needs project roots: pass --projects \u003Cpath\u003E. Until then every package is Unknown and nothing is Safe."
   ]
 }

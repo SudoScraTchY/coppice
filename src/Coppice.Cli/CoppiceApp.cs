@@ -122,7 +122,7 @@ public static class CoppiceApp
 
     private static int RunRoots(string[] args) => RunRoots(CommandFlags.Parse(args));
 
-    private static int RunScan(string[] args) => RunScan(CommandFlags.Parse(args));
+    private static int RunScan(string[] args) => RunScan(ScanFlags.Parse(args));
 
     private static int RunDoctor(CommandFlags flags)
     {
@@ -182,7 +182,7 @@ public static class CoppiceApp
         return ExitSuccess;
     }
 
-    private static int RunScan(CommandFlags flags)
+    private static int RunScan(ScanFlags flags)
     {
         var service = BuildService();
         DoctorReport report = service.Inspect();
@@ -191,11 +191,10 @@ public static class CoppiceApp
         // The mapping lives in ScanWiring so the TUI scans exactly the same set.
         var roots = ScanWiring.FromDoctor(report);
 
-        // Project roots come from config.toml [projects] or --projects flag. For v0.1 we accept none.
-        var projectRoots = Array.Empty<string>();
-
+        // Reference resolution needs project roots: without them every item is Unknown and a plan can
+        // propose nothing. They are explicit (repeated --projects), never inferred from the cwd.
         var scanService = new ScanService(service.Fs, new SystemProcessRunner(), service.Env, service.State);
-        ScanReport scanReport = scanService.RunAsync(roots, projectRoots).GetAwaiter().GetResult();
+        ScanReport scanReport = scanService.RunAsync(roots, flags.ProjectRoots).GetAwaiter().GetResult();
 
         if (flags.Json)
         {
@@ -269,7 +268,8 @@ public static class CoppiceApp
         Console.WriteLine("Commands:");
         Console.WriteLine("  doctor [--json]     resolve locations and report what was found");
         Console.WriteLine("  roots  [--json]     show each location, how it was resolved, and its validity");
-        Console.WriteLine("  scan   [--json]     inventory the caches and store a snapshot");
+        Console.WriteLine("  scan   [--projects <path>]... [--json]");
+        Console.WriteLine("                      inventory the caches and store a snapshot; project roots make usage provable");
         Console.WriteLine("  plan   [--policy <preset>] [--keep-latest <n>] [--out <file>] [--json]");
         Console.WriteLine("                      build and store a plan from the latest snapshot (no changes)");
         Console.WriteLine("  apply  [--plan <file>] [--yes] [--strict] [--resume] [--json]");
@@ -278,7 +278,7 @@ public static class CoppiceApp
         Console.WriteLine("                      inspect, restore or permanently discard quarantined items");
         Console.WriteLine("  audit  show|verify [--json]");
         Console.WriteLine("                      show the mutation log, or replay it against the quarantine index");
-        Console.WriteLine("  tui    [--once] [--no-color]");
+        Console.WriteLine("  tui    [--once] [--no-color] [--projects <path>]...");
         Console.WriteLine("                      keyboard-driven screens: dashboard, roots, items, problems, plan, apply, quarantine");
         Console.WriteLine("  version             print the build version");
         Console.WriteLine();
@@ -303,6 +303,50 @@ public static class CoppiceApp
 
     private static int NotYetAvailable(string command) =>
         Usage($"'{command}' is not available in this build");
+}
+
+/// <summary>
+/// The scan flags. `--projects` is repeatable; each path is a project tree whose manifests and lock/assets
+/// files make usage provable. No roots means Unknown, not "unused".
+/// </summary>
+public sealed record ScanFlags(bool Json, IReadOnlyList<string> ProjectRoots)
+{
+    public static ScanFlags Parse(string[] args) => Parse(args.AsSpan());
+
+    public static ScanFlags Parse(ReadOnlySpan<string> args)
+    {
+        bool json = false;
+        var projectRoots = new List<string>();
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            switch (args[i])
+            {
+                case "--json":
+                    json = true;
+                    break;
+                case "--ci":
+                    // FR-21: machine-readable.
+                    json = true;
+                    break;
+                case "--no-color":
+                    // Accepted and ignored: this renderer never emits color.
+                    break;
+                case "--projects":
+                    if (i + 1 >= args.Length || string.IsNullOrWhiteSpace(args[i + 1]))
+                    {
+                        throw new ArgumentException("--projects needs a directory path");
+                    }
+
+                    projectRoots.Add(args[++i]);
+                    break;
+                default:
+                    throw new ArgumentException($"unknown option '{args[i]}'");
+            }
+        }
+
+        return new ScanFlags(json, projectRoots);
+    }
 }
 
 /// <summary>The global flags the read-only verbs accept. Unknown flags are rejected rather than ignored (07).</summary>

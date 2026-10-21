@@ -6,7 +6,7 @@
 |---|---|---|
 | `coppice doctor` | Roots resolution + problems + config validation | no |
 | `coppice roots` | Detailed location/candidate table | no |
-| `coppice scan [-e net,go,rust,node] [--projects path] [--json]` | Snapshot the machine | no |
+| `coppice scan [--projects <path>]... [--json]` | Snapshot the machine | no |
 | `coppice plan [--policy conservative\|default\|aggressive] [--keep-latest N] [--out plan.json]` | Build a plan from latest snapshot | no |
 | `coppice clean` | scan → plan → interactive review → apply | asks first |
 | `coppice apply [--plan plan.json] [--yes] [--strict] [--resume]` | Execute a plan | **yes** |
@@ -21,6 +21,19 @@ Global flags: `-v/--verbose`, `--no-color`, `--ci`, `--config <path>`,
 Plain output automatically when stdout is piped. First run with no project
 roots configured prints an onboarding hint (reference resolution needs
 projects; without them everything is `Unknown` and nothing is Safe).
+
+## Project roots
+
+`coppice scan --projects <path>` is repeatable; each path is a project tree that reference resolution
+reads. `coppice tui --projects <path>` uses the same paths for the TUI's `s` rescan. There is no
+automatic discovery from the current directory: scanning the wrong tree would turn packages used by
+another repository into `Unreferenced`, and the whole default policy depends on that verdict.
+
+A run with no roots is valid and safe — every item is `Unknown` and a plan proposes nothing — but it
+cannot prove a package is unused. Config-file wiring for project roots, policy, exclusions and pins is
+specified and validated by `ConfigLoader`; v0.3's commands do not read `config.toml` yet, so pass the
+values explicitly. The TUI's pin status shows the line a future config would use rather than claiming
+the pin is active.
 
 ## Install and runtime
 
@@ -82,6 +95,8 @@ destination or detect altered content exit 3; missing content and move failures 
 remove an eligible entry leaves it indexed and exits 1 rather than claiming a deletion that did not happen.
 
 ## TUI screens
+
+`coppice tui [--once] [--no-color] [--projects <path>]...`
 
 | Screen | Content | Key interactions |
 |---|---|---|

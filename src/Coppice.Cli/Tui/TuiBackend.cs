@@ -44,6 +44,7 @@ public sealed class TuiBackend : ITuiBackend
     private readonly IStateStore _state;
     private readonly IAppendLog _log;
     private readonly IClock _clock;
+    private readonly IReadOnlyList<string> _projectRoots;
 
     public TuiBackend(
         IFileSystem fs,
@@ -51,7 +52,8 @@ public sealed class TuiBackend : ITuiBackend
         IEnvironment env,
         IStateStore state,
         IAppendLog log,
-        IClock clock)
+        IClock clock,
+        IReadOnlyList<string>? projectRoots = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(runner);
@@ -66,6 +68,7 @@ public sealed class TuiBackend : ITuiBackend
         _state = state;
         _log = log;
         _clock = clock;
+        _projectRoots = projectRoots ?? [];
     }
 
     public async Task<TuiData> LoadAsync()
@@ -90,7 +93,7 @@ public sealed class TuiBackend : ITuiBackend
         // Resolve first so the scan reads exactly the roots `coppice scan` would, then use the same service.
         DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS).Inspect();
         var scan = new ScanService(_fs, _runner, _env, _state, _clock);
-        await scan.RunAsync(ScanWiring.FromDoctor(roots), projectRoots: []).ConfigureAwait(false);
+        await scan.RunAsync(ScanWiring.FromDoctor(roots), _projectRoots).ConfigureAwait(false);
 
         return await LoadAsync().ConfigureAwait(false);
     }

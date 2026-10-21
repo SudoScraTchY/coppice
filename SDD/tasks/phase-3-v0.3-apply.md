@@ -132,3 +132,28 @@ Exit criteria per 12-roadmap.
 
 > T-044: the safety card's second-reviewer sign-off has not been obtained; the command paths are covered by
 > unit tests through the same `QuarantineRestore`/`ApplyWiring` types the existing safety tests exercise.
+
+### T-045 · Project roots on `scan` and `tui`
+**Refs** FR-06, FR-07, 07-cli-tui · **Depends** T-015, T-036, T-044 · **Effort** S
+
+> Found while writing the T-038 quickstart: `scan` passed an empty project-root list on every run, so
+> reference resolution could never prove anything. Every real item stayed `Unknown`, and the new `plan`
+> verb correctly proposed nothing on a machine that had not been hand-fed a synthetic snapshot. T-038's
+> install → scan → plan → apply flow needs this wiring to be true.
+
+**Build**
+- `scan --projects <path>` and `tui --projects <path>` (repeatable) feed `ProjectDiscoveryService`, so a
+  project's `obj/project.assets.json` can make a cached version `Referenced` and its older siblings
+  `Unreferenced`. The same roots drive the TUI's `s` rescan.
+- No roots is still a valid run: every item stays `Unknown`, the onboarding hint is printed, and the plan is
+  empty. There is deliberately no automatic cwd discovery; scanning the wrong project tree would change what
+  is considered unused.
+- `ScanService` passes its injected process runner to the plugin health check instead of constructing a real
+  runner, so the whole scan path is fake-testable.
+- Help and 07 document the flag.
+
+**Acceptance**
+- [x] A cache with three versions and one referenced version yields two `Unreferenced` items and a plan that proposes the oldest
+- [x] A scan with no project roots stays `Unknown` and plans nothing
+- [x] `scan` and `tui` parse repeated `--projects` paths; a missing value is a usage error
+- [x] Help and 07 list the flag, and the 07 text states that cwd auto-discovery is not performed

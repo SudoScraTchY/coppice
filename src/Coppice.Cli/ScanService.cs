@@ -61,8 +61,8 @@ public sealed class ScanService
     }
 
     /// <summary>
-    /// Scans the cleanable roots. <paramref name="projectRoots"/> come from config or
-    /// <c>--projects</c>; without them, reference resolution cannot prove anything and everything
+    /// Scans the cleanable roots. <paramref name="projectRoots"/> come from the repeatable
+    /// <c>--projects</c> flag; without them, reference resolution cannot prove anything and everything
     /// stays Unknown.
     /// </summary>
     public Task<ScanReport> RunAsync(IReadOnlyList<PortScanRoot> roots, IReadOnlyList<string> projectRoots) =>
@@ -155,7 +155,7 @@ public sealed class ScanService
             roots,
             ToPortProjects(projects),
             _fs,
-            new SystemProcessRunner(),
+            _runner,
             _env,
             _clock,
             cancellationToken);
@@ -224,8 +224,8 @@ public sealed class ScanService
         if (projects.IsEmpty)
         {
             hints.Add(
-                "No projects were found. Reference resolution needs project roots: pass --projects <path> "
-                + "or set [projects] roots in config.toml. Until then every package is Unknown and nothing is Safe.");
+                "No projects were found. Reference resolution needs project roots: pass --projects <path>. "
+                + "Until then every package is Unknown and nothing is Safe.");
         }
         else if (resolver.ReadableProjectCount == 0)
         {

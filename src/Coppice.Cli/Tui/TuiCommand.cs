@@ -6,6 +6,9 @@ namespace Coppice.Cli.Tui;
 
 public sealed record TuiFlags(bool Once, bool Ci, bool NoColor)
 {
+    /// <summary>Project roots for the TUI's rescan. Empty means everything stays Unknown, as in `scan`.</summary>
+    public IReadOnlyList<string> ProjectRoots { get; init; } = [];
+
     public static TuiFlags Parse(string[] args)
     {
         ArgumentNullException.ThrowIfNull(args);
@@ -13,10 +16,11 @@ public sealed record TuiFlags(bool Once, bool Ci, bool NoColor)
         bool once = false;
         bool ci = false;
         bool noColor = false;
+        var projectRoots = new List<string>();
 
-        foreach (string arg in args)
+        for (int i = 0; i < args.Length; i++)
         {
-            switch (arg)
+            switch (args[i])
             {
                 case "--once":
                     once = true;
@@ -28,12 +32,20 @@ public sealed record TuiFlags(bool Once, bool Ci, bool NoColor)
                 case "--no-color":
                     noColor = true;
                     break;
+                case "--projects":
+                    if (i + 1 >= args.Length || string.IsNullOrWhiteSpace(args[i + 1]))
+                    {
+                        throw new ArgumentException("--projects needs a directory path");
+                    }
+
+                    projectRoots.Add(args[++i]);
+                    break;
                 default:
-                    throw new ArgumentException($"unknown option '{arg}'");
+                    throw new ArgumentException($"unknown option '{args[i]}'");
             }
         }
 
-        return new TuiFlags(once, ci, noColor);
+        return new TuiFlags(once, ci, noColor) { ProjectRoots = projectRoots };
     }
 }
 
@@ -79,7 +91,8 @@ public sealed class TuiCommand
             env,
             new Adapters.FileSystemStateStore(fs, env),
             new Adapters.FileAppendLog(env),
-            clock);
+            clock,
+            flags.ProjectRoots);
 
         return new TuiCommand(backend, terminal).RunAsync(flags).GetAwaiter().GetResult();
     }

@@ -258,8 +258,8 @@ public sealed class TuiState
             RootReport? root = SelectedRoot;
             _status = root is null
                 ? "No root selected."
-                : $"pin: add `{root.LocationId} = \"{root.Root.RealPath}\"` under [pins] in {_data.ConfigPath}. "
-                    + "The TUI does not write config; this line is the pin.";
+                : $"pin: this build does not read config-file pins yet. The line for a future config is "
+                    + $"`{root.LocationId} = \"{root.Root.RealPath}\"` under [pins] in {_data.ConfigPath}.";
         }
 
         return TuiIntent.None;

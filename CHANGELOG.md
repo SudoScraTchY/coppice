@@ -103,8 +103,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   discard. A non-interactive restore/prune without `--yes` is exit 2 before the index is read; an occupied
   or altered restore is exit 3. Both commands run natively — no container runtime, daemon or middleman is
   required to install or use Coppice.
+- T-045 project roots on `scan` and `tui`: `--projects <path>` (repeatable) feeds project discovery, so
+  `obj/project.assets.json` can prove a cached version `Referenced` and its older siblings `Unreferenced`.
+  Without roots every item stays `Unknown` and nothing is planned — there is no cwd auto-discovery, because
+  scanning the wrong tree would turn another repository's packages into deletion candidates. The TUI's `s`
+  rescan uses the same paths. `ScanService` now hands its injected process runner to the plugin health check
+  instead of constructing a real one, so the scan path is fully fake-testable.
 
 ### Fixed
+- The scan onboarding hint no longer tells users to set `[projects] roots` in `config.toml`: v0.3's commands
+  do not read that file yet. It points at `--projects`, which works.
 - T-034 box 2 (journal + audit reconcile): a `--resume` that rebuilds a quarantine index entry after a
   kill now also writes the audit line for that move when the log lacks it — and only then, so a kill
   after the gateway's audit append but before the index save rebuilds the entry without duplicating the
