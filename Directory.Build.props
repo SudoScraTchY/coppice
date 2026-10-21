@@ -29,10 +29,10 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageDescription>A cross-platform, plugin-based toolchain and cache cleaner for polyglot developers. Dry-run by default; every proposed deletion carries a reason string.</PackageDescription>
     <PackageTags>dotnet;cleanup;cache;toolchain;developer-tools;disk-space</PackageTags>
-    <PackageProjectUrl>https://github.com/coppice/coppice</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/coppice/coppice</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/SudoScraTchY/coppice</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/SudoScraTchY/coppice</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <Version>0.1.0</Version>
+    <Version>0.3.0</Version>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

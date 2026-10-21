@@ -6,7 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] — apply, safely — 2026-10-21
+
+Phase 3 of the spec roadmap (T-031 … T-038, plus T-044 and T-045). This is the first release that can
+change a machine: a scan produces evidence, a plan carries a reason per step, and `apply` moves
+approved items through one gateway into a same-volume quarantine. `apply` never deletes; permanent
+removal is the separately confirmed `quarantine prune`. Every mutation appends to a hash-chained audit
+ledger. Coppice installs and runs natively — a single .NET file or a `dotnet tool` — with no container
+runtime, daemon or middleman.
+
 ### Added
+- T-038 user documentation and release packaging: a quickstart, a safety explainer, a complete command
+  reference and these release notes. `scripts/publish.sh` ships them beside the binary and fails if any
+  required document is missing. The documented install paths are the framework-dependent single file
+  (~2 MB), the self-contained single file (~38 MB) and the `dotnet tool` package; Docker is not a
+  prerequisite. The clean-machine install→apply pass and the screen-reader pass remain outstanding.
 - T-005 resolution engine: the closed source chain (pin → tool → env → config → registry → OS file
   → default), candidate canonicalization and de-duplication by real path, role assignment, and
   provenance on every root. Ambiguity between two live sources marks the location
@@ -111,6 +125,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of constructing a real one, so the scan path is fully fake-testable.
 
 ### Fixed
+- T-046 kill-test fixture: the real `kill -9` test built its cache under `Path.GetTempPath()`. In an
+  elevated shell that is `C:\Windows\TEMP`, which the denylist correctly refuses, so every step was
+  skipped-unsafe and the test failed for the right product behaviour and the wrong fixture. The test now
+  falls back to its output directory when TEMP is under the Windows directory, opens the journal with a
+  share mode that cannot block the child's append, and reports the child's exit code and output when no
+  intent is observed.
 - The scan onboarding hint no longer tells users to set `[projects] roots` in `config.toml`: v0.3's commands
   do not read that file yet. It points at `--projects`, which works.
 - T-034 box 2 (journal + audit reconcile): a `--resume` that rebuilds a quarantine index entry after a
@@ -190,5 +210,6 @@ nothing in this release can delete anything.
   `apply` do not exist.
 - CI has never run on GitHub: the workflow is committed but the repository has no remote yet.
 
-[Unreleased]: https://github.com/coppice/coppice/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/coppice/coppice/releases/tag/v0.1.0
+[Unreleased]: https://github.com/SudoScraTchY/coppice/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/SudoScraTchY/coppice/releases/tag/v0.3.0
+[0.1.0]: https://github.com/SudoScraTchY/coppice/releases/tag/v0.1.0

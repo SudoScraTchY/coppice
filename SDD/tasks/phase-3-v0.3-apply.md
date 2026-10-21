@@ -88,7 +88,7 @@ Exit criteria per 12-roadmap.
 - [x] CI-mode output stable across runs (golden)
 
 ### T-038 · v0.3 release + user docs
-**Refs** 12-roadmap · **Depends** T-031…T-037 · **Effort** M
+**Refs** 12-roadmap · **Depends** T-031…T-037, T-044, T-045 · **Effort** M
 
 **Build**
 - Quickstart, safety explainer (why dry-run default, what quarantine means), command reference; release notes.
@@ -97,8 +97,15 @@ Exit criteria per 12-roadmap.
   or a middleman for any Coppice command.
 
 **Acceptance**
-- [ ] Docs published alongside binaries
+- [x] Docs published alongside binaries
 - [ ] A new user can go install → doctor → scan → plan → apply unaided, with no container runtime installed
+
+> T-038: `scripts/publish.sh` copies `README.md`, `CHANGELOG.md`, `LICENSE`, `NOTICE` and the four
+> `docs/*.md` guides into the publish output and refuses to publish if one is missing; verified for
+> win-x64, together with the packed `coppice` tool. The published binary was exercised end-to-end
+> (doctor → scan → plan → apply → quarantine list → restore → audit verify) against a synthetic cache
+> on the authoring machine, with no container runtime. Box 2 stays open: a fresh-VM install pass has
+> not been run. The T-036 screen-reader pass also remains open.
 
 ### T-044 · `plan` and `quarantine` verbs
 **Refs** FR-11, FR-14, FR-21, 07-cli-tui · **Depends** T-026, T-032, T-034, T-037 · **Effort** M · **Safety card**

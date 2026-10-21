@@ -255,7 +255,7 @@ public static class CoppiceApp
 
     private static int PrintVersion()
     {
-        Console.WriteLine($"coppice {typeof(CoppiceApp).Assembly.GetName().Version?.ToString(3) ?? "0.1.0"}");
+        Console.WriteLine($"coppice {typeof(CoppiceApp).Assembly.GetName().Version?.ToString(3) ?? "unknown"}");
         return ExitSuccess;
     }
 

@@ -4,14 +4,14 @@
 #   bash scripts/publish.sh                      # win-x64, the default build
 #   bash scripts/publish.sh linux-x64
 #   bash scripts/publish.sh osx-arm64
-#   SELF_CONTAINED=1 bash scripts/publish.sh     # the 37 MB alternative, for users without .NET
+#   SELF_CONTAINED=1 bash scripts/publish.sh     # the 38 MB alternative, for users without .NET
 #
 # Framework-dependent is the default, and that is a measured decision rather than a default of
-# convenience. Single-file self-contained measured 37.7 MB / 110 ms cold start on win-x64; trimming
-# it saved 1.8 MB, so the payload is the .NET runtime and not coppice's code. Framework-dependent
-# single-file is 543 KB and starts in 73 ms. For a tool whose audience is developers who already
-# have .NET — and whose subject IS the .NET cache — bundling the runtime is 69x the size for a
-# slower start.
+# convenience. Single-file self-contained measured 38.4 MB / 108 ms cold start on win-x64 (v0.3.0);
+# trimming it saved 1.8 MB, so the payload is the .NET runtime and not coppice's code.
+# Framework-dependent single-file is 1.93 MB and starts in 65-92 ms. For a tool whose audience is
+# developers who already have .NET — and whose subject IS the .NET cache — bundling the runtime is
+# ~20x the size for a slower start.
 #
 # SELF_CONTAINED=1 remains available. It is not obsolete; it is the answer for a machine with no
 # .NET, which is why F-004 exists.
@@ -44,8 +44,41 @@ else
   common+=(--self-contained false)
 fi
 
+# T-038: the binary ships with the documentation it points at. Check before building so a missing
+# guide fails immediately, rather than producing a directory whose docs are silently absent.
+user_docs=(
+  README.md
+  CHANGELOG.md
+  LICENSE
+  NOTICE
+  docs/quickstart.md
+  docs/safety.md
+  docs/commands.md
+  docs/release-notes-v0.3.md
+)
+
+missing=0
+for file in "${user_docs[@]}"; do
+  if [[ ! -f "$file" ]]; then
+    echo "::error::$file is missing; refusing to publish without the user documentation" >&2
+    missing=1
+  fi
+done
+if (( missing )); then
+  exit 1
+fi
+
 echo "publishing $rid (self-contained=$self_contained) -> $out"
 dotnet publish "$project" "${common[@]}"
+
+mkdir -p "$out/docs"
+for file in "${user_docs[@]}"; do
+  case "$file" in
+    docs/*) cp "$file" "$out/docs/" ;;
+    *) cp "$file" "$out/" ;;
+  esac
+done
+echo "docs: README.md, CHANGELOG.md, LICENSE, NOTICE, docs/*.md"
 
 # NFR-11 is a gate, not a note. Fail here rather than discovering it at release.
 if [[ "$self_contained" != "1" ]]; then
