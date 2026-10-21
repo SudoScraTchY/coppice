@@ -6,23 +6,32 @@ using Coppice.Core.Snapshots;
 using Coppice.Plugins.Net;
 using Coppice.Ports;
 
-namespace Coppice.Cli.Tui;
+namespace Coppice.Cli;
+
+/// <summary>Why a preview has no plan. The CLI turns "nothing to propose" into success and a failed build into an error.</summary>
+public enum PlanPreviewStatus
+{
+    Built,
+    NothingToPropose,
+    Failed,
+}
 
 /// <summary>
-/// The plan a review screen proposes: the decision for EVERY item (so the Items screen can explain a
-/// keep, not only a proposal) plus the plan those decisions built.
+/// The plan a front-end proposes: the decision for EVERY item (so a review screen can explain a keep, not
+/// only a proposal) plus the plan those decisions built.
 /// </summary>
 public sealed record PlanPreview(
     Plan? Plan,
     string Message,
-    IReadOnlyDictionary<string, RetentionDecision> Decisions);
+    IReadOnlyDictionary<string, RetentionDecision> Decisions,
+    PlanPreviewStatus Status);
 
 /// <summary>
 /// Builds a preview with the SAME retention engine and plan builder <c>apply</c> trusts (T-025, T-026).
 /// <para>
-/// There is deliberately no TUI-local rule here. A screen that applied its own threshold would be a second
-/// policy implementation, and the reason a user reads in the plan would no longer be the rule that admitted
-/// the item. The only thing this class chooses is the ecosystem ordering: the .NET plugin's own.
+/// There is deliberately no local rule here. A screen or command that applied its own threshold would be a
+/// second policy implementation, and the reason a user reads in the plan would no longer be the rule that
+/// admitted the item. The only thing this class chooses is the ecosystem ordering: the .NET plugin's own.
 /// </para>
 /// </summary>
 public static class PlanPreviewService
@@ -70,12 +79,17 @@ public static class PlanPreviewService
             return new PlanPreview(
                 null,
                 $"Nothing to propose under the {policy.PresetName} policy: {snapshot.Items.Count} item(s) evaluated, all kept.",
-                decisions);
+                decisions,
+                PlanPreviewStatus.NothingToPropose);
         }
 
         PlanResult built = PlanBuilder.Build(snapshot.SnapshotId, policy, steps);
         return built.IsSuccess
-            ? new PlanPreview(built.Plan, string.Empty, decisions)
-            : new PlanPreview(null, built.Message ?? "The plan could not be built.", decisions);
+            ? new PlanPreview(built.Plan, string.Empty, decisions, PlanPreviewStatus.Built)
+            : new PlanPreview(
+                null,
+                built.Message ?? "The plan could not be built.",
+                decisions,
+                PlanPreviewStatus.Failed);
     }
 }

@@ -25,8 +25,14 @@ public sealed class QuarantineRestore
     private readonly OperatingSystemKind _os;
     private readonly QuarantineIndex _index;
     private readonly AuditLog? _audit;
+    private readonly IClock _clock;
 
-    public QuarantineRestore(IFileSystem fs, OperatingSystemKind os, QuarantineIndex index, AuditLog? audit = null)
+    public QuarantineRestore(
+        IFileSystem fs,
+        OperatingSystemKind os,
+        QuarantineIndex index,
+        AuditLog? audit = null,
+        IClock? clock = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(index);
@@ -35,6 +41,9 @@ public sealed class QuarantineRestore
         _os = os;
         _index = index;
         _audit = audit;
+        // A clock rather than DateTimeOffset.UtcNow directly, so `prune --older-than` is a decision the
+        // command can test at a fixed instant instead of one that depends on the day the suite runs.
+        _clock = clock ?? new SystemClock();
     }
 
     /// <summary>
@@ -156,7 +165,7 @@ public sealed class QuarantineRestore
 
         foreach (QuarantineEntry entry in all)
         {
-            if (DateTimeOffset.UtcNow - entry.QuarantinedAtUtc < age)
+            if (_clock.UtcNow - entry.QuarantinedAtUtc < age)
             {
                 continue;
             }
@@ -257,5 +266,11 @@ public sealed class QuarantineRestore
         {
             // The mutation stands; the log carries a gap that verify reports.
         }
+    }
+
+    /// <summary>The default clock, kept private so Core does not reference the adapters (NFR-08).</summary>
+    private sealed class SystemClock : IClock
+    {
+        public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
     }
 }

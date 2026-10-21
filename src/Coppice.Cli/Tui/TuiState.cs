@@ -101,7 +101,11 @@ public sealed class TuiState
     private TuiData _data;
     private Dictionary<string, Item> _itemsById = new(StringComparer.Ordinal);
     private Policy _policy = Policy.Default;
-    private PlanPreview _preview = new(null, "No snapshot.", new Dictionary<string, RetentionDecision>(StringComparer.Ordinal));
+    private PlanPreview _preview = new(
+        null,
+        "No snapshot.",
+        new Dictionary<string, RetentionDecision>(StringComparer.Ordinal),
+        PlanPreviewStatus.Failed);
     private string _status = string.Empty;
     private TuiScreen _returnScreen = TuiScreen.Dashboard;
     private ItemFilter _filter = ItemFilter.All;
@@ -1089,7 +1093,11 @@ public sealed class TuiState
 
     private PlanPreview PreviewForCurrentSnapshot() =>
         _data.Snapshot is null
-            ? new PlanPreview(null, "No snapshot. Press s to scan first.", new Dictionary<string, RetentionDecision>(StringComparer.Ordinal))
+            ? new PlanPreview(
+                null,
+                "No snapshot. Press s to scan first.",
+                new Dictionary<string, RetentionDecision>(StringComparer.Ordinal),
+                PlanPreviewStatus.Failed)
             : _previewFactory(_data.Snapshot, _policy);
 
     private void EnsurePreview()

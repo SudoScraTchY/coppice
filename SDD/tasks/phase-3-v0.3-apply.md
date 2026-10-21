@@ -92,7 +92,43 @@ Exit criteria per 12-roadmap.
 
 **Build**
 - Quickstart, safety explainer (why dry-run default, what quarantine means), command reference; release notes.
+- Document the native install paths — framework-dependent or self-contained single-file binary, or a
+  `dotnet tool` — and state plainly that no container runtime is required. Docker is not a prerequisite
+  or a middleman for any Coppice command.
 
 **Acceptance**
 - [ ] Docs published alongside binaries
-- [ ] A new user can go install → doctor → scan → plan → apply unaided
+- [ ] A new user can go install → doctor → scan → plan → apply unaided, with no container runtime installed
+
+### T-044 · `plan` and `quarantine` verbs
+**Refs** FR-11, FR-14, FR-21, 07-cli-tui · **Depends** T-026, T-032, T-034, T-037 · **Effort** M · **Safety card**
+
+> Added after T-038: the v0.3 command surface promised a `plan` verb and quarantine management, but
+> neither was wired. T-038's install → doctor → scan → plan → apply flow cannot be completed without
+> them, so this card is release-readiness work, not a new feature.
+
+**Build**
+- `coppice plan [--policy conservative|default|aggressive] [--keep-latest N] [--out plan.json] [--json]`
+  builds from the latest snapshot through the SAME `RetentionEngine` + `PlanBuilder` the TUI and `apply`
+  trust; stores the plan under `plans/` so `apply` (without `--plan`) can use it, and optionally writes
+  the validated JSON to a file.
+- `coppice quarantine list|restore <id>|prune [--older-than <age>] [--yes] [--dry-run] [--json]` reads the
+  index; restore goes through `QuarantineRestore` (hash, containment and occupancy checks, audited);
+  prune permanently deletes older entries only after explicit confirmation or `--yes`, and audits each
+  discard.
+- Both run natively: no container runtime, sidecar, or middleman is part of the install or the command
+  path. Docker remains an optional external ecosystem, never a dependency of Coppice itself.
+- Widen the architecture verb pin and the CLI help deliberately; update 07 with flags, confirmation and
+  exit-code mapping.
+
+**Acceptance**
+- [x] `scan → plan --out → apply --plan` works end-to-end, and `plan` stores a plan `apply` can use without `--plan`
+- [x] A plan written by `--out` passes `PlanStore.Parse`; no plan or file is produced when there is nothing to propose
+- [x] CLI and TUI build the same plan for one snapshot and policy
+- [x] `quarantine restore` is byte-identical, audited, and refuses an occupied or altered destination without moving anything
+- [x] `quarantine prune` deletes only entries older than the threshold, never without confirmation or `--yes`, and audits each discard
+- [x] `--ci` never prompts; restore/prune without `--yes` in a non-interactive run is a usage error
+- [x] Help and 07 list the new verbs; the documented install and command path requires no container runtime
+
+> T-044: the safety card's second-reviewer sign-off has not been obtained; the command paths are covered by
+> unit tests through the same `QuarantineRestore`/`ApplyWiring` types the existing safety tests exercise.

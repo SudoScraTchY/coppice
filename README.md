@@ -28,7 +28,8 @@ coppice solves this by:
 
 coppice treats safety as architecture, not a flag:
 
-- **Dry-run by default.** The `apply` command is the only mutating operation.
+- **Dry-run by default.** `apply` executes a plan; `quarantine restore|prune` manage what it moved. Every
+  mutating command asks first, or requires `--yes` when it cannot ask.
 - **Denylist floor.** Root paths like `%SystemRoot%`, `/usr`, `/home`, `Program Files`, etc. are hard-blocked regardless of any other analysis.
 - **Gateway validation.** Every mutation passes through a single executor that canonicalizes paths, verifies containment within validated scan roots, checks fingerprints, and re-verifies immediately before any filesystem change.
 - **Quarantine, not deletion.** Items are moved (not deleted) to a `.coppice/quarantine/` directory on the same volume, with a restore command to recover them.

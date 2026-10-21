@@ -22,6 +22,14 @@ Plain output automatically when stdout is piped. First run with no project
 roots configured prints an onboarding hint (reference resolution needs
 projects; without them everything is `Unknown` and nothing is Safe).
 
+## Install and runtime
+
+Coppice is a plain .NET binary (framework-dependent or self-contained single file) or a `dotnet tool`. It
+requires no container runtime, daemon, sidecar or middleman: `plan`, `apply`, `quarantine` and `audit`
+operate directly on the user's files and state. Docker is not an ecosystem in v0.3 and is never a
+prerequisite for installing or running the tool. (CI may use a container to prove the test suite runs with
+egress blocked; that is test isolation, not part of the shipped binary.)
+
 ## Exit codes
 
 | Code | Meaning |
@@ -29,7 +37,7 @@ projects; without them everything is `Unknown` and nothing is Safe).
 | 0 | Success (including "nothing to reclaim") |
 | 1 | Runtime error (IO, tool failure) |
 | 2 | Usage error |
-| 3 | Safety abort: plan failed validation / ambiguous roots / denylist hit |
+| 3 | Safety abort: plan failed validation / ambiguous roots / denylist hit / restore would overwrite or would restore altered content |
 | 4 | Partial apply — some steps failed; see audit |
 
 ## Confirmation UX
@@ -45,6 +53,33 @@ Post-apply summary uses the one approved brand term:
   410 steps ok · 2 failed (locked) · 0 skipped-unsafe
   Harvested 18.4 GB — restore anytime: coppice quarantine list
 ```
+
+## plan
+
+`coppice plan [--policy conservative|default|aggressive] [--keep-latest N] [--out plan.json]` builds from
+the newest stored snapshot; run `scan` first. It uses the same retention engine and plan builder as the TUI
+review screen and `apply`, stores the plan under the state root (so a later `apply` with no `--plan` uses
+it), and optionally writes the same checksummed JSON to `--out`. It never queries a toolchain or touches a
+scanned location. `--keep-latest` overrides the preset's keep count; `0` disables the rule. "Nothing to
+propose" is success (exit 0) and stores or writes nothing. The `--out` file is written only after the
+document passes `PlanStore` validation, so `apply --plan` accepts what `plan --out` produces.
+
+An interactive `coppice apply` with no `--plan` loads the newest stored plan. A non-interactive `apply`
+still requires `--plan` (the confirmation guard above); the stored-plan shortcut is the interactive path.
+
+## quarantine
+
+| Command | Effect | Confirmation |
+|---|---|---|
+| `list` | entries with sizes, original paths, and missing-content markers | never prompts; read-only |
+| `restore <id>` | move one entry back after hash, containment and occupancy checks; audited | typed `yes`, or `--yes` |
+| `prune [--older-than <age>]` | permanently delete entries at least that old (default 30 days; `0` = all), index rows included; audited | typed `yes`, or `--yes` |
+
+Ages accept `d`, `h` or `m` (`30d`, `12h`, `90m`); a bare number is days. `prune --dry-run` reports what
+would be deleted and never mutates. In `--ci` or any non-interactive run, `restore` and `prune` without
+`--yes` are usage errors (exit 2) checked before the index is read. Restore refusals that protect a
+destination or detect altered content exit 3; missing content and move failures exit 1. A prune that cannot
+remove an eligible entry leaves it indexed and exits 1 rather than claiming a deletion that did not happen.
 
 ## TUI screens
 

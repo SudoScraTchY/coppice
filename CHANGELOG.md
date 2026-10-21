@@ -57,7 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--strict` softening, because there is no quarantine to undo a mistake with — and explicit
   confirmation (`--yes`). Failures (non-zero exit, timeout kill) become failed steps carrying exit
   code, output, error and duration for the T-035 audit log, never crashes.
-- T-034 `apply` command: the one verb that changes the machine. A plan is bound to the roots resolved
+- T-034 `apply` command: the plan-executing verb. A plan is bound to the roots resolved
   THIS run — never the roots it asserts — so a plan from another machine or a moved cache binds to
   nothing rather than to a path it merely names. Every step runs through the gateway behind a
   write-ahead journal (`state/journal/<planId>.jsonl`): an intent is durable before the mutation and an
@@ -94,6 +94,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no quarantined content the log cannot account for (the failed-index-write orphan the gateway warns about
   in its result resurfaces here as a finding) — and exits 1 when the chain itself does not verify. The
   append log now rolls at a size cap without discarding, and the chain verifies across the roll.
+- T-044 `plan` + `quarantine` verbs: `coppice plan` builds from the newest snapshot through the same
+  `RetentionEngine` and `PlanBuilder` as the TUI and `apply`, stores the checksummed plan so an interactive
+  `apply` can use it without `--plan`, and writes `--out` only after the document passes `PlanStore`
+  validation. `coppice quarantine list|restore <id>|prune` exposes the undo surface: `list` is read-only,
+  `restore` re-checks the content hash, containment and occupancy and audits the move, and `prune` deletes
+  only entries older than `--older-than` (default 30 days) after a typed `yes` or `--yes`, auditing every
+  discard. A non-interactive restore/prune without `--yes` is exit 2 before the index is read; an occupied
+  or altered restore is exit 3. Both commands run natively — no container runtime, daemon or middleman is
+  required to install or use Coppice.
 
 ### Fixed
 - T-034 box 2 (journal + audit reconcile): a `--resume` that rebuilds a quarantine index entry after a

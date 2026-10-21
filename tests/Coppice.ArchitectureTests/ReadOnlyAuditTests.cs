@@ -15,10 +15,10 @@ namespace Coppice.ArchitectureTests;
 /// <para>
 /// It asserts two things here, both statically: no assembly outside <c>Coppice.Adapters</c> and
 /// <c>Coppice.Core</c>'s two pinned mutating types calls a filesystem mutator, and the CLI dispatches
-/// exactly the verbs this pin names — <c>apply</c> among them, as the one verb that mutates (S-1). The
-/// dynamic half — actually running the read-only commands and proving they write nothing — lives in
-/// <c>Coppice.Tests.ReadOnlyCommandTests</c>, because it needs the fake filesystem this project does not
-/// reference.
+/// exactly the verbs this pin names — <c>apply</c>, <c>quarantine restore|prune</c> and the TUI among them,
+/// as the paths that mutate (S-1). The dynamic half — actually running the read-only commands and proving
+/// they write nothing — lives in <c>Coppice.Tests.ReadOnlyCommandTests</c>, because it needs the fake
+/// filesystem this project does not reference.
 /// </para>
 /// </summary>
 public sealed class ReadOnlyAuditTests
@@ -293,13 +293,15 @@ public sealed class ReadOnlyAuditTests
     [Fact]
     public void The_cli_exposes_no_command_that_could_imply_mutation()
     {
-        // T-034 widens this pin deliberately: `apply` is the one verb that mutates, it is in the table
-        // because the product needs it, and this assertion is what makes adding a SECOND one a spec
-        // conversation rather than a side effect. T-035 widens it again for `audit` — which only READS
-        // the log and the index, and exists so the mutation ledger is inspectable without touching the
-        // filesystem it describes. T-036 widens it for `tui`, whose screens reach the machine only through
-        // the same ApplyWiring (gateway + journal + audit) and QuarantineRestore the commands use; it
-        // cannot mutate on its own, and its plan review asks for a second `a` before applying.
+        // T-034 widens this pin deliberately: `apply` mutates, it is in the table because the product
+        // needs it, and this assertion is what makes adding a SECOND mutating verb a spec conversation
+        // rather than a side effect. T-035 widens it for `audit` — which only READS the log and the index.
+        // T-036 widens it for `tui`, whose screens reach the machine only through the same ApplyWiring
+        // (gateway + journal + audit) and QuarantineRestore the commands use. T-044 widens it for `plan`
+        // (reads a snapshot and stores a plan; it never touches a scanned location) and `quarantine`
+        // (list is read-only; restore and prune go through QuarantineRestore, with explicit confirmation
+        // or --yes). None of these is a new mutation path: the pinned types remain the only ones that call
+        // a filesystem mutator, which the tests above enforce independently of this verb list.
         string[] forbidden = ["clean", "delete", "remove", "prune", "purge", "uninstall", "rm"];
 
         string[] dispatched = CommandVerbs(typeof(Coppice.Cli.CoppiceApp));
@@ -309,7 +311,9 @@ public sealed class ReadOnlyAuditTests
             Assert.DoesNotContain(verb, dispatched);
         }
 
-        Assert.Equal(["apply", "audit", "doctor", "roots", "scan", "tui"], dispatched.Order(StringComparer.Ordinal));
+        Assert.Equal(
+            ["apply", "audit", "doctor", "plan", "quarantine", "roots", "scan", "tui"],
+            dispatched.Order(StringComparer.Ordinal));
     }
 
     /// <summary>

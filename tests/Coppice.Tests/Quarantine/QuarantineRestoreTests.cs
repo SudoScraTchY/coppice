@@ -324,8 +324,9 @@ public sealed class QuarantineRestoreTests
 
         _ = gateway.Execute(Step($@"{Root}\newtonsoft.json\1.0.0"));
 
-        // Age zero means "everything", which is what `--older-than 0` should mean.
-        var restore = new QuarantineRestore(fs, Win, index);
+        // Age zero means "everything", which is what `--older-than 0` should mean. The clock is pinned so
+        // this test does not depend on the day it runs.
+        var restore = new QuarantineRestore(fs, Win, index, clock: new FixedClock());
         IReadOnlyList<QuarantineEntry> pruned = await restore.PruneAsync(TimeSpan.Zero);
 
         Assert.Single(pruned);
@@ -343,7 +344,7 @@ public sealed class QuarantineRestoreTests
 
         _ = gateway.Execute(Step($@"{Root}\newtonsoft.json\1.0.0"));
 
-        var restore = new QuarantineRestore(fs, Win, index);
+        var restore = new QuarantineRestore(fs, Win, index, clock: new FixedClock());
         IReadOnlyList<QuarantineEntry> pruned = await restore.PruneAsync(TimeSpan.FromDays(30));
 
         Assert.Empty(pruned);

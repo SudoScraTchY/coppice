@@ -146,10 +146,9 @@ public sealed class TuiBackend : ITuiBackend
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(entryId);
 
-        var index = new QuarantineIndex(_state);
-        var audit = new AuditLog(_log, _clock);
-
-        return new QuarantineRestore(_fs, _env.OS, index, audit).RestoreAsync(entryId);
+        // The same index + audit wiring as the CLI's quarantine verb, so a TUI restore and a CLI restore
+        // produce the same record in the same stream.
+        return ApplyWiring.CreateQuarantine(_fs, _env, _state, _log, _clock).Restore.RestoreAsync(entryId);
     }
 
     /// <summary>

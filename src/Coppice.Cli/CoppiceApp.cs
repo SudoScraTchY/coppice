@@ -7,10 +7,10 @@ namespace Coppice.Cli;
 /// The CLI entry point (07).
 /// <para>
 /// Argument parsing is hand-rolled and tiny on purpose: v0.1 needs a handful of flags, and a parser
-/// dependency would be the largest thing in the tool. Every verb except <c>apply</c> dispatches to a
-/// service that cannot mutate anything, so <c>doctor</c>, <c>roots</c> and <c>scan</c> are safe by
-/// construction rather than by promise; <c>apply</c> mutates through the gateway alone, behind a
-/// confirmation and a write-ahead journal (T-034).
+/// dependency would be the largest thing in the tool. <c>doctor</c>, <c>roots</c>, <c>scan</c>, <c>plan</c>
+/// and <c>audit</c> cannot mutate a scanned location; <c>apply</c> mutates through the gateway behind a
+/// confirmation and a write-ahead journal (T-034), and <c>quarantine restore|prune</c> mutates through
+/// <see cref="Core.Quarantine.QuarantineRestore"/> behind its own confirmation (T-044).
 /// </para>
 /// <para>
 /// Exit codes follow 07 exactly: 0 success, 1 runtime error, 2 usage error, 3 safety abort, 4 partial
@@ -27,8 +27,9 @@ public static class CoppiceApp
     /// <summary>
     /// The command surface, as a table rather than a switch: the read-only audit reads these keys
     /// reflectively, so what the binary can be ASKED to do and what the audit pins are the same list.
-    /// <c>apply</c> and <c>tui</c> are the mutating verbs (S-1): the TUI's apply goes through the same
-    /// gateway, journal and audit as <c>apply</c>, and its restore through <c>QuarantineRestore</c>.
+    /// <c>apply</c>, <c>quarantine</c> and <c>tui</c> are the mutating verbs (S-1): the TUI's apply goes
+    /// through the same gateway, journal and audit as <c>apply</c>, and its restore through the same
+    /// <c>QuarantineRestore</c> as the quarantine verb. <c>plan</c> only reads a snapshot and stores a plan.
     /// </summary>
     public static IReadOnlyDictionary<string, Func<string[], int>> Verbs { get; } =
         new Dictionary<string, Func<string[], int>>(StringComparer.Ordinal)
@@ -36,7 +37,9 @@ public static class CoppiceApp
             ["doctor"] = RunDoctor,
             ["roots"] = RunRoots,
             ["scan"] = RunScan,
+            ["plan"] = RunPlan,
             ["apply"] = RunApply,
+            ["quarantine"] = RunQuarantine,
             ["audit"] = RunAudit,
             ["tui"] = RunTui,
         };
@@ -64,7 +67,7 @@ public static class CoppiceApp
                 return verb(args.AsSpan(1).ToArray());
             }
 
-            return command is "plan" or "clean" or "report"
+            return command is "clean" or "report"
                 ? NotYetAvailable(command)
                 : Usage($"unknown command '{command}'");
         }
@@ -83,6 +86,22 @@ public static class CoppiceApp
         new ApplyCommand(
             new PhysicalFileSystem(),
             new SystemProcessRunner(),
+            new SystemEnvironment(),
+            new FileSystemStateStore(new PhysicalFileSystem(), new SystemEnvironment()),
+            new FileAppendLog(new SystemEnvironment()),
+            new SystemApplyConsole())
+            .Run(args);
+
+    private static int RunPlan(string[] args) =>
+        new PlanCommand(
+            new FileSystemStateStore(new PhysicalFileSystem(), new SystemEnvironment()),
+            new SystemPlanFileWriter(),
+            new SystemApplyConsole())
+            .Run(args);
+
+    private static int RunQuarantine(string[] args) =>
+        new QuarantineCommand(
+            new PhysicalFileSystem(),
             new SystemEnvironment(),
             new FileSystemStateStore(new PhysicalFileSystem(), new SystemEnvironment()),
             new FileAppendLog(new SystemEnvironment()),
@@ -251,8 +270,12 @@ public static class CoppiceApp
         Console.WriteLine("  doctor [--json]     resolve locations and report what was found");
         Console.WriteLine("  roots  [--json]     show each location, how it was resolved, and its validity");
         Console.WriteLine("  scan   [--json]     inventory the caches and store a snapshot");
+        Console.WriteLine("  plan   [--policy <preset>] [--keep-latest <n>] [--out <file>] [--json]");
+        Console.WriteLine("                      build and store a plan from the latest snapshot (no changes)");
         Console.WriteLine("  apply  [--plan <file>] [--yes] [--strict] [--resume] [--json]");
         Console.WriteLine("                      execute a plan: path steps MOVE to quarantine, native steps run a tool");
+        Console.WriteLine("  quarantine list|restore <id>|prune [--older-than <age>] [--yes] [--dry-run] [--json]");
+        Console.WriteLine("                      inspect, restore or permanently discard quarantined items");
         Console.WriteLine("  audit  show|verify [--json]");
         Console.WriteLine("                      show the mutation log, or replay it against the quarantine index");
         Console.WriteLine("  tui    [--once] [--no-color]");
@@ -263,9 +286,11 @@ public static class CoppiceApp
         Console.WriteLine();
         Console.WriteLine("Exit codes: 0 ok · 1 runtime · 2 usage · 3 safety abort · 4 partial apply.");
         Console.WriteLine();
-        Console.WriteLine("--ci forces machine-readable output and never prompts; apply --ci needs --yes and --plan.");
+        Console.WriteLine("--ci forces machine-readable output and never prompts; apply --ci needs --yes and --plan,");
+        Console.WriteLine("and quarantine restore|prune --ci needs --yes.");
         Console.WriteLine();
-        Console.WriteLine("apply and tui are the only commands that change anything; both ask before acting.");
+        Console.WriteLine("apply, quarantine restore|prune, and tui change anything; all ask before acting.");
+        Console.WriteLine("The tool is a native binary or dotnet tool — no container runtime is required.");
         return ExitSuccess;
     }
 

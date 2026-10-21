@@ -15,6 +15,12 @@ public sealed record ApplyServices(
     GatewayEngine Gateway,
     ApplyRunner Runner);
 
+/// <summary>The same index and audit stream, without the gateway apply needs. Quarantine verbs use this.</summary>
+public sealed record QuarantineServices(
+    QuarantineIndex Index,
+    AuditLog Audit,
+    QuarantineRestore Restore);
+
 /// <summary>
 /// Builds the objects <c>apply</c> and the TUI both mutate through, and maps live roots into the shape the
 /// binder accepts (T-034, S-1).
@@ -50,12 +56,35 @@ public static class ApplyWiring
         ArgumentNullException.ThrowIfNull(log);
         ArgumentNullException.ThrowIfNull(clock);
 
+        QuarantineServices quarantine = CreateQuarantine(fs, env, state, log, clock);
+        var gateway = new GatewayEngine(fs, env.OS, quarantine.Index, clock, runner, quarantine.Audit);
+        var apply = new ApplyRunner(gateway, fs, log, quarantine.Index, clock, quarantine.Audit);
+
+        return new ApplyServices(quarantine.Index, quarantine.Audit, gateway, apply);
+    }
+
+    /// <summary>
+    /// The quarantine half of the wiring. Built from the same state and append log as <see cref="Create"/>
+    /// so a restore or prune is recorded in the same audit stream as the quarantines it undoes.
+    /// </summary>
+    public static QuarantineServices CreateQuarantine(
+        IFileSystem fs,
+        IEnvironment env,
+        IStateStore state,
+        IAppendLog log,
+        IClock clock)
+    {
+        ArgumentNullException.ThrowIfNull(fs);
+        ArgumentNullException.ThrowIfNull(env);
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(log);
+        ArgumentNullException.ThrowIfNull(clock);
+
         var index = new QuarantineIndex(state);
         var audit = new AuditLog(log, clock);
-        var gateway = new GatewayEngine(fs, env.OS, index, clock, runner, audit);
-        var apply = new ApplyRunner(gateway, fs, log, index, clock, audit);
+        var restore = new QuarantineRestore(fs, env.OS, index, audit, clock);
 
-        return new ApplyServices(index, audit, gateway, apply);
+        return new QuarantineServices(index, audit, restore);
     }
 
     public static IReadOnlyList<BindingRoot> BindingRoots(DoctorReport report)

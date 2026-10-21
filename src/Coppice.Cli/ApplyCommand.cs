@@ -106,7 +106,7 @@ public sealed record ApplyFlags(string? PlanFile, bool Yes, bool Strict, bool Re
 }
 
 /// <summary>
-/// <c>coppice apply</c> — the one verb that changes the machine (T-034, FR-12, FR-16, S-1).
+/// <c>coppice apply</c> — the verb that executes a plan (T-034, FR-12, FR-16, S-1).
 /// <para>
 /// It owns three decisions and delegates the rest: WHICH plan runs (a file, or the newest in the state
 /// store), WHETHER it may run (the confirmation gate), and what the run means as an exit code. Binding the
@@ -367,7 +367,7 @@ public sealed class ApplyCommand
 
             _console.WriteLine(
                 $"Harvested {ReportTotals.FormatBytes(summary.ReclaimedBytes)} — moved to quarantine and restorable. "
-                + "The `coppice quarantine` verb is not in this build yet; entries live under the state root.");
+                + "Restore anytime: coppice quarantine list");
 
             foreach (ApplyStepReport step in summary.Steps.Where(s => s.Class is ApplyStepClass.Failed or ApplyStepClass.SkippedUnsafe))
             {
