@@ -6,7 +6,7 @@ using Coppice.Plugins.Net;
 using Coppice.Ports;
 using GatewayEngine = Coppice.Core.Gateway.Gateway;
 
-namespace Coppice.Cli;
+namespace Coppice.Application;
 
 /// <summary>The single mutation wiring: one gateway, one audit stream, one journal.</summary>
 public sealed record ApplyServices(

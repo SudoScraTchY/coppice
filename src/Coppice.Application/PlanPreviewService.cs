@@ -1,4 +1,3 @@
-using Coppice.Adapters;
 using Coppice.Core.Domain;
 using Coppice.Core.Plans;
 using Coppice.Core.Retention;
@@ -6,7 +5,7 @@ using Coppice.Core.Snapshots;
 using Coppice.Plugins.Net;
 using Coppice.Ports;
 
-namespace Coppice.Cli;
+namespace Coppice.Application;
 
 /// <summary>Why a preview has no plan. The CLI turns "nothing to propose" into success and a failed build into an error.</summary>
 public enum PlanPreviewStatus
@@ -43,7 +42,7 @@ public static class PlanPreviewService
 
         var engine = new RetentionEngine(new Dictionary<string, IVersionOrdering>(StringComparer.OrdinalIgnoreCase)
         {
-            [NetProfile.EcosystemId] = new DotnetEcosystem(new PhysicalFileSystem()).Versions,
+            [NetProfile.EcosystemId] = new DotnetEcosystem().Versions,
         });
 
         var decisions = new Dictionary<string, RetentionDecision>(StringComparer.Ordinal);
@@ -51,7 +50,7 @@ public static class PlanPreviewService
 
         foreach (Item item in snapshot.Items)
         {
-            RetentionDecision decision = engine.Evaluate(item, ReportTotals.UsageOf(item), policy, snapshot.Items);
+            RetentionDecision decision = engine.Evaluate(item, ItemUsage.Of(item), policy, snapshot.Items);
             decisions[item.ItemId] = decision;
 
             if (decision is { Admitted: false, AdviseOnly: false })

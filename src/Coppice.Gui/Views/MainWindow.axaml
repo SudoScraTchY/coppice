@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Coppice.Gui.ViewModels"
+        x:Class="Coppice.Gui.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Coppice — harvest what regrows"
+        Width="1180" Height="780"
+        MinWidth="920" MinHeight="620"
+        Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+
+  <Window.Styles>
+    <Style Selector="TextBlock.h1">
+      <Setter Property="FontSize" Value="22" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.h2">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="Margin" Value="0,0,0,12" />
+    </Style>
+    <Style Selector="TextBlock.muted">
+      <Setter Property="Opacity" Value="0.72" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*">
+    <Border Background="#1E3A2C" Padding="20,14">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Spacing="2">
+          <TextBlock Text="coppice" FontSize="24" FontWeight="Bold" Foreground="White" />
+          <TextBlock Text="Harvest what regrows. Never touch the root."
+                     Foreground="#CFE3D8" FontSize="12" />
+        </StackPanel>
+        <TextBlock Grid.Column="2" Text="{Binding Status}" Foreground="White"
+                   TextWrapping="Wrap" MaxWidth="620" VerticalAlignment="Center"
+                   AutomationProperties.Name="Status" />
+      </Grid>
+    </Border>
+
+    <TabControl x:Name="Sections" Grid.Row="1" Margin="12">
+      <!-- ============================ DASHBOARD ============================ -->
+      <TabItem Header="Dashboard">
+        <ScrollViewer>
+          <StackPanel Margin="16" Spacing="4">
+            <TextBlock Classes="h1" Text="Scan, keep, and harvest" />
+            <TextBlock Classes="muted"
+                       Text="A plan is built from evidence. Nothing is moved until you review it and confirm." />
+
+            <Border Classes="card" Margin="0,14,0,12">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="h2" Text="Project roots" />
+                <TextBlock Classes="muted"
+                           Text="One path per line (or separated by semicolons). Coppice reads obj/project.assets.json under each path. Without roots, every item is Unknown and nothing is proposed." />
+                <TextBox Text="{Binding ProjectRoots, Mode=TwoWay}"
+                         AcceptsReturn="True" Height="86"
+                         PlaceholderText="C:\src"
+                         AutomationProperties.Name="Project roots" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Content="Scan"
+                          Command="{Binding ScanCommand}"
+                          AutomationProperties.Name="Scan" />
+                  <Button Content="Cancel scan"
+                          Command="{Binding ScanCancelCommand}"
+                          AutomationProperties.Name="Cancel scan" />
+                  <ProgressBar IsIndeterminate="True" Width="220"
+                               IsVisible="{Binding IsBusy}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Text="{Binding ScanSummary}" Classes="muted" />
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="h2" Text="Retention policy" />
+                <ComboBox ItemsSource="{Binding Policies}"
+                          SelectedItem="{Binding SelectedPolicy, Mode=TwoWay}"
+                          HorizontalAlignment="Stretch"
+                          AutomationProperties.Name="Retention policy">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PolicyOption">
+                      <StackPanel Margin="0,4">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Detail}" Classes="muted" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <StackPanel Orientation="Horizontal" Spacing="8"
+                            IsVisible="{Binding IsCustomPolicy}">
+                  <TextBlock Text="Keep the newest" VerticalAlignment="Center" />
+                  <NumericUpDown Value="{Binding CustomKeepLatest, Mode=TwoWay}"
+                                 Minimum="0" Maximum="1000" Increment="1" Width="150"
+                                 AutomationProperties.Name="Custom keep count" />
+                  <TextBlock Text="version(s) of each package" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <TextBlock Text="{Binding PolicySummary}" FontStyle="Italic" />
+                <TextBlock Classes="muted"
+                           Text="Keep newest only keeps one version of each package and proposes the older eligible ones. Referenced versions and items whose usage is Unknown are never proposed." />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ============================== ITEMS ============================== -->
+      <TabItem Header="Items">
+        <Grid RowDefinitions="Auto,Auto,*" Margin="16">
+          <StackPanel Spacing="4">
+            <TextBlock Classes="h1" Text="Every package Coppice found" />
+            <TextBlock Classes="muted"
+                       Text="Usage is Referenced, Unreferenced, or Unknown. Unknown is never proposed. The decision shows what the current policy would do." />
+          </StackPanel>
+
+          <Grid Grid.Row="1" ColumnDefinitions="2*,110,90,90,110,*" Margin="0,16,0,6">
+            <TextBlock Text="PACKAGE" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="1" Text="USAGE" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="2" Text="RISK" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="3" Text="SIZE" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="4" Text="DECISION" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="5" Text="WHY" FontWeight="SemiBold" />
+          </Grid>
+
+          <ListBox Grid.Row="2" ItemsSource="{Binding Items}"
+                   AutomationProperties.Name="Items">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:ItemRow">
+                <Grid ColumnDefinitions="2*,110,90,90,110,*" Margin="0,4">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Version}" Classes="muted" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="1" Text="{Binding Usage}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding Risk}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="3" Text="{Binding Size}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="4" Text="{Binding Decision}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="5" Text="{Binding Reason}" Classes="muted"
+                             VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </TabItem>
+
+      <!-- =============================== PLAN ============================== -->
+      <TabItem Header="Plan">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="16">
+          <StackPanel Spacing="4">
+            <TextBlock Classes="h1" Text="Review the plan" />
+            <TextBlock Text="{Binding PlanSummary}" FontWeight="SemiBold" />
+            <TextBlock Classes="muted"
+                       Text="Every step is moved to quarantine, not deleted. Uncheck anything you want to keep this time." />
+          </StackPanel>
+
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,12,0,8">
+            <Button Content="Select all" Command="{Binding SelectAllStepsCommand}" />
+            <Button Content="Clear" Command="{Binding ClearStepsCommand}" />
+            <TextBlock Text="{Binding SelectedStepCount, StringFormat='{}{0} selected'}"
+                       VerticalAlignment="Center" />
+            <TextBlock Text="{Binding SelectedStepBytes, StringFormat='· {0}'}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+
+          <Grid Grid.Row="2" ColumnDefinitions="44,2*,110,*" Margin="0,0,0,6">
+            <TextBlock Grid.Column="1" Text="STEP" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="2" Text="SIZE" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="3" Text="WHY" FontWeight="SemiBold" />
+          </Grid>
+
+          <ListBox Grid.Row="3" ItemsSource="{Binding PlanSteps}"
+                   AutomationProperties.Name="Plan steps">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:PlanStepRow">
+                <Grid ColumnDefinitions="44,2*,110,*" Margin="0,4">
+                  <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                            AutomationProperties.Name="Include step" />
+                  <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding Size}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="3" Text="{Binding Reason}" Classes="muted"
+                             VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <Border Grid.Row="4" Classes="card" Margin="0,12,0,8">
+            <StackPanel Spacing="8">
+              <CheckBox Content="I understand the selected path steps are moved to quarantine."
+                        IsChecked="{Binding IsApplyConfirmed, Mode=TwoWay}"
+                        AutomationProperties.Name="Confirm apply" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Apply selected steps"
+                        Command="{Binding ApplyCommand}"
+                        AutomationProperties.Name="Apply selected steps" />
+                <Button Content="Cancel apply"
+                        Command="{Binding ApplyCancelCommand}"
+                        AutomationProperties.Name="Cancel apply" />
+                <ProgressBar Minimum="0" Maximum="1" Value="{Binding ApplyPercent}"
+                             Width="260" VerticalAlignment="Center" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </Grid>
+      </TabItem>
+
+      <!-- =============================== APPLY ============================= -->
+      <TabItem Header="Apply">
+        <Grid RowDefinitions="Auto,Auto,*" Margin="16">
+          <StackPanel Spacing="4">
+            <TextBlock Classes="h1" Text="Apply progress" />
+            <TextBlock Classes="muted"
+                       Text="A cancel stops between steps, never mid-move. An interrupted run stays resumable from the journal." />
+          </StackPanel>
+
+          <StackPanel Grid.Row="1" Spacing="8" Margin="0,14,0,10">
+            <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+            <ProgressBar Minimum="0" Maximum="1" Value="{Binding ApplyPercent}" Height="18" />
+          </StackPanel>
+
+          <ListBox Grid.Row="2" ItemsSource="{Binding ApplyLog}"
+                   AutomationProperties.Name="Apply progress" />
+        </Grid>
+      </TabItem>
+
+      <!-- ============================= QUARANTINE ========================== -->
+      <TabItem Header="Quarantine">
+        <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+          <StackPanel Spacing="4">
+            <TextBlock Classes="h1" Text="Quarantine" />
+            <TextBlock Classes="muted"
+                       Text="Restore re-checks the content hash, containment and destination occupancy before moving anything back." />
+          </StackPanel>
+
+          <ListBox Grid.Row="1" ItemsSource="{Binding QuarantineEntries}"
+                   SelectedItem="{Binding SelectedQuarantine, Mode=TwoWay}"
+                   Margin="0,14,0,10"
+                   AutomationProperties.Name="Quarantine entries">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:QuarantineRow">
+                <Grid ColumnDefinitions="2*,90,180,*" Margin="0,4">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding OriginalPath}" Classes="muted" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="1" Text="{Binding Size}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding QuarantinedAt}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="3" Text="{Binding ContentState}" VerticalAlignment="Center"
+                             Margin="16,0,0,0" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <Border Grid.Row="2" Classes="card">
+            <StackPanel Spacing="8">
+              <CheckBox Content="I understand restore moves the selected item back to its original path."
+                        IsChecked="{Binding IsRestoreConfirmed, Mode=TwoWay}"
+                        AutomationProperties.Name="Confirm restore" />
+              <Button Content="Restore selected"
+                      Command="{Binding RestoreSelectedCommand}"
+                      HorizontalAlignment="Left"
+                      AutomationProperties.Name="Restore selected" />
+            </StackPanel>
+          </Border>
+        </Grid>
+      </TabItem>
+
+      <!-- =============================== ROOTS ============================= -->
+      <TabItem Header="Roots">
+        <Grid RowDefinitions="Auto,*" Margin="16">
+          <StackPanel Spacing="4">
+            <TextBlock Classes="h1" Text="Resolved locations" />
+            <TextBlock Classes="muted"
+                       Text="Where each location was found, how it was found, and whether it validated. Read-only." />
+          </StackPanel>
+
+          <ListBox Grid.Row="1" ItemsSource="{Binding Roots}" Margin="0,14,0,0"
+                   AutomationProperties.Name="Resolved roots">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:RootRow">
+                <Grid ColumnDefinitions="160,2*,90,90,110,*" Margin="0,4">
+                  <TextBlock Text="{Binding LocationId}" FontWeight="SemiBold" />
+                  <TextBlock Grid.Column="1" Text="{Binding Path}" Classes="muted" />
+                  <TextBlock Grid.Column="2" Text="{Binding Via}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="3" Text="{Binding Role}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="4" Text="{Binding Validity}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="5" Text="{Binding Problem}" Classes="muted"
+                             VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </TabItem>
+
+      <!-- ============================= PROBLEMS ============================ -->
+      <TabItem Header="Problems">
+        <Grid RowDefinitions="Auto,*" Margin="16">
+          <StackPanel Spacing="4">
+            <TextBlock Classes="h1" Text="Health problems" />
+            <TextBlock Classes="muted"
+                       Text="Findings from the last scan. A problem is information, not a proposed removal." />
+          </StackPanel>
+
+          <ListBox Grid.Row="1" ItemsSource="{Binding Problems}" Margin="0,14,0,0"
+                   AutomationProperties.Name="Health problems">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:ProblemRow">
+                <Grid ColumnDefinitions="180,90,2*,*" Margin="0,4">
+                  <TextBlock Text="{Binding Code}" FontWeight="SemiBold" />
+                  <TextBlock Grid.Column="1" Text="{Binding Severity}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding Summary}" Classes="muted"
+                             VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="3" Text="{Binding Path}" Classes="muted"
+                             VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </TabItem>
+    </TabControl>
+  </Grid>
+</Window>

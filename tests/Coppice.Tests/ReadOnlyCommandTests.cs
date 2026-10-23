@@ -37,8 +37,8 @@ public sealed class ReadOnlyCommandTests
     {
         (FakeFileSystem fs, FakeProcessRunner runner, FakeEnvironment env, _) = World();
 
-        var service = new Coppice.Cli.DoctorService(fs, runner, env, env.OS);
-        Coppice.Cli.DoctorReport report = service.Inspect();
+        var service = new Coppice.Application.DoctorService(fs, runner, env, env.OS);
+        Coppice.Application.DoctorReport report = service.Inspect();
 
         Assert.Empty(fs.Writes);
         Assert.NotEmpty(report.Roots);
@@ -49,7 +49,7 @@ public sealed class ReadOnlyCommandTests
     {
         (FakeFileSystem fs, FakeProcessRunner runner, FakeEnvironment env, _) = World();
 
-        var service = new Coppice.Cli.DoctorService(fs, runner, env, env.OS);
+        var service = new Coppice.Application.DoctorService(fs, runner, env, env.OS);
         service.Inspect();
 
         Assert.Empty(fs.Writes);
@@ -65,8 +65,8 @@ public sealed class ReadOnlyCommandTests
         fs.AddDirectory("/home/dev/.nuget/packages/newtonsoft.json/13.0.3");
         fs.AddFileOfSize("/home/dev/.nuget/packages/newtonsoft.json/13.0.3/newtonsoft.json.13.0.3.nupkg", 4096);
 
-        var service = new Coppice.Cli.ScanService(fs, runner, env, state);
-        Coppice.Cli.ScanReport report = await service.RunAsync(
+        var service = new Coppice.Application.ScanService(fs, runner, env, state);
+        Coppice.Application.ScanReport report = await service.RunAsync(
             [
                 new Ports.ScanRoot(
                     "nuget-packages",
@@ -88,7 +88,7 @@ public sealed class ReadOnlyCommandTests
     {
         (FakeFileSystem fs, FakeProcessRunner runner, FakeEnvironment env, FakeStateStore state) = World();
 
-        var service = new Coppice.Cli.ScanService(fs, runner, env, state);
+        var service = new Coppice.Application.ScanService(fs, runner, env, state);
         await service.RunAsync([], projectRoots: []);
 
         // The snapshot is the ONE write v0.1 makes, and it goes to the state store — the user's own
@@ -118,7 +118,7 @@ public sealed class ReadOnlyCommandTests
         fs.AddDirectory(cache + separator + "serilog" + separator + "3.0.1");
         fs.AddFileOfSize(cache + separator + "serilog" + separator + "3.0.1" + separator + "serilog.3.0.1.nupkg", 2048);
 
-        var service = new Coppice.Cli.ScanService(fs, runner, env, state);
+        var service = new Coppice.Application.ScanService(fs, runner, env, state);
         await service.RunAsync(
             [
                 new Ports.ScanRoot(
@@ -142,8 +142,8 @@ public sealed class ReadOnlyCommandTests
     {
         (FakeFileSystem fs, FakeProcessRunner runner, FakeEnvironment env, FakeStateStore state) = World();
 
-        var service = new Coppice.Cli.ScanService(fs, runner, env, state);
-        Coppice.Cli.ScanReport report = await service.RunAsync([], projectRoots: []);
+        var service = new Coppice.Application.ScanService(fs, runner, env, state);
+        Coppice.Application.ScanReport report = await service.RunAsync([], projectRoots: []);
 
         Assert.Empty(report.Items);
         Assert.NotNull(report.SnapshotId);
@@ -158,10 +158,10 @@ public sealed class ReadOnlyCommandTests
         fs.AddDirectory("/home/dev/.nuget/packages/polly/8.0.0");
 
         var clock = new FakeClock(DateTimeOffset.UnixEpoch);
-        var service = new Coppice.Cli.ScanService(fs, runner, env, state, clock);
+        var service = new Coppice.Application.ScanService(fs, runner, env, state, clock);
 
-        Coppice.Cli.ScanReport first = await service.RunAsync([], projectRoots: []);
-        Coppice.Cli.ScanReport second = await service.RunAsync([], projectRoots: []);
+        Coppice.Application.ScanReport first = await service.RunAsync([], projectRoots: []);
+        Coppice.Application.ScanReport second = await service.RunAsync([], projectRoots: []);
 
         Assert.Equal(first.SnapshotId, second.SnapshotId);
         Assert.Equal(Coppice.Core.Domain.DomainJson.ComputeChecksum(first.Items), Coppice.Core.Domain.DomainJson.ComputeChecksum(second.Items));

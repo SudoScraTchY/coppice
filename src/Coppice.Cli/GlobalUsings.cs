@@ -13,6 +13,7 @@
 // A switch statement per enum (RootRoleTo, RiskTo) is the deliberate cost of NFR-08: the plugin
 // boundary stays free of Core types, and the translation lives in exactly one visible place.
 
+global using Coppice.Application;
 global using Policy = Coppice.Core.Domain.Policy;
 global using Problem = Coppice.Core.Domain.Problem;
 global using Project = Coppice.Core.Projects.Project;
@@ -24,3 +25,4 @@ global using ScanContext = Coppice.Core.Scanning.ScanContext;
 global using ScanRoot = Coppice.Core.Scanning.ScanRoot;
 global using Severity = Coppice.Core.Domain.Severity;
 global using Usage = Coppice.Core.Domain.Usage;
+global using UsageBreakdown = Coppice.Application.UsageBreakdown;

@@ -1,8 +1,10 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Coppice.Adapters/Coppice.Adapters.csproj" />
+    <Project Path="src/Coppice.Application/Coppice.Application.csproj" />
     <Project Path="src/Coppice.Cli/Coppice.Cli.csproj" />
     <Project Path="src/Coppice.Core/Coppice.Core.csproj" />
+    <Project Path="src/Coppice.Gui/Coppice.Gui.csproj" />
     <Project Path="src/Coppice.Manifests/Coppice.Manifests.csproj" />
     <Project Path="src/Coppice.Plugins.Go/Coppice.Plugins.Go.csproj" />
     <Project Path="src/Coppice.Plugins.Net/Coppice.Plugins.Net.csproj" />

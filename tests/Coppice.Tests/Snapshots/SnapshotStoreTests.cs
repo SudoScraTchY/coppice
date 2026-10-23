@@ -243,7 +243,7 @@ public sealed class SnapshotStoreTests
         Assert.True(snapshot.IsIntact());
 
         // Content changes break the checksum...
-        Assert.False((snapshot with { Usage = new UsageBreakdown(1, 0, 0) }).IsIntact());
+        Assert.False((snapshot with { Usage = new Coppice.Core.Domain.UsageBreakdown(1, 0, 0) }).IsIntact());
 
         // ...but the id and timestamp are metadata about the capture, not the state it recorded,
         // so re-snapshotting identical content under a new id stays verifiable.

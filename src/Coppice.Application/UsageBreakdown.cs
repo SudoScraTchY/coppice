@@ -1,12 +1,12 @@
 using Coppice.Core.Domain;
 
-namespace Coppice.Cli;
+namespace Coppice.Application;
 
 /// <summary>
 /// Usage counts for the scan report (FR-18).
 /// <para>
 /// This is the SINGLE place usage is counted. The CSV and Markdown exporters compute their own
-/// <see cref="ReportTotals"/> from the same rule, and a third counter would be free to disagree with the
+/// report totals from the same rule, and a third counter would be free to disagree with the
 /// other two — and a user comparing two exports of one scan would have no way to tell which was right.
 /// </para>
 /// <para>
@@ -30,7 +30,7 @@ public sealed record UsageBreakdown(
 
         foreach (Item item in items)
         {
-            switch (ReportTotals.UsageOf(item))
+            switch (ItemUsage.Of(item))
             {
                 case Usage.Referenced:
                     refc++;

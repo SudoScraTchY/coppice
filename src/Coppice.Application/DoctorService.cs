@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using Coppice.Adapters;
 using Coppice.Core.Domain;
@@ -7,7 +6,7 @@ using Coppice.Core.Scanning;
 using Coppice.Plugins.Net;
 using Coppice.Ports;
 
-namespace Coppice.Cli;
+namespace Coppice.Application;
 
 /// <summary>One resolved location, ready to report (FR-02).</summary>
 public sealed record RootReport(string LocationId, ResolvedRoot Root, string? Problem);
@@ -91,7 +90,7 @@ public sealed class DoctorService
 
             foreach (ResolvedRoot root in outcome.Roots)
             {
-                roots.Add(new RootReport(location.Id, root, TextReport.FixHint(root)));
+                roots.Add(new RootReport(location.Id, root, FixHint(root)));
             }
 
             // A location that resolved to nothing at all still deserves a line: "no idea where
@@ -256,6 +255,33 @@ public sealed class DoctorService
 
     // ---- rendering ----
 
+    /// <summary>
+    /// The concrete fix for a root that will not be cleaned. This travels with the report because it
+    /// is the answer to "why not?", not a table decoration; both the CLI and a GUI screen show it.
+    /// </summary>
+    private static string FixHint(ResolvedRoot root) => root.Validity switch
+    {
+        RootValidity.Denied =>
+            "this path is on the safety denylist; it will never be cleaned. If it is genuinely a "
+            + "toolchain cache, move it out of the protected location and pin it with --root.",
+
+        RootValidity.FailsFingerprint =>
+            "this path exists but does not look like a cache for this ecosystem, so it will not be "
+            + "cleaned. Check whether an environment variable points at the wrong place.",
+
+        RootValidity.Ambiguous =>
+            "two sources disagree about which copy is in use. Pin the correct one with "
+            + "--root <location-id>=<path> to resolve this.",
+
+        RootValidity.NotFound =>
+            "this path does not exist. Nothing to do; it may be a default for a tool you do not have.",
+
+        RootValidity.NeedsElevation =>
+            "this path needs elevation to modify. Install it per-user or leave it alone.",
+
+        _ => string.Empty,
+    };
+
     /// <summary>Machine-readable output. Paths are REAL here, never shortened or abbreviated.</summary>
     public static string ToJson(DoctorReport report)
     {
@@ -286,71 +312,5 @@ public sealed class DoctorService
                 WriteIndented = true,
                 Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
             });
-    }
-
-    /// <summary>Human output: the roots table, then the problems, then the exit code rationale.</summary>
-    public static string ToText(DoctorReport report, string? home = null)
-    {
-        ArgumentNullException.ThrowIfNull(report);
-
-        var sb = new StringBuilder();
-        home ??= string.Empty;
-
-        sb.AppendLine("coppice doctor");
-        sb.AppendLine();
-        sb.AppendLine(TextReport.RootHeader());
-        sb.AppendLine(new string('-', 100));
-
-        if (report.Roots.Count == 0)
-        {
-            sb.AppendLine("  (no locations resolved)");
-        }
-
-        foreach (RootReport root in report.Roots)
-        {
-            sb.AppendLine(TextReport.RootRow(root.LocationId, root.Root, home));
-
-            // A convention-only path gets its caveat on its own line. 09 requires the reduced confidence to
-            // be SURFACED, and a marker in the provenance column is easy to miss when the row is long.
-            string? confidence = TextReport.ConfidenceNote(root.Root);
-            if (confidence is not null)
-            {
-                sb.AppendLine($"      ~ {confidence}");
-            }
-
-            if (!string.IsNullOrEmpty(root.Problem))
-            {
-                sb.AppendLine($"      -> {root.Problem}");
-            }
-        }
-
-        if (report.Issues.Count > 0)
-        {
-            sb.AppendLine();
-            sb.AppendLine("Issues:");
-            foreach (string issue in report.Issues)
-            {
-                sb.AppendLine($"  {issue}");
-            }
-        }
-
-        sb.AppendLine();
-        sb.AppendLine(Summary(report));
-
-        return sb.ToString();
-    }
-
-    private static string Summary(DoctorReport report)
-    {
-        int total = report.Roots.Count;
-        int cleanable = report.Roots.Count(r => r.Root.IsCleanable);
-
-        if (total == 0)
-        {
-            return "No locations resolved. Nothing is known about this machine yet.";
-        }
-
-        return $"{cleanable} of {total} location(s) are resolved and cleanable. "
-            + "This tool does not delete anything on its own; run 'coppice plan' to review a removal.";
     }
 }

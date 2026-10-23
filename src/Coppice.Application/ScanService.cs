@@ -16,7 +16,7 @@ using PortProjectSet = Coppice.Ports.ProjectSet;
 using PortReferenceVerdict = Coppice.Ports.ReferenceVerdict;
 using PortScanRoot = Coppice.Ports.ScanRoot;
 
-namespace Coppice.Cli;
+namespace Coppice.Application;
 
 /// <summary>What one scan found, ready to render (FR-18).</summary>
 public sealed record ScanReport(

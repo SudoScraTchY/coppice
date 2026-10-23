@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Coppice.Application\Coppice.Application.csproj" />
     <ProjectReference Include="..\..\src\Coppice.Core\Coppice.Core.csproj" />
     <ProjectReference Include="..\..\src\Coppice.Ports\Coppice.Ports.csproj" />
     <ProjectReference Include="..\..\src\Coppice.Adapters\Coppice.Adapters.csproj" />
@@ -9,6 +10,7 @@
     <ProjectReference Include="..\..\src\Coppice.Plugins.Rust\Coppice.Plugins.Rust.csproj" />
     <ProjectReference Include="..\..\src\Coppice.Plugins.Node\Coppice.Plugins.Node.csproj" />
     <ProjectReference Include="..\..\src\Coppice.Cli\Coppice.Cli.csproj" />
+    <ProjectReference Include="..\..\src\Coppice.Gui\Coppice.Gui.csproj" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />

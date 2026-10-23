@@ -93,6 +93,19 @@ Full flags, confirmation rules, state locations and exit codes:
 Exit codes: `0` success · `1` runtime error · `2` usage error · `3` safety abort · `4` partial or
 cancelled apply.
 
+## GUI (v0.4, in progress)
+
+The Avalonia desktop shell runs the same services as the CLI:
+
+```bash
+dotnet run --project src/Coppice.Gui
+```
+
+It has Dashboard, Items, Plan review (with per-step selection), Apply progress, Quarantine, Roots and
+Problems screens. The retention picker includes **Keep newest only**, the same policy as
+`coppice plan --keep-latest 1`: the newest version of each package is kept and older unreferenced
+versions are proposed. The GUI is not part of the v0.3 release artifact yet; v0.4 packaging is T-043.
+
 ## Safety model
 
 - **Dry-run by default.** `doctor`, `roots`, `scan` and `plan` do not modify a scanned cache. `apply`

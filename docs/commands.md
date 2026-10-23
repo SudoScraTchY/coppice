@@ -69,6 +69,8 @@ TUI and `apply`. It never queries a toolchain and never touches a cache.
 - `--policy` selects the preset. `default` keeps the newest 2 versions per package; `conservative` keeps
   3; `aggressive` keeps 1 and admits Review-tier items.
 - `--keep-latest <n>` overrides the preset's keep count; `0` disables the keep rule. Use it deliberately.
+  `--keep-latest 1` is the "keep newest only" policy: for each package, the newest version is kept and every
+  older version that is `Unreferenced` is proposed. A referenced older version is still protected (S-4).
 - `--out <file>` writes the checksummed plan JSON to that path. The file is validated with the same
   `PlanStore` rules `apply` uses before it is written.
 - The plan is always stored under state, even without `--out`. An interactive `coppice apply` with no
@@ -190,6 +192,9 @@ coppice help
 coppice doctor
 coppice scan --projects ~/src --projects ~/work
 coppice plan --out plan.json
+
+# Five cached versions of one package: keep the newest, propose the four older ones.
+coppice plan --keep-latest 1
 
 # Interactive apply asks for a typed yes.
 coppice apply --plan plan.json

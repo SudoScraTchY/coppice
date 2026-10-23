@@ -2,7 +2,7 @@ using Coppice.Core.Domain;
 using Coppice.Plugins.Net;
 using Net = Coppice.Plugins.Net;
 
-namespace Coppice.Cli;
+namespace Coppice.Application;
 
 /// <summary>
 /// The one translation from a doctor report to the portable roots a scan reads. Shared by

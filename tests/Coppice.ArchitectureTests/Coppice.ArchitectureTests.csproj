@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Coppice.Application\Coppice.Application.csproj" />
     <ProjectReference Include="..\..\src\Coppice.Core\Coppice.Core.csproj" />
     <ProjectReference Include="..\..\src\Coppice.Ports\Coppice.Ports.csproj" />
     <ProjectReference Include="..\..\src\Coppice.Adapters\Coppice.Adapters.csproj" />

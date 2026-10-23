@@ -65,7 +65,7 @@ public sealed class ReadOnlyAuditTests
         get
         {
             var data = new TheoryData<string>();
-            foreach (string name in new[] { "Coppice.Ports", "Coppice.Plugins.Net", "Coppice.Manifests", "Coppice.Cli" })
+            foreach (string name in new[] { "Coppice.Ports", "Coppice.Plugins.Net", "Coppice.Manifests", "Coppice.Application", "Coppice.Cli" })
             {
                 data.Add(name);
             }

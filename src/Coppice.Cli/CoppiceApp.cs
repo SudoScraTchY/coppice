@@ -135,7 +135,7 @@ public static class CoppiceApp
         }
         else
         {
-            Console.Out.Write(DoctorService.ToText(report, service.HomeDirectory));
+            Console.Out.Write(DoctorText.ToText(report, service.HomeDirectory));
         }
 
         // A location that resolved but cannot be cleaned is not a failure — it is a report. Only an

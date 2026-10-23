@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- T-039 Avalonia shell: `Coppice.Gui` is a native Avalonia 12 desktop front-end over the same application
+  services as the CLI. Dashboard (project roots, scan, cancel), Items, Plan review with per-step selection,
+  Apply progress, Quarantine (restore), Roots and Problems. The policy picker exposes "Keep newest only",
+  which is the CLI's `--keep-latest 1`, alongside default, conservative and a custom keep count. The GUI
+  references Application/Core and neither Adapters nor the CLI; an architecture test pins that.
+- `Coppice.Application`: the shared service layer extracted from the CLI (`DoctorService`, `ScanService`,
+  `PlanPreviewService`, `ScanWiring`, `ApplyWiring`, `SnapshotLibrary`, `QuarantineLibrary`,
+  `PlanApplyService`). The CLI and GUI now build plans through one preview service and run mutations through
+  one apply service and gateway wiring.
+- A five-version end-to-end test: one referenced newest version, four unreferenced older versions, and
+  `--keep-latest 1` proposes exactly the four older ones. A GUI/CLI equality test proves the GUI's
+  "Keep newest only" choice produces the same plan id and step set as `coppice plan --keep-latest 1`.
+
 ## [0.3.0] — apply, safely — 2026-10-21
 
 Phase 3 of the spec roadmap (T-031 … T-038, plus T-044 and T-045). This is the first release that can

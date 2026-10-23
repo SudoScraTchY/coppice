@@ -135,7 +135,7 @@ public sealed class DeterministicOrderingTests
     [Fact]
     public void UsageBreakdown_splits_by_risk()
     {
-        UsageBreakdown breakdown = UsageBreakdown.FromItems(
+        Coppice.Core.Domain.UsageBreakdown breakdown = Coppice.Core.Domain.UsageBreakdown.FromItems(
         [
             Item("a", "1", Risk.Safe) with { Size = 10 },
             Item("b", "1", Risk.Safe) with { Size = 5 },

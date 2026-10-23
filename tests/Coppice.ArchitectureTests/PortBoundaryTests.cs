@@ -79,6 +79,20 @@ public sealed class PortBoundaryTests
         Assert.Empty(offenders);
     }
 
+    /// <summary>
+    /// The GUI is a view over application services. It must not reach around them to an adapter, and it
+    /// must not reference the CLI: either would let a screen grow a second mutation or retention path.
+    /// </summary>
+    [Fact]
+    public void The_gui_references_neither_the_adapters_nor_the_cli()
+    {
+        IReadOnlyList<string> references = ProjectReferenceNames("Coppice.Gui");
+
+        Assert.DoesNotContain("Coppice.Adapters", references);
+        Assert.DoesNotContain("Coppice.Cli", references);
+        Assert.Contains("Coppice.Application", references);
+    }
+
     [Fact]
     public void Only_the_ports_project_defines_the_capability_interfaces()
     {

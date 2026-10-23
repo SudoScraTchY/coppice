@@ -5,7 +5,7 @@ using Xunit;
 // ScanReport.Problems is the Core domain type; Ports declares a portable Problem of the same name for
 // the plugin boundary, and the ambiguity is a real signal that the two types are distinct concepts.
 using Problem = Coppice.Core.Domain.Problem;
-using UsageBreakdown = Coppice.Cli.UsageBreakdown;
+using UsageBreakdown = Coppice.Application.UsageBreakdown;
 
 namespace Coppice.Tests.Export;
 

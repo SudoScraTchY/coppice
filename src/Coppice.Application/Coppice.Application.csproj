@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Coppice.Core\Coppice.Core.csproj" />
+    <ProjectReference Include="..\Coppice.Ports\Coppice.Ports.csproj" />
+    <ProjectReference Include="..\Coppice.Adapters\Coppice.Adapters.csproj" />
+    <ProjectReference Include="..\Coppice.Plugins.Net\Coppice.Plugins.Net.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>

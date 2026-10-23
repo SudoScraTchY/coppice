@@ -4,9 +4,9 @@ using Coppice.Cli;
 using Coppice.Core.Domain;
 using Coppice.Ports;
 using Xunit;
-// ScanReport.Usage is the Cli UsageBreakdown, not the domain one of the same name: that is what
+// ScanReport.Usage is the Application UsageBreakdown, not the domain one of the same name: that is what
 // ScanService produces and what the console renderer prints.
-using UsageBreakdown = Coppice.Cli.UsageBreakdown;
+using UsageBreakdown = Coppice.Application.UsageBreakdown;
 
 namespace Coppice.Tests.Export;
 

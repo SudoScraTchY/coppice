@@ -44,29 +44,6 @@ public static class TextReport
     /// A concrete next step for a root that will not be cleaned. NFR-10 requires a fix hint: a
     /// denylist hit with no explanation leaves the user thinking the tool is broken.
     /// </summary>
-    public static string FixHint(ResolvedRoot root) => root.Validity switch
-    {
-        RootValidity.Denied =>
-            "this path is on the safety denylist; it will never be cleaned. If it is genuinely a "
-            + "toolchain cache, move it out of the protected location and pin it with --root.",
-
-        RootValidity.FailsFingerprint =>
-            "this path exists but does not look like a cache for this ecosystem, so it will not be "
-            + "cleaned. Check whether an environment variable points at the wrong place.",
-
-        RootValidity.Ambiguous =>
-            "two sources disagree about which copy is in use. Pin the correct one with "
-            + "--root <location-id>=<path> to resolve this.",
-
-        RootValidity.NotFound =>
-            "this path does not exist. Nothing to do; it may be a default for a tool you do not have.",
-
-        RootValidity.NeedsElevation =>
-            "this path needs elevation to modify. Install it per-user or leave it alone.",
-
-        _ => string.Empty,
-    };
-
     /// <summary>Header for the `roots` table.</summary>
     public static string RootHeader() => string.Join(
         "  ",

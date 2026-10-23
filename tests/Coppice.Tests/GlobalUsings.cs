@@ -10,6 +10,7 @@
 // against the plugin boundary, writes `Ports.ScanContext` and friends in full. That asymmetry is
 // intentional: a conformance test that silently picked the Core type would prove nothing.
 
+global using Coppice.Application;
 global using Project = Coppice.Core.Projects.Project;
 global using ProjectSet = Coppice.Core.Projects.ProjectSet;
 global using Risk = Coppice.Core.Domain.Risk;

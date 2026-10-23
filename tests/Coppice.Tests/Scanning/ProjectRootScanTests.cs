@@ -37,20 +37,23 @@ public sealed class ProjectRootScanTests
         FakeStateStore State,
         FakeClock Clock);
 
-    private static World BuildWorld()
+    private static World BuildWorld(
+        IReadOnlyList<string>? versions = null,
+        string referencedVersion = "13.0.3")
     {
         var fs = new FakeFileSystem(Linux);
         fs.AddDirectory(Cache);
 
-        foreach (string version in new[] { "11.0.1", "12.0.1", "13.0.3" })
+        foreach (string version in versions ?? ["11.0.1", "12.0.1", "13.0.3"])
         {
             string directory = $"{Cache}/Newtonsoft.Json/{version}";
             fs.AddDirectory(directory);
             fs.AddFile($"{directory}/newtonsoft.json.{version}.nupkg", $"package {version}");
         }
 
+        string assets = Assets.Replace("13.0.3", referencedVersion, StringComparison.Ordinal);
         fs.AddFile($"{Projects}/app/App.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\" />");
-        fs.AddFile($"{Projects}/app/obj/project.assets.json", Assets);
+        fs.AddFile($"{Projects}/app/obj/project.assets.json", assets);
 
         return new World(
             fs,
@@ -100,6 +103,41 @@ public sealed class ProjectRootScanTests
 
         Assert.True(loaded.IsSuccess, loaded.Message);
         Assert.Equal(oldest.ItemId, Assert.Single(loaded.Plan!.Steps).ItemId);
+    }
+
+    [Fact]
+    public async Task Five_versions_keep_the_newest_and_propose_the_other_four()
+    {
+        string[] versions = ["1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0"];
+        World world = BuildWorld(versions, referencedVersion: "5.0.0");
+
+        ScanReport report = await Service(world).RunAsync([CacheRoot()], [Projects]);
+
+        Assert.Equal(5, report.Items.Count);
+        Item newest = Assert.Single(report.Items, item => item.Version == "5.0.0");
+        Assert.Equal("Referenced", newest.Facts["usage"]);
+        Assert.All(
+            report.Items.Where(item => item.Version != "5.0.0"),
+            item => Assert.Equal("Unreferenced", item.Facts["usage"]));
+
+        var console = new FakeApplyConsole(interactive: false);
+        var plan = new PlanCommand(world.State, new FakePlanFileWriter(), console, world.Clock);
+
+        Assert.Equal(ExitCodes.Success, plan.Run(["--keep-latest", "1"]));
+
+        string key = Assert.Single(world.State.ListKeys("plans/"));
+        PlanLoadResult loaded = await new PlanStore(world.State).LoadAsync(key["plans/".Length..^".json".Length]);
+
+        Assert.True(loaded.IsSuccess, loaded.Message);
+        Plan stored = loaded.Plan!;
+        Assert.Equal(1, stored.Policy.KeepLatestN);
+        Assert.Equal(4, stored.Steps.Count);
+        Assert.DoesNotContain(stored.Steps, step => step.ItemId == newest.ItemId);
+
+        Dictionary<string, string> versionByItem = report.Items.ToDictionary(item => item.ItemId, item => item.Version, StringComparer.Ordinal);
+        Assert.Equal(
+            versions[..4].Order(StringComparer.Ordinal),
+            stored.Steps.Select(step => versionByItem[step.ItemId]).Order(StringComparer.Ordinal));
     }
 
     [Fact]
