@@ -254,6 +254,33 @@ public sealed class NetInventoryTests
         Assert.Equal(0, SdkVersion.Compare("9.0.100+sha.abcdef", "9.0.100"));
     }
 
+    [Theory]
+    [InlineData("1.0.0.1", "1.0.0.2", -1)]
+    [InlineData("1.0.0.2", "1.0.0.10", -1)]
+    [InlineData("1.0.0.1", "1.0.0", 1)]
+    [InlineData("1.0.0", "1.0.0.0", 0)]
+    public void A_four_part_version_orders_by_its_revision(string a, string b, int expected) =>
+        Assert.Equal(expected, Math.Sign(SdkVersion.Compare(a, b)));
+
+    [Fact]
+    public void Prerelease_numeric_identifiers_sort_below_alphanumeric_ones()
+    {
+        Assert.Equal(-1, Math.Sign(SdkVersion.Compare("1.0.0-1", "1.0.0-alpha")));
+        Assert.Equal(1, Math.Sign(SdkVersion.Compare("1.0.0-alpha", "1.0.0-1")));
+    }
+
+    [Fact]
+    public void Prerelease_text_compares_case_insensitively()
+    {
+        Assert.Equal(0, SdkVersion.Compare("1.0.0-Alpha", "1.0.0-alpha"));
+    }
+
+    [Fact]
+    public void A_hyphen_in_build_metadata_is_not_a_prerelease()
+    {
+        Assert.Equal(0, SdkVersion.Compare("1.0.0+sha-abc", "1.0.0"));
+    }
+
     [Fact]
     public void Architecture_is_read_from_the_install_path_or_reported_unknown()
     {

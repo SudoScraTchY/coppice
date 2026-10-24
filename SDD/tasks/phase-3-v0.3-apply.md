@@ -164,6 +164,7 @@ Exit criteria per 12-roadmap.
 - [x] A scan with no project roots stays `Unknown` and plans nothing
 - [x] `scan` and `tui` parse repeated `--projects` paths; a missing value is a usage error
 - [x] Help and 07 list the flag, and the 07 text states that cwd auto-discovery is not performed
+
 ### T-046 · Kill test: a temp root the denylist does not refuse
 **Refs** 11-testing · **Depends** T-034 · **Effort** S
 
@@ -182,3 +183,22 @@ Exit criteria per 12-roadmap.
 - [x] The kill test passes when `Path.GetTempPath()` is under the Windows directory
 - [x] Journal polling cannot cause the child's append to fail
 - [x] A run that exits before an intent reports the child's exit code and output
+
+### T-047 · NuGet four-part versions order by revision
+**Refs** FR-08, FR-09, 09-ecosystems · **Depends** T-025, T-039 · **Effort** S
+
+**Build**
+- `NetVersionOrdering` reused `SdkVersion.Compare`, which parsed only major.minor.patch. Four-part NuGet
+  versions that differed only in the revision compared equal, so keep-latest-N fell back to the `ItemId`
+  tie-break and could keep an older version. Compare the revision, and while here follow NuGet for the rest
+  of the grammar: numeric prerelease identifiers sort below alphanumeric ones, prerelease text compares
+  case-insensitively, and `+metadata` is stripped before searching for the `-prerelease` separator.
+
+**Acceptance**
+- [x] `1.0.0.1 < 1.0.0.2 < 1.0.0.10`, and `1.0.0 == 1.0.0.0`
+- [x] keep-latest 1 over four-part versions keeps the true newest and proposes the other three (scan + plan fixture)
+- [x] Prerelease precedence and build metadata containing a hyphen are covered
+
+> T-047 was found while verifying T-039's five-version case against real package versions (for example
+> GoogleGson 2.13.2.2 and HarfBuzzSharp 8.3.1.3). The old comparator returned equal for 1.0.0.2 and
+> 1.0.0.10; the deterministic `ItemId` tie-break then kept 1.0.0.2 and proposed 1.0.0.10.

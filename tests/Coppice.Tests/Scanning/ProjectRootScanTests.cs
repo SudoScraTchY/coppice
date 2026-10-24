@@ -141,6 +141,34 @@ public sealed class ProjectRootScanTests
     }
 
     [Fact]
+    public async Task Four_part_versions_keep_the_true_newest()
+    {
+        string[] versions = ["1.0.0.1", "1.0.0.2", "1.0.0.9", "1.0.0.10"];
+        World world = BuildWorld(versions, referencedVersion: "1.0.0.10");
+
+        ScanReport report = await Service(world).RunAsync([CacheRoot()], [Projects]);
+        Item newest = Assert.Single(report.Items, item => item.Version == "1.0.0.10");
+
+        var console = new FakeApplyConsole(interactive: false);
+        var plan = new PlanCommand(world.State, new FakePlanFileWriter(), console, world.Clock);
+
+        Assert.Equal(ExitCodes.Success, plan.Run(["--keep-latest", "1"]));
+
+        string key = Assert.Single(world.State.ListKeys("plans/"));
+        PlanLoadResult loaded = await new PlanStore(world.State).LoadAsync(key["plans/".Length..^".json".Length]);
+
+        Assert.True(loaded.IsSuccess, loaded.Message);
+        Plan stored = loaded.Plan!;
+        Assert.Equal(3, stored.Steps.Count);
+        Assert.DoesNotContain(stored.Steps, step => step.ItemId == newest.ItemId);
+
+        Dictionary<string, string> versionByItem = report.Items.ToDictionary(item => item.ItemId, item => item.Version, StringComparer.Ordinal);
+        Assert.Equal(
+            ["1.0.0.1", "1.0.0.2", "1.0.0.9"],
+            stored.Steps.Select(step => versionByItem[step.ItemId]).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public async Task Without_project_roots_every_item_is_unknown_and_nothing_is_planned()
     {
         World world = BuildWorld();

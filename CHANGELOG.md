@@ -20,6 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--keep-latest 1` proposes exactly the four older ones. A GUI/CLI equality test proves the GUI's
   "Keep newest only" choice produces the same plan id and step set as `coppice plan --keep-latest 1`.
 
+### Fixed
+- T-047: keep-newest now compares all four numeric parts of a NuGet version. Four-part versions that
+  differed only in the revision compared equal, so the deterministic `ItemId` tie-break could keep an
+  older version and propose the true newest. Prerelease identifiers now follow NuGet ordering (numeric
+  below alphanumeric, text case-insensitive), and build metadata containing `-` is no longer read as a
+  prerelease.
+
 ## [0.3.0] — apply, safely — 2026-10-21
 
 Phase 3 of the spec roadmap (T-031 … T-038, plus T-044 and T-045). This is the first release that can

@@ -348,7 +348,7 @@ internal sealed class NetVersionOrdering : IVersionOrdering
             Number(parsed.Major),
             Number(parsed.Minor),
             Number(parsed.Patch),
-            0,
+            Number(parsed.Revision),
             parsed.Preview,
             null);
 

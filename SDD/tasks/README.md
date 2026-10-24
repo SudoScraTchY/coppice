@@ -7,7 +7,7 @@
 | phase-0-bootstrap.md | 0 | T-000 … T-004 | repo, identity, ports, model, path safety |
 | phase-1-v0.1-readonly.md | v0.1 | T-005 … T-019 | read-only trust: .NET + doctor + conformance |
 | phase-2-v0.2-manifests.md | v0.2 | T-020 … T-030 | manifests, policy/plans, escape suite, API freeze |
-| phase-3-v0.3-apply.md | v0.3 | T-031 … T-038, T-044 … T-046 | gateway, quarantine, audit, apply, TUI, CI mode, plan/quarantine verbs, project roots, kill-test fixture |
+| phase-3-v0.3-apply.md | v0.3 | T-031 … T-038, T-044 … T-047 | gateway, quarantine, audit, apply, TUI, CI mode, plan/quarantine verbs, project roots, kill-test fixture, four-part version ordering |
 | phase-4-v0.4-gui.md | v0.4 | T-039 … T-043 | Avalonia GUI, history, completions |
 
 ## Workflow

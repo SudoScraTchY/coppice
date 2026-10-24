@@ -94,6 +94,14 @@ public static class SdkVersion
             return result;
         }
 
+        // NuGet accepts a fourth numeric part. Ignoring it made 1.0.0.2 and 1.0.0.10 compare equal,
+        // so keep-latest-N fell back to the ItemId tie-break and could keep the older version.
+        result = Numeric(left.Revision).CompareTo(Numeric(right.Revision));
+        if (result != 0)
+        {
+            return result;
+        }
+
         bool leftPreview = left.Preview is not null;
         bool rightPreview = right.Preview is not null;
 
@@ -164,8 +172,9 @@ public static class SdkVersion
 
     private static int ComparePreRelease(string a, string b)
     {
-        // Numeric parts compare numerically, text parts lexically, and a longer tail wins, which
-        // matches NuGet's own ordering: preview.2 > preview.1, preview.1.1 > preview.1.
+        // Numeric parts compare numerically, text parts compare case-insensitively, a numeric identifier
+        // sorts below an alphanumeric one, and a longer tail wins. That is NuGet's SemVer ordering:
+        // preview.2 > preview.1, preview.1.1 > preview.1, and 1.0.0-1 < 1.0.0-alpha.
         string[] left = a.Split('.', StringSplitOptions.RemoveEmptyEntries);
         string[] right = b.Split('.', StringSplitOptions.RemoveEmptyEntries);
 
@@ -187,9 +196,9 @@ public static class SdkVersion
             int result = (leftNumeric, rightNumeric) switch
             {
                 (true, true) => leftValue.CompareTo(rightValue),
-                (true, false) => 1,
-                (false, true) => -1,
-                _ => string.CompareOrdinal(left[i], right[i]),
+                (true, false) => -1,
+                (false, true) => 1,
+                _ => StringComparer.OrdinalIgnoreCase.Compare(left[i], right[i]),
             };
 
             if (result != 0)
@@ -204,7 +213,11 @@ public static class SdkVersion
     private static int Numeric(string? part) =>
         int.TryParse(part, NumberStyles.None, CultureInfo.InvariantCulture, out int value) ? value : 0;
 
-    public readonly record struct Parsed(string? Major, string? Minor, string? Patch, string? Preview);
+    public readonly record struct Parsed(string? Major, string? Minor, string? Patch, string? Preview)
+    {
+        /// <summary>The optional fourth numeric part of a NuGet package version; SDK versions omit it.</summary>
+        public string? Revision { get; init; }
+    }
 
     /// <summary>
     /// Splits a .NET version into its numeric core and its pre-release tail, discarding build
@@ -219,8 +232,16 @@ public static class SdkVersion
         }
 
         string core = version.Trim();
-        string? preview = null;
 
+        // Strip build metadata BEFORE looking for the prerelease dash: metadata can contain a hyphen,
+        // and treating "1.0.0+sha-abc" as prerelease would change how two identical versions order.
+        int plus = core.IndexOf('+', StringComparison.Ordinal);
+        if (plus >= 0)
+        {
+            core = core[..plus];
+        }
+
+        string? preview = null;
         int dash = core.IndexOf('-', StringComparison.Ordinal);
         if (dash >= 0)
         {
@@ -228,15 +249,15 @@ public static class SdkVersion
             core = core[..dash];
         }
 
-        core = core.Split('+', 2)[0];
-        preview = preview?.Split('+', 2)[0];
-
         string[] parts = core.Split('.', StringSplitOptions.RemoveEmptyEntries);
 
         return new Parsed(
             parts.Length > 0 ? parts[0] : null,
             parts.Length > 1 ? parts[1] : null,
             parts.Length > 2 ? parts[2] : null,
-            preview is { Length: > 0 } ? preview : null);
+            preview is { Length: > 0 } ? preview : null)
+        {
+            Revision = parts.Length > 3 ? parts[3] : null,
+        };
     }
 }
