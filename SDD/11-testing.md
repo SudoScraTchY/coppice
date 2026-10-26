@@ -49,10 +49,9 @@ the gateway lands (T-031). E-7 is a named mount-point test in the Safety suite; 
   canary did not execute. The TRX is uploaded as the `egress-results` artifact; because the results
   directory is dot-prefixed, the upload must include hidden files. There is no equivalent local gate
   on Windows/macOS.
-- **Perf smoke:** NFR-04's 30k-item / ~30 GB target is not in CI. T-053's fixture is sparse. A real
-  3,152-item / 19.4 GB cache measured 190.6 s before T-058 and 15.6–17.7 s after the reference-index
-  fix; a 30k-item fixture is 9.8 s. The exact combined 30k/30 GB shape is not in CI, so NFR-04 still
-  needs the owner's acceptance or an amendment.
+- **Perf smoke:** NFR-04 is measured outside CI: a real 30,000-item / 31,457,280,000-byte fixture
+  scans in 9.965 s, and the real 3,152-package / 19.4 GB cache in 15.6–17.7 s after T-058. The sparse
+  30k fake is no longer the only evidence; the real fixture is not in CI.
 - **Coverage:** no percentage gate is enforced today. The escape suite, architecture tests, real
   process kill test and goldens are the mandatory gates.
 

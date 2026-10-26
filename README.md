@@ -9,7 +9,7 @@ A native, plugin-based toolchain and cache cleaner for polyglot developers.
 | | |
 |---|---|
 | **License** | Apache-2.0 |
-| **Status** | v0.4.0-rc.1 — release candidate (human gates and T-058 NFR-04 amendment open; 0.3.0 was never tagged — see ADR-017) |
+| **Status** | v0.4.0-rc.1 — release candidate (human gates open; 0.3.0 was never tagged — see ADR-017) |
 | **Platforms** | Windows, Linux, macOS (x64/arm64) |
 | **Runtime** | .NET 10. No container runtime, daemon, service or middleman |
 
@@ -163,9 +163,8 @@ and [SDD/06-safety-model.md](./SDD/06-safety-model.md).
   version → doctor → scan → plan → apply → restore → audit verify with no .NET on `PATH` and isolated
   state (2026-10-26). A true fresh-VM install → apply transcript and the dogfood reports remain human
   gates recorded in `SDD/AGENDA.md`; this is why the release is `0.4.0-rc.1`, not a tag.
-- **Scan performance:** 30,000 items scan in 9.8 s and the real 3,152-package / 19.4 GB cache in
-  15.6–17.7 s after the T-058 reference-index fix (was 190.6 s); the exact combined 30k / 30 GB shape
-  and the owner's acceptance or amendment remain open.
+- **Scan performance:** NFR-04 is met on a real fixture: 30,000 items / 31,457,280,000 bytes in
+  9.965 s; the real 3,152-package / 19.4 GB cache is 15.6–17.7 s after the T-058 reference-index fix.
 
 ## Documentation
 

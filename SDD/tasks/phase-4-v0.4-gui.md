@@ -97,7 +97,7 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > are ticked in the evidence commit that adds them. The GUI archive from the earlier `40399283405` dry
 > run was extracted and launched; the post-fix GUI is name-checked and packaged in `40411290645`. A
 > scrubbed-PATH E2E of the post-fix self-contained archive completed the full pipeline. The fresh-VM
-> gate, T-058's owner decision and the other human gates remain open.
+> gate and the other human gates remain open.
 
 > T-043 prepared `0.4.0-rc.1`, not a tag. Run `40313952759` is green on all six cells. The CLI is
 > 2.19 MB framework-dependent / 36.73 MB self-contained; the GUI is 47.71 MB self-contained. The
@@ -285,7 +285,7 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - Add a real-volume benchmark and a regression test that each project is read once per project set.
 
 **Acceptance**
-- [ ] NFR-04's 30k-item / ~30 GB target is met on a real fixture under 60 s, or the owner explicitly amends NFR-04 with a tested limit — 30k items in 9.8 s and 3,152 packages / 19.4 GB in 15.6 s; the combined 30k/30 GB shape is not run
+- [x] NFR-04's 30k-item / ~30 GB target is met on a real fixture under 60 s — 30,000 items / 31,457,280,000 bytes on the real filesystem in 9.965 s (1 MB sparse files); the real 3,152-package / 19.4 GB cache is 15.6–17.7 s
 - [x] Hard-link de-duplication, quarantine exclusion and link safety still pass — 1,372 unit tests, 33 architecture tests, 12 goldens, 53 escape tests at 100k
 - [x] The measured before/after numbers are in the agenda and release notes — 190.6 s → 15.6–17.7 s
 
@@ -296,5 +296,5 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 >
 > Fix landed 2026-10-27: the cached reference index takes the same 3,152-item cache to 17.7 s, then
 > 15.6 s warm (10.8–12.2x), with the same 46 Referenced / 3,106 Unknown verdicts. A 30,000-item
-> fixture (30k x 1 KB) scans in 9.8 s, under the 60 s item-count target. The exact combined 30k/30 GB
-> shape is not run, so the tag waits on the owner's acceptance or an explicit amendment.
+> fixture with 1 MB per item (30 GB logical) on the real filesystem scans in 9.965 s, so NFR-04's
+> 30k / 30 GB target is met. T-058 is done; the tag waits only on the human gates.

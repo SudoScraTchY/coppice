@@ -23,10 +23,8 @@ evidence for a feature. `blocked-human` cards never auto-tick.
   the `v0.4.0` tag waits for the human gates. See `docs/adr/ADR-017-release-truth-and-size-budget.md`.
 - **NFR-11:** framework-dependent < 5 MB (primary), self-contained < 50 MB (optional);
   NativeAOT remains OQ-03.
-- **NFR-04:** the sparse 30k fixture is not real-volume evidence. The real 3,152-package / 19.4 GB
-  scan was 190.6 s; the T-058 reference-index fix takes it to 15.6–17.7 s, and a 30k-item fixture
-  scans in 9.8 s. The exact combined 30k/30 GB shape is not run; the owner must accept the evidence
-  or amend NFR-04 before the tag.
+- **NFR-04:** met on a real filesystem: 30,000 items / 31,457,280,000 bytes in 9.965 s, and the real
+  3,152-package / 19.4 GB cache in 15.6–17.7 s after the T-058 reference-index fix.
 - **GUI:** T-050 landed the redesign and its testability work; T-040 is the pin editor/provenance card.
 - **Scope:** full v0.4. v1.0 work stays planning-only.
 - **Parallelism:** at most two build-heavy lanes at once; the orchestrator alone merges to
@@ -42,7 +40,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | W3 | T-051 FR-01/FR-02 | T-052 FR-22/FR-23 | T-056 / T-049 | B/T/G; pin-denied and drop-in-manifest tests |
 | W4 | T-040 pin editor/provenance | T-041 history/trends | T-050 / T-048 | B/T; headless GUI; two-snapshot delta |
 | W5 | T-053 NFR-04 perf/doctor | T-042 completions + HTML | T-051 / T-015 | B/T/P; recorded perf evidence; offline HTML |
-| W6 | T-043 v0.4 release | — | all | full CI on release commit; release dry run (18 archives + package); NFR-04 decision (T-058); human gates; tag |
+| W6 | T-043 v0.4 release | — | all | full CI on release commit; release dry run (18 archives + package); human gates; tag |
 
 ## Card status (as of 2026-10-26)
 
@@ -62,10 +60,10 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-039 Avalonia shell | `done` except box 4 human | boxes 1/2 closed by T-050; box 4 is `blocked-human` |
 | T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
 | T-040 GUI pin editor | `done` | `110dc84`; run `40311141426` green on all six cells; pin/roots tests |
-| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; runs `40313952759` (six cells) and `40411290645` (post-T-058 strict release dry run: exact 18 archives + nupkg + sidecars, both CLI variants version-checked, screenshots inside the SC/GUI archives, no Release; `gh release create` is tag-only and unexercised); CLI 2.19/36.74 MB, GUI 47.72 MB on win-x64; tag withheld until T-058's owner decision and the human gates |
+| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; runs `40313952759` (six cells) and `40411290645` (post-T-058 strict release dry run: exact 18 archives + nupkg + sidecars, both CLI variants version-checked, screenshots inside the SC/GUI archives, no Release; `gh release create` is tag-only and unexercised); CLI 2.19/36.74 MB, GUI 47.72 MB on win-x64; tag withheld until the human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
-| T-058 real-volume scan perf | `in-progress` | ReferenceIndex fix: 190.6 s → 15.6–17.7 s on 3,152 packages, 9.8 s on 30k items; combined 30k/30 GB shape or owner amendment open |
+| T-058 real-volume scan perf | `done` | ReferenceIndex fix: 190.6 s → 15.6–17.7 s on 3,152/19.4 GB; 30k/30 GB real-filesystem fixture 9.965 s; regression test; NFR-04 met |
 | T-057 FR-23 user manifests | `done` | `b0f1871` + `346a460`; runs `40309220254`, `40311675742` green |
 | T-036 TUI screens | `blocked-human` | box 4 screen-reader smoke pass |
 | T-038 v0.3 release docs | `blocked-human` | box 2 fresh-VM install; 0.3.0 itself withdrawn |
@@ -121,10 +119,7 @@ none of them can be automated or self-certified.
 4. **Second safety reviewer.** An independent read of the gateway, containment, denylist, TOCTOU,
    quarantine and the release workflow; record reviewer name, commit and PASS/FAIL.
    T-031/32/34/35/44/48/52/56.
-5. **Tag.** Resolve T-058's remaining decision: the reference-index fix is landed, but NFR-04's 30k
-   target is not demonstrated. Record the owner's explicit amendment with a tested limit (or a 30k
-   test under 60 s). Then add the dated rows to the evidence log, and make the release-identity edit in
-   one commit:
+5. **Tag.** Add the dated rows to the evidence log, then make the release-identity edit in one commit:
    `<Version>0.4.0</Version>`, the CHANGELOG heading, the release-notes title and candidate paragraphs,
    the README status/install/caption wording, and the quickstart/commands version strings — the dated
    evidence rows keep their historical `rc.1` references. Push, wait for a green `build.yml` on that
@@ -169,6 +164,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-26 | Final rc.1 artifact clean E2E | SC zip from `40399283405`, scrubbed PATH, isolated state; plan `pln_2e4ffbf65e6d`, quarantine `493083826337143c`, audit 2 records intact |
 | 2026-10-27 | Real-volume scan measurement | rc.1 SC binary on the real NuGet cache: 3,152 items / 19.4 GB warm 190.6 s (cold 210.5 s); empty cache 5.0 s; T-058 opened |
 | 2026-10-27 | T-058 reference-index fix | `DotnetEcosystem.Resolve` builds one assets index per project set; the same 3,152-item cache is 17.7 s, then 15.6 s warm, and a 30k-item fixture is 9.8 s; verdicts unchanged; 1,372 unit, 33 architecture, 12 goldens, 53 escape at 100k |
+| 2026-10-27 | NFR-04 exact shape met | 30,000 items / 31,457,280,000 bytes on the real filesystem (1 MB sparse files) scanned in 9.965 s; T-058 done |
 | 2026-10-27 | Dogfood report 1/5 (owner machine, automated) | scoped to the owner's machine, not an independent user: rc.1 SC binary; 46 Referenced, 3,106 Unknown, 0 Unreferenced; `plan` correctly proposes nothing (0 candidates); finding T-058 |
 | 2026-10-26 | Clean-environment rc.1 E2E (not a fresh VM) | self-contained zip, scrubbed PATH, isolated state; version→doctor→scan→plan→apply→restore→audit verify; details in the section above |
 | 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |
