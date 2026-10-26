@@ -36,8 +36,8 @@ fails conformance does not ship.
 | E-12 | File locked open during apply → skip, no crash, audited | apply/gateway |
 
 Phasing: E-1…E-9 + E-11 are runnable against resolution/path-safety (T-028); E-10 and E-12 join when
-the gateway lands (T-031). E-7 was specified but had no test until T-054; E-10/E-12 live in the Apply
-tests and are included in the named escape job by T-054.
+the gateway lands (T-031). E-7 is a named mount-point test in the Safety suite; E-10/E-12 carry an
+`Escape` trait and the escape job's filter includes them (T-054).
 
 ## Other suites
 

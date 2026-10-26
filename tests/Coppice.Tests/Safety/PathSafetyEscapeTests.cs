@@ -1,5 +1,8 @@
+using Coppice.Core.Domain;
 using Coppice.Core.PathSafety;
+using Coppice.Core.Resolution;
 using Coppice.Ports;
+using Coppice.Tests.Support;
 using FsCheck.Fluent;
 using Xunit;
 
@@ -367,5 +370,39 @@ public sealed class PathSafetyEscapeTests
 
                 return !result.Ok || IsInside(result.Path, Root(os), os);
             });
+    }
+
+    // ---- E-7: mount points and placeholders -------------------------------------------------------
+
+    [Fact]
+    [Trait("Escape", "E-7")]
+    public void E7_A_mount_point_root_is_not_trusted_when_it_resolves_to_a_denied_target()
+    {
+        // A mount point (or a OneDrive placeholder) is a reparse point: the name says "cache", the
+        // target can be a user profile. The name must not buy trust; resolution follows the link and
+        // the denylist floor decides.
+        var fs = new FakeFileSystem(OperatingSystemKind.Windows);
+        fs.AddDirectory(@"C:\Users\dev");
+        fs.AddJunction(@"C:\cache", @"C:\Users\dev");
+
+        var spec = new LocationSpec
+        {
+            Id = "nuget-packages",
+            Mode = ResolveMode.First,
+            OS = OperatingSystemKind.Windows,
+            Sources = new Dictionary<ResolvedVia, SourceResult>
+            {
+                [ResolvedVia.Env] = SourceResult.Of(@"C:\cache", ResolvedVia.Env, "NUGET_PACKAGES"),
+            },
+        };
+
+        var engine = new ResolutionEngine(fs, OperatingSystemKind.Windows, @"C:\Users\dev");
+        ResolutionOutcome outcome = engine.Resolve(spec, _ => true);
+
+        Assert.NotEmpty(outcome.Roots);
+        Assert.All(outcome.Roots, root =>
+            Assert.True(
+                root.Validity != RootValidity.Ok,
+                $"a mount-point root resolved to a denied target but was {root.Validity}: {root.RealPath}"));
     }
 }

@@ -111,7 +111,7 @@ jobs:
           COPPICE_ESCAPE_CASES: '100000'
         run: >
           dotnet test --configuration Release --no-build
-          --filter 'FullyQualifiedName~Coppice.Tests.Safety'
+          --filter 'FullyQualifiedName~Coppice.Tests.Safety|Escape=E-7|Escape=E-10|Escape=E-12'
           --logger "trx;LogFileName=escape.trx"
           --results-directory "${{ runner.temp }}/escape-results"
 

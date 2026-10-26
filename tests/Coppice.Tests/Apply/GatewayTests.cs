@@ -242,6 +242,7 @@ public sealed class GatewayTests
     // ---- locks (S-10) and E-12 ---------------------------------------------------------------------------
 
     [Fact]
+    [Trait("Escape", "E-12")]
     public async Task E12_A_locked_file_is_skipped_and_the_rest_of_the_plan_continues()
     {
         // The locked DIRECTORY is what the gateway probes; the fake carries a lock on a node, so the
@@ -440,6 +441,7 @@ public sealed class GatewayTests
     // ---- E-10: relative-path injection --------------------------------------------------------------------
 
     [Fact]
+    [Trait("Escape", "E-10")]
     public async Task E10_A_relative_path_in_a_plan_is_refused()
     {
         // A hand-edited or hostile plan naming "..\..\Windows\System32\config". Containment canonicalizes
@@ -455,6 +457,7 @@ public sealed class GatewayTests
     }
 
     [Fact]
+    [Trait("Escape", "E-10")]
     public async Task E10_A_bare_relative_path_is_refused()
     {
         FakeFileSystem fs = Cache("pkg");
@@ -466,6 +469,7 @@ public sealed class GatewayTests
     }
 
     [Fact]
+    [Trait("Escape", "E-10")]
     public async Task E10_an_empty_path_is_refused()
     {
         FakeFileSystem fs = Cache("pkg");
@@ -477,6 +481,7 @@ public sealed class GatewayTests
     }
 
     [Theory]
+    [Trait("Escape", "E-10")]
     [InlineData("", false)]
     [InlineData("   ", false)]
     [InlineData(@"..\..\etc", false)]
