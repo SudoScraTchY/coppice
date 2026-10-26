@@ -260,34 +260,37 @@ public sealed class ScanService
     };
 
     /// <summary>
-    /// 07: the first run with no project roots prints an onboarding hint, because without projects
-    /// every item is Unknown and nothing can be considered Safe. Without this the tool looks broken
-    /// on a fresh machine.
+    /// 07: onboarding hints are derived from what the scan found, never from an ecosystem id. With
+    /// no project roots every item is Unknown and nothing can be considered Safe; with projects but
+    /// no readable lock/assets file the same holds until the user restores. A machine with nothing
+    /// to scan gets no hint, because there is nothing useful to suggest.
     /// </summary>
     private static string[] BuildOnboardingHints(CoreProjectSet projects, IReadOnlyList<Item> items)
     {
-        var hints = new List<string>();
+        if (items.Count == 0)
+        {
+            return [];
+        }
 
         if (projects.IsEmpty)
         {
-            hints.Add(
+            return
+            [
                 "No projects were found. Reference resolution needs project roots: pass --projects <path>. "
-                + "Until then every package is Unknown and nothing is Safe.");
-            return [.. hints];
+                + "Until then every package is Unknown and nothing is Safe.",
+            ];
         }
 
-        if (items.Count > 0 && items.All(i => ItemUsage.Of(i) == Usage.Unknown))
+        if (items.All(i => ItemUsage.Of(i) == Usage.Unknown))
         {
-            bool hasDotnet = items.Any(i => string.Equals(i.Ecosystem, "dotnet", StringComparison.Ordinal));
-
-            hints.Add(hasDotnet
-                ? $"Found {projects.Projects.Count} project(s), but none has an obj/project.assets.json. "
-                    + "Run 'dotnet restore' so coppice can tell what is actually in use."
-                : $"Found {projects.Projects.Count} project(s), but no lock or assets file could be read. "
-                    + "Run your package manager's restore so coppice can tell what is actually in use.");
+            return
+            [
+                $"Found {projects.Projects.Count} project(s), but no lock or assets file could be read. "
+                + "Run your package manager's restore so coppice can tell what is actually in use.",
+            ];
         }
 
-        return [.. hints];
+        return [];
     }
 
     /// <summary>

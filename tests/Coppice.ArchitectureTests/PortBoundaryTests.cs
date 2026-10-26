@@ -1,5 +1,9 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
+
+using Coppice.Adapters;
+using Coppice.Application;
+
 using Xunit;
 
 namespace Coppice.ArchitectureTests;
@@ -65,6 +69,83 @@ public sealed class PortBoundaryTests
             .OrderBy(r => r, StringComparer.Ordinal)];
 
         Assert.Equal(["Coppice.Ports"], projectReferences);
+    }
+
+    /// <summary>
+    /// T-056: Application is the composition layer, so its project references ARE the dependency
+    /// graph this pin protects. Core and Ports are the kernel and the plugin boundary; Adapters
+    /// supplies the production ports the composition roots construct; Manifests loads the
+    /// Go/Rust/Node profiles; and the four Plugins.* projects are the shipped ecosystems T-048
+    /// wired into the real scan path. A new reference has to be added here — and justified — rather
+    /// than arriving as a transitive accident.
+    /// </summary>
+    [Fact]
+    public void Application_references_exactly_the_intended_projects()
+    {
+        string[] expected =
+        [
+            "Coppice.Adapters",
+            "Coppice.Core",
+            "Coppice.Manifests",
+            "Coppice.Plugins.Go",
+            "Coppice.Plugins.Net",
+            "Coppice.Plugins.Node",
+            "Coppice.Plugins.Rust",
+            "Coppice.Ports",
+        ];
+
+        string[] actual = [.. ProjectReferenceNames("Coppice.Application")
+            .OrderBy(r => r, StringComparer.Ordinal)];
+
+        Assert.Equal(expected, actual);
+    }
+
+    /// <summary>
+    /// T-056: there is exactly one shipped catalog and one way to materialise it. Every production
+    /// composition root calls <see cref="EcosystemRegistry.CreateDefault"/>; a direct
+    /// <c>new EcosystemRegistry(...)</c> elsewhere would be a second registration point whose
+    /// catalog could drift from the shipped one. ScanService is asserted to use that factory too.
+    /// </summary>
+    [Fact]
+    public void The_default_ecosystem_registration_goes_through_the_single_factory()
+    {
+        EcosystemRegistry registry = EcosystemRegistry.CreateDefault(new PhysicalFileSystem());
+
+        Assert.Equal(
+            ["dotnet", "go", "node", "rust"],
+            registry.Ecosystems.Select(e => e.Id).Order(StringComparer.Ordinal));
+
+        string root = FindRepoRoot();
+        string[] directConstructions =
+        [
+            .. SourceFiles(Path.Combine(root, "src"))
+                .Where(f => !string.Equals(Path.GetFileName(f), "EcosystemRegistry.cs", StringComparison.Ordinal))
+                .Where(f => File.ReadAllText(f).Contains("new EcosystemRegistry(", StringComparison.Ordinal))
+                .Select(f => Path.GetRelativePath(root, f))
+        ];
+
+        Assert.Empty(directConstructions);
+
+        string scanService = File.ReadAllText(Path.Combine(root, "src", "Coppice.Application", "ScanService.cs"));
+        Assert.Contains("EcosystemRegistry.CreateDefault(fs)", scanService, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// T-056: ScanService is an orchestrator, not a catalog. A quoted ecosystem id in it is a branch
+    /// that would have to be edited for every new ecosystem. The ids come from the default registry,
+    /// so shipping a fifth ecosystem extends this assertion automatically rather than requiring a
+    /// list here to be remembered.
+    /// </summary>
+    [Fact]
+    public void ScanService_does_not_branch_on_an_ecosystem_id()
+    {
+        EcosystemRegistry registry = EcosystemRegistry.CreateDefault(new PhysicalFileSystem());
+        string source = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Coppice.Application", "ScanService.cs"));
+
+        foreach (string id in registry.Ecosystems.Select(e => e.Id))
+        {
+            Assert.DoesNotContain($"\"{id}\"", source, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     [Fact]
@@ -310,6 +391,16 @@ public sealed class PortBoundaryTests
                 .Select(m => m.Groups[1].Value.Split(['/', '\\']).Last())
                 .Select(p => p[..p.LastIndexOf('.')])
         ];
+    }
+
+    /// <summary>Source files under a directory, excluding generated obj/bin output.</summary>
+    private static IEnumerable<string> SourceFiles(string directory)
+    {
+        char separator = Path.DirectorySeparatorChar;
+
+        return Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{separator}obj{separator}", StringComparison.Ordinal)
+                && !f.Contains($"{separator}bin{separator}", StringComparison.Ordinal));
     }
 
     private static string FindRepoRoot()

@@ -153,7 +153,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             (DoctorReport doctor, ScanReport scan) = await Task.Run(
                 async () =>
                 {
-                    DoctorReport report = _services.Doctor.Inspect();
+                    DoctorReport report = _services.Doctor.Inspect(cancellationToken);
                     ScanReport result = await _services.Scan
                         .RunAsync(ScanWiring.FromDoctor(report, _services.Registry), projects, cancellationToken)
                         .ConfigureAwait(false);

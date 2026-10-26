@@ -1,7 +1,13 @@
+using System.Diagnostics;
+
 using Coppice.Application;
+using Coppice.Core.Resolution;
+using Coppice.Manifests;
 using Coppice.Ports;
 using Coppice.Tests.Support;
 using Xunit;
+using Xunit.Abstractions;
+using ResolvedVia = Coppice.Core.Domain.ResolvedVia;
 
 namespace Coppice.Tests.Ecosystems;
 
@@ -15,6 +21,10 @@ namespace Coppice.Tests.Ecosystems;
 public sealed class EcosystemDoctorTests
 {
     private const OperatingSystemKind Linux = OperatingSystemKind.Linux;
+
+    private readonly ITestOutputHelper _output;
+
+    public EcosystemDoctorTests(ITestOutputHelper output) => _output = output;
 
     [Fact]
     public void Doctor_resolves_go_rust_and_node_roots_and_scan_wiring_carries_them()
@@ -143,5 +153,96 @@ public sealed class EcosystemDoctorTests
         var loaded = await new Coppice.Core.Snapshots.SnapshotStore(state, clock).LoadAsync(report.SnapshotId);
         Assert.True(loaded.Ok, loaded.Message);
         Assert.Equal(["go", "node", "rust"], loaded.Snapshot!.Ecosystems);
+    }
+
+    /// <summary>
+    /// T-056: a doctor probe that never returns is cut off by the caller's token. The runner blocks
+    /// until it observes cancellation, so this test cannot finish unless Inspect actually passes
+    /// the token through. The measured bound is wall time from Cancel() to the observed
+    /// OperationCanceledException; it must be far below the 2 s probe timeout.
+    /// </summary>
+    [Fact]
+    public async Task Cancelling_doctor_aborts_a_blocked_probe_promptly()
+    {
+        var fs = new FakeFileSystem(Linux);
+        var env = new FakeEnvironment(Linux);
+
+        var location = new EcosystemLocation(
+            "probe",
+            "probe-cache",
+            "package-cache",
+            ResolveMode.First,
+            new Ports.FingerprintSpec(),
+            Risk.Safe,
+            "user",
+            InstallerOwned: false,
+            AllowlistPattern: null,
+            ConfidencePenalty: 0,
+            Sources: [new LocationSource(ResolvedVia.Tool, Run: "probe --where", Parse: ManifestParserKind.Line)],
+            DefaultPaths: new Dictionary<OperatingSystemKind, string> { [Linux] = "/probe/cache" },
+            SupportedOperatingSystems: [Linux]);
+
+        var registry = new EcosystemRegistry(
+            [new EcosystemPlugin("probe", "Probe", [location], new ProbeEcosystem(), new ProbeOrdering())]);
+        var runner = new BlockingProcessRunner();
+        var doctor = new DoctorService(fs, runner, env, Linux, registry);
+
+        using var cts = new CancellationTokenSource();
+        Task<DoctorReport> inspect = Task.Run(() => doctor.Inspect(cts.Token));
+
+        try
+        {
+            ProcessRequest request = await runner.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            // Bounded independently of cancellation; the exact value is the contract this test pins.
+            Assert.Equal(TimeSpan.FromSeconds(2), request.Timeout);
+            Assert.Equal("probe", request.FileName);
+
+            var stopwatch = Stopwatch.StartNew();
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => inspect);
+            stopwatch.Stop();
+
+            _output.WriteLine($"cancellation observed after {stopwatch.Elapsed.TotalMilliseconds:F1} ms");
+            Assert.True(
+                stopwatch.Elapsed < TimeSpan.FromSeconds(1),
+                $"cancellation took {stopwatch.Elapsed.TotalMilliseconds:F0} ms; expected under 1000 ms");
+        }
+        finally
+        {
+            // Keep a failed assertion from leaking a task blocked forever on an infinite delay.
+            cts.Cancel();
+        }
+    }
+
+    /// <summary>Blocks until the token is cancelled, and records the probe it was asked to run.</summary>
+    private sealed class BlockingProcessRunner : IProcessRunner
+    {
+        public TaskCompletionSource<ProcessRequest> Started { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task<ProcessResult> RunAsync(ProcessRequest request, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            Started.TrySetResult(request);
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken).ConfigureAwait(false);
+            throw new InvalidOperationException("unreachable");
+        }
+    }
+
+    private sealed class ProbeEcosystem : IEcosystem
+    {
+        public string Id => "probe";
+
+        public IVersionOrdering Versions { get; } = new ProbeOrdering();
+
+        public bool IsPresent(Coppice.Ports.ScanContext ctx) => false;
+    }
+
+    private sealed class ProbeOrdering : IVersionOrdering
+    {
+        public VersionComponents? TryParse(string version) => new(1, 0, 0, 0, null, null);
+
+        public int Compare(string? x, string? y) => string.CompareOrdinal(x, y);
     }
 }

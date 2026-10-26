@@ -260,6 +260,28 @@ public sealed class EcosystemScanTests
         Assert.Empty(world.State.ListKeys("plans/"));
     }
 
+    [Fact]
+    public async Task A_non_dotnet_restore_hint_comes_from_the_scan_data_not_the_ecosystem_name()
+    {
+        World world = EmptyWorld();
+        world.Fs
+            .AddDirectory($"{GoCache}/github.com/pkg/errors@v0.9.1")
+            .AddFile($"{GoCache}/github.com/pkg/errors@v0.9.1/errors.go", "package errors");
+
+        // A Go project whose go.sum has not been generated yet: every module stays Unknown.
+        world.Fs.AddFile($"{GoProject}/go.mod", "module example.com/app\n\ngo 1.22\n");
+
+        ScanReport report = await Service(world).RunAsync([Root("go-mod-cache", GoCache)], [GoProject]);
+
+        Assert.All(report.Items, item => Assert.Equal("Unknown", item.Facts["usage"]));
+
+        // The restore hint is about the evidence, not about .NET: the same data shape produces the
+        // same hint for a Go project, and the text names no ecosystem.
+        string hint = Assert.Single(report.OnboardingHints);
+        Assert.Contains("restore", hint, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("dotnet", hint, StringComparison.OrdinalIgnoreCase);
+    }
+
     // ---- registration is data-driven ---------------------------------------------------------
 
     /// <summary>

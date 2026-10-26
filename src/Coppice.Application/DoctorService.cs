@@ -77,10 +77,28 @@ public sealed class DoctorService
     public IStateStore State => new FileSystemStateStore(_fs, _env);
 
     /// <summary>
+    /// The longest a single tool query may run. A probe that hangs must not hold the whole report:
+    /// doctor is an interactive verb, and T-048 added up to ten tool-backed locations. Cancellation
+    /// short-circuits the rest, so this is the worst one probe can add to a cancelled report.
+    /// </summary>
+    private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(2);
+
+    /// <summary>
     /// Resolves every location every registered ecosystem declares for this OS and reports what was
     /// found. This is the read-only surface `doctor`, `roots` and `scan` share; it never mutates.
     /// </summary>
-    public DoctorReport Inspect()
+    public DoctorReport Inspect() => Inspect(CancellationToken.None);
+
+    /// <summary>
+    /// The cancellable form the GUI drives. The token is passed to every tool probe and checked
+    /// between locations, so cancelling a scan does not wait for the remaining tools to answer.
+    /// <para>
+    /// The check after each probe is deliberate: <see cref="Coppice.Adapters.SystemProcessRunner"/> reports a
+    /// cancelled child as <c>TimedOut</c> rather than throwing, so the token must be re-asserted for
+    /// cancellation to be observable regardless of which runner implementation is installed.
+    /// </para>
+    /// </summary>
+    public DoctorReport Inspect(CancellationToken cancellationToken)
     {
         var engine = new ResolutionEngine(_fs, _os, _env.HomeDirectory);
         var validator = new FingerprintValidator(_fs, _os);
@@ -90,7 +108,9 @@ public sealed class DoctorService
 
         foreach (EcosystemLocation location in _registry.Locations.Where(l => l.AppliesTo(_os)))
         {
-            LocationSpec spec = BuildSpec(location);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            LocationSpec spec = BuildSpec(location, cancellationToken);
             ResolutionOutcome outcome = engine.Resolve(spec, validator.AsPredicate(FingerprintFor(location)));
 
             issues.AddRange(outcome.Issues.Select(i => $"[{location.Id}] {i.Code}: {i.Summary}"));
@@ -134,7 +154,7 @@ public sealed class DoctorService
     /// is the engine's, and the engine's precedence table enforces it. Manifest and code profiles
     /// both arrive here as the same descriptor.
     /// </summary>
-    internal LocationSpec BuildSpec(EcosystemLocation location)
+    internal LocationSpec BuildSpec(EcosystemLocation location, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(location);
 
@@ -150,7 +170,7 @@ public sealed class DoctorService
                     break;
 
                 case ResolvedVia.Tool:
-                    if (RunToolQuery(source) is { } toolPath)
+                    if (RunToolQuery(source, cancellationToken) is { } toolPath)
                     {
                         sources[ResolvedVia.Tool] = SourceResult.Of(toolPath, ResolvedVia.Tool, source.Run);
                     }
@@ -251,8 +271,13 @@ public sealed class DoctorService
     /// Asks the tool where its cache is. Returns null on ANY failure — a missing tool, a non-zero
     /// exit, a timeout, or output we cannot parse — because a tool that cannot answer must not stop
     /// the scan; the next source in the chain gets its turn (E-11).
+    /// <para>
+    /// Cancellation is different from failure: it propagates, because the caller asked to stop and a
+    /// half-resolved report is not an answer. The probe is bounded by <see cref="ProbeTimeout"/> so
+    /// an unresponsive tool cannot outlive the verb's budget.
+    /// </para>
     /// </summary>
-    private string? RunToolQuery(LocationSource source)
+    private string? RunToolQuery(LocationSource source, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(source.Run))
         {
@@ -265,17 +290,25 @@ public sealed class DoctorService
             return null;
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
+
         try
         {
-            ProcessResult result = _runner.RunAsync(new ProcessRequest
-            {
-                FileName = parts[0],
-                Arguments = [.. parts.Skip(1)],
-                // Neutral cwd: a stray nuget.config in the current project must not skew a
-                // machine-level answer (LR-6).
-                WorkingDirectory = null,
-                Timeout = TimeSpan.FromSeconds(10),
-            }).GetAwaiter().GetResult();
+            ProcessResult result = _runner.RunAsync(
+                new ProcessRequest
+                {
+                    FileName = parts[0],
+                    Arguments = [.. parts.Skip(1)],
+                    // Neutral cwd: a stray nuget.config in the current project must not skew a
+                    // machine-level answer (LR-6).
+                    WorkingDirectory = null,
+                    Timeout = ProbeTimeout,
+                },
+                cancellationToken).GetAwaiter().GetResult();
+
+            // SystemProcessRunner turns a cancelled child into a TimedOut result instead of
+            // throwing, so cancellation has to be re-asserted here to be observable.
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (result.TimedOut || result.ExitCode != 0 || string.IsNullOrWhiteSpace(result.StandardOutput))
             {

@@ -188,4 +188,19 @@ public sealed class ProjectRootScanTests
         Assert.Empty(world.State.ListKeys("plans/"));
         Assert.Contains("Nothing to propose", console.AllOutput, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task A_machine_with_no_items_gets_no_onboarding_hint()
+    {
+        // T-056: a hint is advice about evidence the scan actually saw. With nothing scanned there
+        // is no package to call Unknown and no reason to send the user looking for --projects, so
+        // the report stays silent instead of printing a misleading instruction.
+        var fs = new FakeFileSystem(Linux);
+        var world = new World(fs, new FakeEnvironment(Linux), new FakeProcessRunner(), new FakeStateStore(), new FakeClock(Stamp));
+
+        ScanReport report = await Service(world).RunAsync([], []);
+
+        Assert.Empty(report.Items);
+        Assert.Empty(report.OnboardingHints);
+    }
 }
