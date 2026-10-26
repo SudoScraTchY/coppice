@@ -32,6 +32,9 @@ public sealed record CoppiceConfig
     /// <summary>Project roots to scan for package references. Empty means "discover", not "none".</summary>
     public IReadOnlyList<string> ProjectRoots { get; init; } = [];
 
+    /// <summary>Opt-in trust for manifests dropped into the user ecosystem directory (OQ-08).</summary>
+    public EcosystemSettings Ecosystems { get; init; } = new();
+
     public PolicySettings Policy { get; init; } = new();
 
     /// <summary>
@@ -118,6 +121,18 @@ public sealed record QuarantineSettings
 
     /// <summary>Days to keep a quarantined item before it is eligible for removal. 0 means "keep indefinitely".</summary>
     public int RetentionDays { get; init; }
+}
+
+/// <summary>
+/// User-manifest trust (FR-23, OQ-08). Defaults to off: a manifest can add locations, so accepting
+/// one is a trust decision the user has to make explicitly.
+/// </summary>
+public sealed record EcosystemSettings
+{
+    public bool TrustUserManifests { get; init; }
+
+    /// <summary>Directory to scan for <c>*.toml</c>, or null for <c>&lt;config-dir&gt;/ecosystems</c>.</summary>
+    public string? Directory { get; init; }
 }
 
 /// <summary>Why a config was refused. Every case names the file position so the message can point at it.</summary>

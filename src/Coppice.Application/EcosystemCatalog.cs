@@ -56,11 +56,40 @@ public static class EcosystemCatalog
     /// </summary>
     internal static IReadOnlyList<EcosystemPlugin> CreatePlugins(
         IFileSystem fs,
-        IEnumerable<EcosystemPlugin>? additional = null) =>
+        IEnumerable<EcosystemPlugin>? additional = null,
+        IReadOnlyList<ManifestLoadResult>? userManifests = null) =>
     [
         .. Definitions.Select(d => CreatePlugin(d, fs)),
+        .. (userManifests ?? [])
+            .Where(m => m.IsValid && m.Id is not null)
+            .Select(m => CreateUserPlugin(fs, m)),
         .. additional ?? [],
     ];
+
+    /// <summary>
+    /// A manifest-only ecosystem. It has no compiled plugin, so the generic cache inventory is the
+    /// conservative maximum: Review-tier items, no reference resolver, no removal strategy, no health
+    /// checker. An unlisted location gets no path-delete allowlist (the T-048 fail-closed rule).
+    /// </summary>
+    private static EcosystemPlugin CreateUserPlugin(IFileSystem fs, ManifestLoadResult manifest)
+    {
+        ManifestValidationResult validation = manifest.Validation;
+        string id = validation.Id!;
+        IReadOnlyList<string> locationIds = [.. validation.Locations.Select(location => location.Id)];
+
+        var definition = new EcosystemDefinition(
+            Id: id,
+            DisplayName: validation.DisplayName.Length == 0 ? id : validation.DisplayName,
+            ManifestId: null,
+            CreatePlugin: _ => new ManifestEcosystem(id, locationIds),
+            CreateVersions: () => new ManifestVersionOrdering(),
+            Allowlists: new Dictionary<string, string>(StringComparer.Ordinal),
+            CodeLocations: null,
+            CodeDetection: null,
+            ManifestOverride: validation);
+
+        return CreatePlugin(definition, fs);
+    }
 
     /// <summary>
     /// One definition, materialised once so the manifest is parsed once and its locations and its
@@ -307,15 +336,22 @@ public static class EcosystemCatalog
         Func<IVersionOrdering> CreateVersions,
         IReadOnlyDictionary<string, string> Allowlists,
         IReadOnlyList<EcosystemLocation>? CodeLocations,
-        EcosystemDetection? CodeDetection = null)
+        EcosystemDetection? CodeDetection = null,
+        ManifestValidationResult? ManifestOverride = null)
     {
         /// <summary>
-        /// The shipped profile, when this definition is manifest-backed. Loaded lazily and only once
-        /// per materialisation, so a missing or invalid profile contributes nothing rather than
-        /// taking the whole catalog down.
+        /// The shipped profile, when this definition is manifest-backed. A user manifest supplies its own
+        /// validated result; built-ins load from embedded resources. Loaded lazily and only once per
+        /// materialisation, so a missing or invalid profile contributes nothing rather than taking the
+        /// whole catalog down.
         /// </summary>
         public ManifestValidationResult? LoadManifest()
         {
+            if (ManifestOverride is not null)
+            {
+                return ManifestOverride;
+            }
+
             if (ManifestId is null)
             {
                 return null;

@@ -56,7 +56,8 @@ public sealed class TuiBackend : ITuiBackend
         IAppendLog log,
         IClock clock,
         IReadOnlyList<string>? projectRoots = null,
-        IReadOnlyDictionary<string, string>? pins = null)
+        IReadOnlyDictionary<string, string>? pins = null,
+        EcosystemRegistry? registry = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(runner);
@@ -72,7 +73,7 @@ public sealed class TuiBackend : ITuiBackend
         _log = log;
         _clock = clock;
         _projectRoots = projectRoots ?? [];
-        _registry = EcosystemRegistry.CreateDefault(fs);
+        _registry = registry ?? EcosystemRegistry.CreateDefault(fs);
         _pins = pins ?? new Dictionary<string, string>(StringComparer.Ordinal);
     }
 

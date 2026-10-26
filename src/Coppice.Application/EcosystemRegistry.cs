@@ -1,3 +1,5 @@
+using Coppice.Core.Config;
+using Coppice.Manifests;
 using Coppice.Ports;
 
 namespace Coppice.Application;
@@ -17,11 +19,12 @@ public sealed class EcosystemRegistry
     private readonly Dictionary<string, EcosystemPlugin> _byEcosystem;
     private readonly Dictionary<string, (EcosystemPlugin Plugin, EcosystemLocation Location)> _byLocation;
 
-    public EcosystemRegistry(IEnumerable<EcosystemPlugin> ecosystems)
+    public EcosystemRegistry(IEnumerable<EcosystemPlugin> ecosystems, IReadOnlyList<string>? manifestErrors = null)
     {
         ArgumentNullException.ThrowIfNull(ecosystems);
 
         _ecosystems = [.. ecosystems];
+        ManifestErrors = manifestErrors ?? [];
         _byEcosystem = new Dictionary<string, EcosystemPlugin>(StringComparer.OrdinalIgnoreCase);
         _byLocation = new Dictionary<string, (EcosystemPlugin, EcosystemLocation)>(StringComparer.Ordinal);
 
@@ -54,13 +57,50 @@ public sealed class EcosystemRegistry
     /// </summary>
     public static EcosystemRegistry CreateDefault(
         IFileSystem fs,
-        IEnumerable<EcosystemPlugin>? additional = null)
+        IEnumerable<EcosystemPlugin>? additional = null,
+        IReadOnlyList<ManifestLoadResult>? userManifests = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
-        return new EcosystemRegistry(EcosystemCatalog.CreatePlugins(fs, additional));
+
+        IReadOnlyList<ManifestLoadResult> manifests = userManifests ?? [];
+        string[] errors =
+        [
+            .. manifests
+                .Where(manifest => !manifest.IsValid)
+                .SelectMany(manifest => manifest.Validation.Errors.Select(error =>
+                    $"[manifest {manifest.Path}] {error.ToDisplayString()}")),
+        ];
+
+        return new EcosystemRegistry(
+            EcosystemCatalog.CreatePlugins(fs, additional, manifests),
+            errors);
+    }
+
+    /// <summary>
+    /// The production registry for a config. User manifests are loaded only when the config opted in;
+    /// a missing directory is empty, and an invalid manifest contributes an error (visible in doctor)
+    /// but no plugin. No rebuild, no network.
+    /// </summary>
+    public static EcosystemRegistry CreateForConfig(IFileSystem fs, IEnvironment env, CoppiceConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(fs);
+        ArgumentNullException.ThrowIfNull(env);
+        ArgumentNullException.ThrowIfNull(config);
+
+        if (!config.Ecosystems.TrustUserManifests)
+        {
+            return CreateDefault(fs);
+        }
+
+        string directory = UserConfigPath.EcosystemsDirectory(env, config);
+        IReadOnlyList<ManifestLoadResult> manifests = new ManifestLoader(fs).LoadDirectory(directory);
+        return CreateDefault(fs, userManifests: manifests);
     }
 
     public IReadOnlyList<EcosystemPlugin> Ecosystems => _ecosystems;
+
+    /// <summary>Rejected user manifests, already formatted for the doctor report.</summary>
+    public IReadOnlyList<string> ManifestErrors { get; }
 
     public IReadOnlyList<EcosystemLocation> Locations =>
         [.. _ecosystems.SelectMany(e => e.Locations)];

@@ -62,12 +62,13 @@ public sealed class GuiServices : IDisposable
         var clock = new SystemClock();
 
         QuarantineServices quarantine = ApplyWiring.CreateQuarantine(fs, env, state, log, clock);
-        EcosystemRegistry registry = EcosystemRegistry.CreateDefault(fs);
 
         // A GUI launch must not silently ignore a broken config; it also must not refuse to start.
-        // Pins apply only when the file loaded cleanly. The CLI verbs are stricter (exit 2).
+        // Pins and user manifests apply only when the file loaded cleanly. CLI verbs are stricter.
         ConfigLoadResult config = UserConfigService.Load(fs, UserConfigPath.For(env));
-        IReadOnlyDictionary<string, string>? pins = config.IsSuccess ? config.Config!.Pins : null;
+        CoppiceConfig effective = config.IsSuccess ? config.Config! : CoppiceConfig.Defaults;
+        EcosystemRegistry registry = EcosystemRegistry.CreateForConfig(fs, env, effective);
+        IReadOnlyDictionary<string, string>? pins = config.IsSuccess ? effective.Pins : null;
 
         return new GuiServices(
             registry,

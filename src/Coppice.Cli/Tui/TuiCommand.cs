@@ -112,7 +112,8 @@ public sealed class TuiCommand
             new Adapters.FileAppendLog(env),
             clock,
             projectRoots,
-            loaded.Config!.Pins);
+            loaded.Config!.Pins,
+            EcosystemRegistry.CreateForConfig(fs, env, loaded.Config!));
 
         return new TuiCommand(backend, terminal, UserConfigService.PolicyOf(loaded.Config!))
             .RunAsync(flags)

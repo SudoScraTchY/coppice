@@ -145,7 +145,7 @@ public sealed class DoctorService
         var validator = new FingerprintValidator(_fs, _os);
 
         var roots = new List<RootReport>();
-        var issues = new List<string>();
+        var issues = new List<string>(_registry.ManifestErrors);
 
         // NFR-04: doctor is an interactive health check. A per-probe timeout is not a total budget:
         // several hung tools can each consume their 2 s and still exceed 5 s. This linked budget bounds

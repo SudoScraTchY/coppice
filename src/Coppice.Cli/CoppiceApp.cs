@@ -93,13 +93,18 @@ public static class CoppiceApp
             return ExitUsageError;
         }
 
+        var fs = new PhysicalFileSystem();
+        var env = new SystemEnvironment();
+        EcosystemRegistry registry = EcosystemRegistry.CreateForConfig(fs, env, config);
+
         return new ApplyCommand(
-            new PhysicalFileSystem(),
+            fs,
             new SystemProcessRunner(),
-            new SystemEnvironment(),
-            new FileSystemStateStore(new PhysicalFileSystem(), new SystemEnvironment()),
-            new FileAppendLog(new SystemEnvironment()),
+            env,
+            new FileSystemStateStore(fs, env),
+            new FileAppendLog(env),
             new SystemApplyConsole(),
+            registry: registry,
             pins: config.Pins)
             .Run(args);
     }
@@ -111,11 +116,13 @@ public static class CoppiceApp
             return ExitUsageError;
         }
 
+        var fs = new PhysicalFileSystem();
+        var env = new SystemEnvironment();
         var command = new PlanCommand(
-            new FileSystemStateStore(new PhysicalFileSystem(), new SystemEnvironment()),
+            new FileSystemStateStore(fs, env),
             new SystemPlanFileWriter(),
             new SystemApplyConsole(),
-            registry: EcosystemRegistry.CreateDefault(new PhysicalFileSystem()),
+            registry: EcosystemRegistry.CreateForConfig(fs, env, config),
             basePolicy: UserConfigService.PolicyOf(config));
 
         return command.Run(args);
@@ -334,13 +341,16 @@ public static class CoppiceApp
 
     private static DoctorService BuildService(CoppiceConfig? config = null)
     {
+        var fs = new PhysicalFileSystem();
         var env = new SystemEnvironment();
+        EcosystemRegistry registry = EcosystemRegistry.CreateForConfig(fs, env, config ?? CoppiceConfig.Defaults);
+
         return new DoctorService(
-            new PhysicalFileSystem(),
+            fs,
             new SystemProcessRunner(),
             env,
             env.OS,
-            registry: null,
+            registry,
             pins: config?.Pins);
     }
 

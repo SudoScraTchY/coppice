@@ -31,6 +31,8 @@ public static class ConfigLoader
         "quarantine.enabled",
         "quarantine.directory",
         "quarantine.retention_days",
+        "ecosystems.trust_user_manifests",
+        "ecosystems.directory",
         "exclude.paths",
         "exclude.names",
     };
@@ -198,6 +200,34 @@ public static class ConfigLoader
             ExcludedPaths = document.StringArray("exclude.paths") ?? [],
             ExcludedNames = document.StringArray("exclude.names") ?? [],
             Quarantine = ReadQuarantine(document, diagnostics),
+            Ecosystems = ReadEcosystems(document, diagnostics),
+        };
+    }
+
+    private static EcosystemSettings ReadEcosystems(ConfigDocument document, List<ConfigDiagnostic> diagnostics)
+    {
+        bool trust = false;
+
+        if (document.Bool("ecosystems.trust_user_manifests") is { } configured)
+        {
+            trust = configured;
+        }
+
+        string? directory = document.String("ecosystems.directory");
+        if (directory is { Length: 0 })
+        {
+            diagnostics.Add(new ConfigDiagnostic(
+                "ecosystems.directory",
+                document.LineOf("ecosystems.directory"),
+                "the ecosystem directory is empty.",
+                "Use a quoted path, or omit the key to use <config-dir>/ecosystems."));
+            directory = null;
+        }
+
+        return new EcosystemSettings
+        {
+            TrustUserManifests = trust,
+            Directory = directory,
         };
     }
 
