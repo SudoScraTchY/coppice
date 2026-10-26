@@ -5,7 +5,7 @@
 > [ADR-017](adr/ADR-017-release-truth-and-size-budget.md) and [quickstart.md](quickstart.md) for the
 > current development build.
 
-Released 2026-10-21.
+Candidate date: 2026-10-21 (never released).
 
 v0.3 is the first release that can change your machine. It scans the NuGet global-packages cache,
 proves which versions your projects reference, proposes a plan, and — after you confirm it — moves
@@ -23,7 +23,7 @@ Three supported paths, all ending with a `coppice` command on your `PATH`:
 |---|---|---|
 | Framework-dependent single file | .NET 10 runtime | ~2 MB |
 | Self-contained single file | nothing else | ~38 MB |
-| `dotnet tool install --global coppice --version 0.3.0` | .NET 10 SDK/runtime | package |
+| `dotnet tool install --global coppice --version 0.3.0` | .NET 10 SDK/runtime | package (never published) |
 
 The publish script copies `README.md`, `CHANGELOG.md`, `LICENSE`, `NOTICE` and the user documentation
 into the publish directory, so the binary ships with the docs it refers to. The `coppice` tool package
@@ -107,9 +107,8 @@ not the same as a person using a screen reader.
   inventories only the NuGet global-packages cache and .NET health.
 - **Config file.** `config.toml` is specified and its loader is tested, but the current commands do not
   read it. T-049 wires project roots, policy and exclusions; T-052 consumes pins and quarantine
-  settings.
-  it. Pass `--projects`, `--policy` and `--keep-latest` explicitly. The TUI's pin line shows what a
-  future config would use.
+  settings. Until those cards land, pass `--projects`, `--policy` and `--keep-latest` explicitly. The
+  TUI's pin line shows what a future config would use.
 - **`clean`, `report` and `config` verbs.** Report exporters exist, but the verbs are not wired.
 - **GUI.** The Avalonia front end is v0.4 work.
 

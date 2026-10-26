@@ -1,3 +1,4 @@
+using System.Reflection;
 using Coppice.Adapters;
 using Coppice.Core.Domain;
 
@@ -255,7 +256,20 @@ public static class CoppiceApp
 
     private static int PrintVersion()
     {
-        Console.WriteLine($"coppice {typeof(CoppiceApp).Assembly.GetName().Version?.ToString(3) ?? "unknown"}");
+        string version =
+            typeof(CoppiceApp).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+            ?? typeof(CoppiceApp).Assembly.GetName().Version?.ToString(3)
+            ?? "unknown";
+
+        // The SDK appends +<source-sha> to the informational version; the user-facing label is the
+        // package version ("0.4.0-dev"), not the build metadata.
+        int metadata = version.IndexOf('+');
+        if (metadata >= 0)
+        {
+            version = version[..metadata];
+        }
+
+        Console.WriteLine($"coppice {version}");
         return ExitSuccess;
     }
 

@@ -15,8 +15,8 @@
 - **v0.2** — code complete. ADR-011 records that Rust needed a domain addition; the CHANGELOG 0.2.0
   section is restored by T-055.
 - **v0.3** — code complete. The 0.3.0 release claim is withdrawn (ADR-017); T-048/T-049 were stranded
-  off-main and land in 0.4.0. The kill/resume and quarantine evidence exists in the suite; six-cell
-  CI evidence is pending the current run.
+  off-main and land in 0.4.0. The kill/resume and quarantine evidence exists in the suite; six-cell CI
+  evidence is green (run `40282093437`).
 - **v0.4** — in progress. T-050–T-056 and T-040–T-043 are the active queue. The GUI redesign is
   parked on `wip/gui-shell`; T-050 finishes it before T-040.
 - **v1.0** — planning only. No distribution, docs-site or packaging work is in this goal.

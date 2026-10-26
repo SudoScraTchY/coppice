@@ -264,7 +264,3 @@ nothing in this release can delete anything.
 - T-007 … T-019 (the rest of v0.1 read-only) are not started. `doctor`, `roots`, `scan`, `plan`, and
   `apply` do not exist.
 - CI has never run on GitHub: the workflow is committed but the repository has no remote yet.
-
-[Unreleased]: https://github.com/SudoScraTchY/coppice/compare/v0.3.0...HEAD
-[0.3.0]: https://github.com/SudoScraTchY/coppice/releases/tag/v0.3.0
-[0.1.0]: https://github.com/SudoScraTchY/coppice/releases/tag/v0.1.0

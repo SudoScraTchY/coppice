@@ -401,8 +401,14 @@ public sealed class PathSafetyEscapeTests
 
         Assert.NotEmpty(outcome.Roots);
         Assert.All(outcome.Roots, root =>
-            Assert.True(
-                root.Validity != RootValidity.Ok,
-                $"a mount-point root resolved to a denied target but was {root.Validity}: {root.RealPath}"));
+        {
+            // Not merely "not Ok": the mount point must resolve to the denied target and be refused
+            // by the denylist, not fail for an unrelated reason such as NotFound.
+            Assert.Equal(RootValidity.Denied, root.Validity);
+            Assert.Equal(@"C:\Users\dev", root.RealPath, ignoreCase: true);
+        });
+        Assert.Contains(
+            outcome.Issues,
+            issue => issue.Code == "DENIED" && issue.Summary.Contains(@"C:\Users\dev", StringComparison.OrdinalIgnoreCase));
     }
 }

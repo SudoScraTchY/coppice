@@ -109,8 +109,8 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - Checks per 09: orphaned SDK folders, partial/corrupt packages, dangling `PATH`/`DOTNET_ROOT`, x86/x64 duplicates, preview superseded by GA, inactive default roots, broken tool shims.
 
 **Acceptance**
-- [ ] One fixture per problem code; each emits Problem(code, severity, path, summary)
-- [ ] All checks read-only (C-9)
+- [x] One fixture per problem code; each emits Problem(code, severity, path, summary) — `NetHealthCheckerTests`, 30 cases
+- [x] All checks read-only (C-9) — health checks read through `IFileSystem`; `ReadOnlyAuditTests` pins the mutation boundary
 
 ### T-014 · `doctor` + `roots` commands
 **Refs** FR-19, 07-cli-tui · **Depends** T-005…T-013 · **Effort** M
@@ -162,13 +162,12 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - 3-OS × 2-arch matrix; a container job with blocked egress running the full suite; artifact upload of test results.
 
 **Acceptance**
-- [ ] Suite green on all six cells (written; needs a CI run — cannot be proven locally)
+- [x] Suite green on all six cells — run `40282093437` on `30917d3`, all six cells, egress and license
 - [x] Egress job fails loudly if any test attempts a network call (verified by a canary test that is expected to fail when egress is open)
 
-> Both items are implemented and the canary's local behaviour is verified (it fails with egress
-> open, which is the required half). The six-cell matrix and the `--network none` container run can
-> only be confirmed by a CI run: this machine is Windows-only and has no Docker daemon, so neither
-> the arm64 emulation nor the blocked-egress container could be exercised here.
+> Both items are implemented and proven. The first six-cell attempt (`40280980743`) exposed a real
+> macOS path bug; `30917d3` fixed it and run `40282093437` is green on every cell. The egress canary is
+> verified locally with egress open (it fails, as required) and by the green egress job.
 
 ### T-019 · v0.1 release + dogfooding
 **Refs** NFR-11, 12-roadmap · **Depends** T-005…T-018 · **Effort** M

@@ -68,7 +68,7 @@ commit before merging, so one card still equals one commit.
 | **A** architecture | `dotnet test tests/Coppice.ArchitectureTests/Coppice.ArchitectureTests.csproj -c Release --no-build` |
 | **F** format | `dotnet format Coppice.slnx --verify-no-changes` |
 | **G** goldens | `bash scripts/verify-golden.sh Release` |
-| **E** escape | `COPPICE_ESCAPE_CASES=100000 dotnet test ... --filter 'FullyQualifiedName~Coppice.Tests.Safety'` |
+| **E** escape | `COPPICE_ESCAPE_CASES=100000 dotnet test ... --filter 'FullyQualifiedName~Coppice.Tests.Safety\|Escape=E-7\|Escape=E-10\|Escape=E-12'` |
 | **P** publish | `bash scripts/publish.sh win-x64`; `SELF_CONTAINED=1 bash scripts/publish.sh win-x64` for release |
 | **C** CI | `gh workflow run build.yml --ref <branch>`; inspect six cells, egress canary, license job, artifacts |
 
@@ -93,8 +93,10 @@ commit before merging, so one card still equals one commit.
 ## Skills policy
 
 The repository vendors two development-time skills under `.qoder/skills/`: `avalonia` and a
-trimmed `csharp-expert`. They are Markdown-only and add no runtime dependency. The full
-provenance, pinned commits, licenses and refresh procedure are in `.qoder/skills/README.md`.
+trimmed `csharp-expert`. They are development-time instructions (the Avalonia tree also carries
+optional preview helper assets) and add no runtime dependency, package reference or network call to
+Coppice. The full provenance, pinned commits, licenses and refresh procedure are in
+`.qoder/skills/README.md`.
 
 Evaluated but not vendored: `dotnet-maui` (wrong UI framework), `dotnet-ai` (offline/no-LLM
 product), `dotnet-advanced/vectorization` (no SIMD hot loop or benchmark; SHA-256 is already

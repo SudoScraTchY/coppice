@@ -55,5 +55,6 @@ the gateway lands (T-031). E-7 is a named mount-point test in the Safety suite; 
 ## CI matrix
 
 Windows, Linux and macOS × x64/arm64 on GitHub-hosted runners (six real cells; a RID assertion fails
-a cell that silently falls back to x64). The egress job and license job run on Linux. Release builds:
-self-contained single file per OS/arch.
+a cell that silently falls back to x64). The egress job and license job run on Linux. Release
+artifacts are produced by T-043; the six cells currently publish the framework-dependent single file
+per RID.

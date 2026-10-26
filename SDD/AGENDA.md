@@ -61,7 +61,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-036 TUI screens | `blocked-human` | box 4 screen-reader smoke pass |
 | T-038 v0.3 release docs | `blocked-human` | box 2 fresh-VM install; 0.3.0 itself withdrawn |
 | T-019 v0.1 release + dogfood | `blocked-human` | 5+ dogfood reports |
-| T-013 .NET health checks | `done`, unticked | `0e34bc4`; tick in T-055 after verifying both boxes |
+| T-013 .NET health checks | `done` | `0e34bc4`; boxes ticked with `NetHealthCheckerTests` (30 cases) and `ReadOnlyAuditTests` |
 
 ## Human-only gates
 
