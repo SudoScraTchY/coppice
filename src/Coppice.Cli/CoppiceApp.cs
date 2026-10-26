@@ -44,6 +44,7 @@ public static class CoppiceApp
             ["quarantine"] = RunQuarantine,
             ["audit"] = RunAudit,
             ["tui"] = RunTui,
+            ["completions"] = RunCompletions,
         };
 
     public static int Run(string[] args)
@@ -129,6 +130,26 @@ public static class CoppiceApp
             .Run(args);
 
     private static int RunTui(string[] args) => Tui.TuiCommand.RunSystem(args);
+
+    private static int RunCompletions(string[] args)
+    {
+        if (args.Length != 1)
+        {
+            return Usage("completions needs exactly one shell: powershell, bash, zsh or fish");
+        }
+
+        string shell = args[0];
+
+        // Checked before rendering anything: an unknown shell must leave stdout untouched so a caller
+        // that redirects it into a profile does not overwrite that file with an error message.
+        if (!CompletionScript.IsSupported(shell))
+        {
+            return Usage($"unknown shell '{shell}'; expected powershell, bash, zsh or fish");
+        }
+
+        Console.Out.Write(CompletionScript.Render(shell, Verbs.Keys));
+        return ExitSuccess;
+    }
 
     private static int RunDoctor(string[] args) => RunDoctor(CommandFlags.Parse(args));
 
@@ -342,6 +363,8 @@ public static class CoppiceApp
         Console.WriteLine("                      show the mutation log, or replay it against the quarantine index");
         Console.WriteLine("  tui    [--once] [--no-color] [--projects <path>]...");
         Console.WriteLine("                      keyboard-driven screens: dashboard, roots, items, problems, plan, apply, quarantine");
+        Console.WriteLine("  completions <powershell|bash|zsh|fish>");
+        Console.WriteLine("                      print a completion script to stdout");
         Console.WriteLine("  version             print the build version");
         Console.WriteLine();
         Console.WriteLine("Flags: --json, --ci, --no-color");
