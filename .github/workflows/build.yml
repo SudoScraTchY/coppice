@@ -243,6 +243,10 @@ jobs:
         with:
           name: egress-results
           path: ${{ github.workspace }}/.egress-results
+          # The results directory is dot-prefixed, and upload-artifact skips hidden files by default.
+          # Without this the canary still runs, but the TRX it proves is silently not archived.
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 14
 
   licence:
