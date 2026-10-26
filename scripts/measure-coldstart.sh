@@ -17,12 +17,24 @@ if [[ ! -x "$binary" ]]; then
   exit 1
 fi
 
+# GNU date reports nanoseconds, BSD date (macOS) does not. Fall back to Perl's high-resolution
+# clock so the same gate runs on every supported platform.
+now_ns() {
+  local value
+  value="$(date +%s%N 2>/dev/null || true)"
+  if [[ "$value" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "$value"
+  else
+    perl -MTime::HiRes=time -e 'printf "%.0f\n", time * 1000000000'
+  fi
+}
+
 # `version` is the honest probe: it touches the CLI, the domain assembly and the formatter, so it
 # pays startup and JIT, without paying for a filesystem walk that would swamp it.
 printf '%s\n' "cold start of $(basename "$binary") — $runs runs of 'version'"
-for i in $(seq 1 "$runs"); do
-  start=$(date +%s%N)
+for ((i = 1; i <= runs; i++)); do
+  start=$(now_ns)
   "$binary" version > /dev/null 2>&1
-  end=$(date +%s%N)
+  end=$(now_ns)
   echo "  run $i: $(( (end - start) / 1000000 )) ms"
 done

@@ -1,7 +1,8 @@
 name: build
 
-# NFR-09 / the Definition of Done: unit + fixture tests green on the win/linux/mac matrix.
-# This is a read-only project until v0.3, so there is nothing here that can touch a real machine.
+# FR-25 / the Definition of Done: unit + fixture tests green on the win/linux/mac matrix.
+# The tests run against fakes and fixtures; the egress job separately proves NFR-02 (no network).
+# Nothing here touches a real user's files: the kill test and fixtures use their own temp roots.
 on:
   push:
     branches: [main]
@@ -20,31 +21,59 @@ jobs:
   build:
     # 3 OS x 2 arch (T-018 acceptance: "Suite green on all six cells").
     #
-    # arm64 runs on the x64 runners under emulation. That is a real slowdown on the test suite, but it
-    # is the only way to get arm64 coverage in public CI, and the suite is fast enough that the cost
-    # is cheaper than an arm-only bug reaching a user's machine.
+    # The arm64 cells run on GitHub-hosted arm64 runners. Requesting an arm64 SDK on an x64 runner
+    # does not create arm64 coverage: setup-dotnet's architecture input selects which SDK to install,
+    # but an x64 kernel cannot execute the arm64 test host. The "Verify the SDK matches the cell"
+    # step makes a silently-x64 cell fail instead of letting the arm64 claim become decoration.
     name: ${{ matrix.os }} · ${{ matrix.arch }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        arch: [x64, arm64]
+        include:
+          - os: linux
+            arch: x64
+            runner: ubuntu-24.04
+            rid: linux-x64
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            rid: linux-arm64
+          - os: macOS
+            arch: x64
+            runner: macos-15-intel
+            rid: osx-x64
+          - os: macOS
+            arch: arm64
+            runner: macos-15
+            rid: osx-arm64
+          - os: windows
+            arch: x64
+            runner: windows-2025
+            rid: win-x64
+          - os: windows
+            arch: arm64
+            runner: windows-11-arm
+            rid: win-arm64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
-          # Without this, every cell resolves the host's SDK and the arm64 half of the matrix quietly
-          # re-tests x64 six times over.
           architecture: ${{ matrix.arch }}
 
-      - name: Report the SDK actually in use
+      - name: Verify the SDK matches the cell
         shell: bash
         run: |
-          echo "cell: ${{ matrix.os }} / ${{ matrix.arch }}"
+          arch="${{ matrix.arch }}"
+          rid="$(dotnet --info | tr -d '\r' | awk '/RID:/{print $2; exit}')"
+          echo "cell: ${{ matrix.os }} / $arch (RID $rid)"
+          if [[ "$rid" != *"-${arch}" ]]; then
+            echo "::error::expected a $arch SDK in this cell, got $rid"
+            exit 1
+          fi
           dotnet --info | sed -n '1,12p'
 
       - name: Restore
@@ -88,7 +117,7 @@ jobs:
 
       - name: Upload escape suite results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: escape-results-${{ matrix.os }}-${{ matrix.arch }}
           path: ${{ runner.temp }}/escape-results
@@ -101,10 +130,20 @@ jobs:
         shell: bash
         run: bash scripts/verify-golden.sh Release
 
-      - name: Pack (proves the tool package builds and carries license metadata)
-        run: dotnet pack src/Coppice.Cli/Coppice.Cli.csproj --configuration Release --output "${{ runner.temp }}/packages"
+      # The publish path is part of the product, not a release-day script: this proves the binary,
+      # its size budget, its docs and its cold start on the same six cells that run the tests.
+      - name: Publish (framework-dependent single file)
+        shell: bash
+        run: bash scripts/publish.sh ${{ matrix.rid }}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload the published tool
+        uses: actions/upload-artifact@v7
+        with:
+          name: coppice-${{ matrix.rid }}
+          path: artifacts/${{ matrix.rid }}
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results-${{ matrix.os }}-${{ matrix.arch }}
@@ -115,29 +154,30 @@ jobs:
     # NFR-02/NFR-03: the suite must pass with egress BLOCKED, and that must be demonstrated rather
     # than assumed.
     #
-    # A blocked-egress container running a suite that never touches the network produces a green job
-    # whether or not the isolation actually works. So this job runs EgressCanaryTests, which opens a
-    # real TCP connection to 1.1.1.1:443 and asserts it FAILS. With egress blocked it passes, and that
-    # pass is the proof. If the isolation regresses, the canary fails and this job fails loudly
-    # instead of reporting a green that means nothing.
+    # A blocked-egress run of a suite that never touches the network produces a green job whether or
+    # not the isolation actually works. So this job runs EgressCanaryTests, which opens a real TCP
+    # connection to 1.1.1.1:443 and asserts it FAILS. With no route it passes, and that pass is the
+    # proof. If the isolation regresses, the canary fails and this job fails loudly instead of
+    # reporting a green that means nothing.
+    #
+    # The isolation is a network namespace: `unshare --net` gives the test process tree an empty
+    # network stack with only loopback. That is the same property `--network none` provides, without
+    # depending on a container image pull or on the runtime's attach behaviour to surface output.
     name: egress blocked
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
 
-      # Restore into a path INSIDE the workspace. The container mounts the workspace and runs with a
-      # different HOME, so packages restored to the runner's default ~/.nuget would not be findable
-      # from inside — and the container cannot fetch them, because its network is none.
+      # Restore into a path INSIDE the workspace. The namespace run inherits this path, and the
+      # packages must be present before egress is removed.
       - name: Restore into a workspace-local package folder
         shell: bash
         run: |
-          # $GITHUB_WORKSPACE, not $PWD: the path must resolve identically in this step and in the
-          # docker -v mount below, and PWD is whatever the runner last cd'd into.
           echo "EGRESS_PACKAGES=$GITHUB_WORKSPACE/.egress-packages" >> "$GITHUB_ENV"
           dotnet restore --packages "$GITHUB_WORKSPACE/.egress-packages"
 
@@ -147,31 +187,39 @@ jobs:
           dotnet build --configuration Release --no-restore \
             -p:RestorePackagesPath="$EGRESS_PACKAGES"
 
-      # The isolation itself. --network none removes the only route to the internet a container has.
       # BOTH test projects, not just Coppice.Tests. Coppice.ArchitectureTests is where the
       # "no assembly references a System.Net type" rule lives, so running the egress job without it
       # would leave the strictest network check unverified exactly where it matters.
-      - name: Run the full suite with no network
+      - name: Run the full suite with no route
+        shell: bash
         run: |
-          docker run --rm --network none \
-            -v "$GITHUB_WORKSPACE:/src" \
-            -w /src \
-            -e NUGET_PACKAGES=/src/.egress-packages \
-            -e DOTNET_CLI_TELEMETRY_OPTOUT=1 \
-            -e DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 \
-            mcr.microsoft.com/dotnet/sdk:10.0 \
+          dotnet_bin="$(command -v dotnet)"
+          dotnet_root="${DOTNET_ROOT:-$(dirname "$(readlink -f "$dotnet_bin")")}"
+
+          # sudo resets the environment, so pass the paths explicitly rather than relying on
+          # inheritance. EGRESS_RESULTS is expanded inside the namespace script.
+          sudo -n unshare --net -- env \
+            DOTNET_ROOT="$dotnet_root" \
+            PATH="$dotnet_root:$PATH" \
+            NUGET_PACKAGES="$GITHUB_WORKSPACE/.egress-packages" \
+            EGRESS_WORKSPACE="$GITHUB_WORKSPACE" \
+            EGRESS_RESULTS="$GITHUB_WORKSPACE/.egress-results" \
+            DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+            DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 \
             bash -c '
-              set -e
+              set -euo pipefail
+              cd "$EGRESS_WORKSPACE"
+              ip link set lo up
               dotnet test tests/Coppice.Tests/Coppice.Tests.csproj \
                 --configuration Release --no-build \
                 --settings tests/egress.runsettings \
                 --logger "trx;LogFileName=egress.trx" \
-                --results-directory /src/.egress-results
+                --results-directory "$EGRESS_RESULTS"
               dotnet test tests/Coppice.ArchitectureTests/Coppice.ArchitectureTests.csproj \
                 --configuration Release --no-build \
                 --settings tests/egress.runsettings \
                 --logger "trx;LogFileName=architecture.trx" \
-                --results-directory /src/.egress-results
+                --results-directory "$EGRESS_RESULTS"
             '
 
       - name: Prove the canary is actually load-bearing
@@ -188,9 +236,9 @@ jobs:
             echo "::error::the egress canary did not run — a green egress job without it proves nothing"
             exit 1
           fi
-          echo "egress canary ran under --network none"
+          echo "egress canary ran under unshare --net"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: egress-results
@@ -200,11 +248,11 @@ jobs:
   licence:
     # T-000 acceptance: `dotnet pack` emits license metadata without warnings.
     name: license metadata
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
 

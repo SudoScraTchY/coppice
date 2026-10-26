@@ -70,6 +70,9 @@ public sealed class TuiRenderTests
             Ansi = AnsiSupport.No,
             ColorSystem = ColorSystemSupport.NoColors,
             Interactive = InteractionSupport.No,
+            // Spectre's default GitHub enricher forces Ansi back on whenever GITHUB_ACTIONS=true.
+            // Leaving it enabled makes this assertion depend on where the test runs, not on the renderer.
+            Enrichment = new ProfileEnrichment { UseDefaultEnrichers = false },
             Out = new AnsiConsoleOutput(writer),
         });
 

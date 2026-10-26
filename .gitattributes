@@ -1,5 +1,6 @@
-# Normalize line endings on checkin; checkout as-is on Windows, LF elsewhere.
-* text=auto
+# Normalize line endings on checkin; the repo and .editorconfig require LF everywhere.
+# eol=lf is explicit so a Windows checkout (core.autocrlf=true) cannot make dotnet format fail.
+* text=auto eol=lf
 
 *.cs text diff=csharp
 *.csproj text

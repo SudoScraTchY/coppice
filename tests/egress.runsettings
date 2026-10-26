@@ -8,9 +8,9 @@
      property under test, and it is enforced by construction rather than by review.
 
   2. It leaves the egress canary ENABLED. The canary opens a real TCP connection and asserts it
-     FAILS. The container running this has egress blocked, so the canary passes — and that pass is
-     the proof the isolation is real. Without the canary, a broken network configuration would
-     produce a green job that proved nothing.
+     FAILS. The job running this has no route out, so the canary passes — and that pass is the
+     proof the isolation is real. Without the canary, a broken network configuration would produce
+     a green job that proved nothing.
 
   Do not "fix" the canary by deleting it or by excluding the Network category here. Its failure mode
   is the signal.

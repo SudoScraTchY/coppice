@@ -5,6 +5,7 @@ using Coppice.Adapters;
 using Coppice.Core.Apply;
 using Coppice.Core.Domain;
 using Coppice.Core.Gateway;
+using Coppice.Core.PathSafety;
 using Coppice.Core.Plans;
 using Coppice.Core.Quarantine;
 using Coppice.Core.Snapshots;
@@ -59,7 +60,11 @@ public sealed class ApplyRealProcessKillTests
 
     private static async Task<(bool Caught, string? Error)> AttemptAsync(int packageCount)
     {
-        string temp = Path.Combine(KillTestRoot(), "coppice-kill-" + Guid.NewGuid().ToString("N"));
+        // The child re-resolves NUGET_PACKAGES through symlinks. macOS temp paths live under /var,
+        // which links to /private/var, so a fixture built from the declared path would name items
+        // the resolved root does not contain. Build from the same real path the child will see.
+        string killRoot = new IFileSystemPaths(new PhysicalFileSystem(), CurrentOs()).ResolveRealPath(KillTestRoot());
+        string temp = Path.Combine(killRoot, "coppice-kill-" + Guid.NewGuid().ToString("N"));
         string stateParent = Path.Combine(temp, "state");
         string stateDir = Path.Combine(stateParent, "coppice");
         string cacheDir = Path.Combine(temp, "cache");
@@ -188,6 +193,11 @@ public sealed class ApplyRealProcessKillTests
             TryDelete(temp);
         }
     }
+
+    private static OperatingSystemKind CurrentOs() =>
+        OperatingSystem.IsWindows() ? OperatingSystemKind.Windows
+        : OperatingSystem.IsMacOS() ? OperatingSystemKind.MacOS
+        : OperatingSystemKind.Linux;
 
     /// <summary>
     /// A temp root the product will actually consider cleanable. An elevated shell often reports

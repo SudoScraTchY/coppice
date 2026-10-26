@@ -22,3 +22,6 @@ coverage*.xml
 
 ## Tooling
 .dotnet/
+
+# Agent worktrees are disposable checkouts; project skills under .qoder/skills are tracked.
+.qoder/worktrees/
