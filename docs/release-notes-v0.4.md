@@ -94,6 +94,15 @@ the source path.
 The GUI has no size budget; 47.71 MB is the recorded candidate. The CLI budgets (5 MB framework-dependent,
 50 MB self-contained) are enforced by `scripts/publish.sh`.
 
+A release dry run (run `40329677179` on `4d4cc46`) built every variant on all six RIDs and refused to
+create a Release off-tag. Ranges across those cells:
+
+| Variant | Bytes | Size |
+|---|---:|---:|
+| CLI framework-dependent | 2,193,723–2,286,168 | 2.09–2.18 MB |
+| CLI self-contained | 37,310,888–40,202,928 | 35.58–38.34 MB |
+| GUI self-contained | 47,274,034–52,044,876 | 45.08–49.63 MB |
+
 ## Known limits and open human gates
 
 - **Not tagged.** `v0.4.0` requires the screen-reader smoke pass, a fresh-VM install → doctor → scan →
@@ -113,6 +122,8 @@ The GUI has no size budget; 47.71 MB is the recorded candidate. The CLI budgets 
 - 1,371 unit tests + 33 architecture tests (local, after the last code card)
 - 12 golden reports, `dotnet format --verify-no-changes`, the 100k-case escape suite
 - Six-cell GitHub Actions run per code card; the release candidate's run is `40313952759` on `4bb1b7e`
+- Release dry run `40329677179` on `4d4cc46`: all six RIDs, 18 archives + the `dotnet tool` package,
+  no Release created off-tag
 - `SDD/AGENDA.md` records the other run ids
 - `scripts/publish.sh` FD/SC and `scripts/publish-gui.sh` size measurements
 

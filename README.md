@@ -112,6 +112,14 @@ dotnet run --project src/Coppice.Gui
 bash scripts/publish-gui.sh win-x64
 ```
 
+Screenshots from the 0.4.0-rc.1 shell on Windows:
+
+![Dashboard: project roots, retention policy and the loaded scan](docs/images/gui-dashboard.png)
+
+![Evidence: every item, its usage verdict and the reason behind the decision](docs/images/gui-items.png)
+
+![History: 12 snapshots compared, with growth named per ecosystem](docs/images/gui-history.png)
+
 The T-050 shell has Setup/Scan/Dashboard, Items, Plan review, Apply, Quarantine, Roots, Problems and
 History, with the retention picker's **Keep newest only** policy (the same as
 `coppice plan --keep-latest 1`). Preferences go through `IShellPreferencesStore`; the headless tests

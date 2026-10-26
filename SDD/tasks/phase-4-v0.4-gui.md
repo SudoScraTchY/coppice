@@ -84,8 +84,15 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 **Acceptance**
 - [x] GUI release artifact self-contained and < reasonable size (record actual) — 50,034,463 bytes (47.71 MB) via `scripts/publish-gui.sh win-x64`
 - [x] Roadmap updated: v1.0 items become the only open cards
-- [ ] A release dry run produces 18 archives + the package, with no Release created off-tag
-- [ ] GUI screenshots in README, taken from the running shell
+- [x] A release dry run produces 18 archives + the package, with no Release created off-tag — run `40329677179`; `gh release list` stayed empty
+- [x] GUI screenshots in README, taken from the running shell — `docs/images/gui-{dashboard,items,history}.png` from the rc.1 binary
+
+> The release dry run (`workflow_dispatch`) succeeded as run `40329677179` on `4d4cc46`: all six
+> cells built FD, SC and GUI variants, the aggregate required 18 archives + the nupkg, and no GitHub
+> Release was created off-tag. Measured bytes: FD 2,193,723–2,286,168; SC 37,310,888–40,202,928;
+> GUI 47,274,034–52,044,876. The rc.1 shell was launched from the published binary and the Dashboard,
+> Evidence and History screens were captured to `docs/images/`; both boxes are ticked in the evidence
+> commit that adds them.
 
 > T-043 prepared `0.4.0-rc.1`, not a tag. Run `40313952759` is green on all six cells. The CLI is
 > 2.19 MB framework-dependent / 36.73 MB self-contained; the GUI is 47.71 MB self-contained. The
