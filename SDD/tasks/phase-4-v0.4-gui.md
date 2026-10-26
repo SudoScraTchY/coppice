@@ -275,19 +275,24 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 **Build**
 - Reproduce on a real NuGet cache: 3,152 packages / ~19.4 GB, one project root. A warm scan measured
   190.6 s; an empty cache measures 5.0 s, so the cost is per item.
-- Profile and fix the per-item size measurement. `PhysicalFileSystem.MeasureSize` walks every file in
-  a package through `GetEntry` (attributes + `FileInfo` + an identity string), about 60 ms per package.
-  Candidate fixes: a single-pass `FileSystemEnumerable` walk in the adapter, bounded parallel sizing,
-  or reusing sizes for unchanged package directories. Keep hard-link de-duplication (FR-05),
-  quarantine exclusion and link safety.
-- Add a real-volume perf test (not the sparse fake) and record before/after numbers in `SDD/AGENDA.md`.
+- Profile: the per-item cost was NOT `MeasureSize`. A single-pass `FileSystemEnumerable` size walk was
+  tried and left the time unchanged, so it was not kept. The cost was `DotnetEcosystem.Resolve`, which
+  re-read every project's `obj/project.assets.json` for every package (3,152 x projects).
+- Fix: build one `ReferenceIndex` per `ProjectSet` and answer each package from a dictionary. Preserve
+  case-insensitive id/version matching, the unreadable-project Unknown rules, project ordering and every
+  reason string. Leave FR-05 size semantics untouched.
+- Add a real-volume benchmark and a regression test that each project is read once per project set.
 
 **Acceptance**
 - [ ] NFR-04's 30k-item / ~30 GB target is met on a real fixture under 60 s, or the owner explicitly amends NFR-04 with a tested limit
-- [ ] Hard-link de-duplication, quarantine exclusion and link safety still pass
-- [ ] The measured before/after numbers are in the agenda and release notes
+- [x] Hard-link de-duplication, quarantine exclusion and link safety still pass — 1,372 unit tests, 33 architecture tests, 12 goldens, 53 escape tests at 100k
+- [x] The measured before/after numbers are in the agenda and release notes — 190.6 s → 15.6–17.7 s
 
 > Opened 2026-10-27 from a dogfood run of the rc.1 self-contained binary: 3,152 items / 19.4 GB warm
 > in 190.6 s (the first run was 210.5 s). NFR-04 (30k items / ~30 GB < 60 s warm) is not demonstrated
 > on real data; T-053's 1.38 s number is a sparse fixture that does not measure every file. The tag
 > waits on a fix or an explicit owner amendment, not on a silent caveat.
+>
+> Fix landed 2026-10-27: the cached reference index takes the same 3,152-item cache to 17.7 s, then
+> 15.6 s warm (10.8–12.2x), with the same 46 Referenced / 3,106 Unknown verdicts. The strict 30k/30 GB
+> target is still not demonstrated; the tag waits on a 30k test or an explicit owner amendment.

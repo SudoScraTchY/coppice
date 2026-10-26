@@ -111,10 +111,10 @@ refused to create a Release off-tag. Ranges across those cells:
 - The self-contained rc.1 artifact was exercised end to end with no .NET on `PATH` against a scratch
   cache: version → doctor → scan → plan → apply → quarantine list → restore → audit verify. That is
   supporting evidence, not the fresh-VM gate; the host was not fresh.
-- **NFR-04 is not demonstrated on real data.** The 30k-item number is a sparse fixture (1.38 s) that
-  does not measure every file. A warm scan of a real 3,152-package / 19.4 GB cache took **190.6 s**
-  (empty cache 5.0 s; the first run was 210.5 s), so per-package size measurement dominates. T-058
-  tracks the fix or an explicit NFR-04 amendment; the tag waits on it.
+- **NFR-04 is not fully demonstrated on real data.** The 30k-item number is a sparse fixture (1.38 s).
+  The first real measurement was **190.6 s** for 3,152 packages / 19.4 GB. The T-058 reference-index
+  fix takes the same cache to **15.6–17.7 s** (10.8–12.2x); the strict 30k/30 GB target is still not
+  demonstrated, so the tag waits on a 30k test or an explicit NFR-04 amendment.
 - The GUI visual layer is compiled and its view models are headless-tested; Avalonia rendering is not
   part of the automated gate.
 - `clean`, `report` and `config` verbs remain planned; the HTML exporter and completions are the
@@ -135,6 +135,8 @@ refused to create a Release off-tag. Ranges across those cells:
 - Clean-environment E2E: the rc.1 self-contained binary, `PATH` without .NET, isolated state, completed
   the full read → plan → move → restore → audit path; repeated against the final archive from
   `40399283405` (plan `pln_2e4ffbf65e6d`)
+- T-058: real 3,152-package scan 190.6 s → 15.6–17.7 s; 1,372 unit, 33 architecture, 12 goldens,
+  53 escape tests at 100k
 - `SDD/AGENDA.md` records the other run ids
 - `scripts/publish.sh` FD/SC and `scripts/publish-gui.sh` size measurements
 

@@ -31,6 +31,9 @@ public sealed class FakeFileSystem : IFileSystem
     /// </summary>
     public TimeSpan EnumerationDelay { get; set; } = TimeSpan.Zero;
 
+    /// <summary>Successful small-text reads; T-058 uses this to prove the assets index is built once.</summary>
+    public int ReadSmallTextCount { get; private set; }
+
     private readonly TaskCompletionSource _firstEnumeration = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>
@@ -388,6 +391,7 @@ public sealed class FakeFileSystem : IFileSystem
             throw new FileNotFoundException("Not found in the fake filesystem.", path);
         }
 
+        ReadSmallTextCount++;
         return Encoding.UTF8.GetString(node.Content, 0, Math.Min(node.Content.Length, maxBytes));
     }
 

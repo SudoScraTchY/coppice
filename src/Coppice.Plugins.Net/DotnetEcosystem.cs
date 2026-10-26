@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Coppice.Ports;
 using CoreDomain = Coppice.Core.Domain;
@@ -59,6 +60,13 @@ public sealed class DotnetEcosystem : IEcosystem, IInventoryProvider, IReference
     /// </para>
     /// </summary>
     private readonly Ports.IFileSystem? _fs;
+
+    /// <summary>
+    /// Assets-file indexes, one per scan's project set. The first Resolve for a set reads every
+    /// project once; the next 3,000 package versions are dictionary lookups. Building this per item
+    /// was the real-volume scan's 190 s: 3,152 items x every project's assets file.
+    /// </summary>
+    private readonly ConditionalWeakTable<Ports.ProjectSet, ReferenceIndex> _referenceIndexes = new();
 
     /// <summary>
     /// .NET counts as present when the scan resolved at least one location it owns. Presence is a
@@ -256,52 +264,32 @@ public sealed class DotnetEcosystem : IEcosystem, IInventoryProvider, IReference
             };
         }
 
-        var reader = new NetReferenceReader(_fs);
-        var referencing = new List<string>();
-        int readable = 0;
-        int unreadable = 0;
+        ReferenceIndex index = _referenceIndexes.GetValue(projects, set => ReferenceIndex.Build(set, _fs));
 
-        foreach (Ports.Project project in projects.Projects)
-        {
-            char separator = project.RootPath.Contains('\\', StringComparison.Ordinal) ? '\\' : '/';
-            IReadOnlyList<PackageReference>? references = reader.ReadReferences(project.RootPath, separator);
-
-            if (references is null)
-            {
-                unreadable++;
-                continue;
-            }
-
-            readable++;
-
-            if (references.Any(r => IsSamePackage(r, itemName, itemVersion)))
-            {
-                referencing.Add(project.RootPath);
-            }
-        }
-
-        if (referencing.Count > 0)
+        if (index.ReferencedBy.TryGetValue(
+            (itemName.ToUpperInvariant(), itemVersion.ToUpperInvariant()),
+            out IReadOnlyList<string>? referencing))
         {
             return new Ports.ReferenceVerdict
             {
                 Usage = Ports.Usage.Referenced,
-                ReferencingProjects = [.. referencing.Order(StringComparer.Ordinal)],
+                ReferencingProjects = referencing,
                 Reason = $"referenced by {referencing.Count} project(s)",
             };
         }
 
         // An unreadable project could reference anything, so its packages stay Unknown even when
         // every OTHER project was read successfully. Partial evidence does not prove absence.
-        if (unreadable > 0)
+        if (index.UnreadableProjects > 0)
         {
             return new Ports.ReferenceVerdict
             {
                 Usage = Ports.Usage.Unknown,
-                Reason = $"{unreadable} project(s) could not be read (no obj/project.assets.json — run 'dotnet restore')",
+                Reason = $"{index.UnreadableProjects} project(s) could not be read (no obj/project.assets.json — run 'dotnet restore')",
             };
         }
 
-        if (readable == 0)
+        if (index.ReadableProjects == 0)
         {
             return new Ports.ReferenceVerdict
             {
@@ -313,17 +301,61 @@ public sealed class DotnetEcosystem : IEcosystem, IInventoryProvider, IReference
         return new Ports.ReferenceVerdict
         {
             Usage = Ports.Usage.Unreferenced,
-            Reason = $"no project references {itemName} {itemVersion} ({readable} project(s) checked)",
+            Reason = $"no project references {itemName} {itemVersion} ({index.ReadableProjects} project(s) checked)",
         };
     }
 
     /// <summary>
-    /// NuGet package ids are case-insensitive; versions are not. A mismatch here would let a project
-    /// referencing "Newtonsoft.Json 13.0.3" fail to match a cached "newtonsoft.json/13.0.3".
+    /// The package-reference graph for one project set. Reads every project's assets file once and
+    /// keeps the same verdicts, ordering and reason strings the per-item loop produced.
     /// </summary>
-    private static bool IsSamePackage(PackageReference reference, string itemName, string itemVersion) =>
-        string.Equals(reference.PackageId, itemName, StringComparison.OrdinalIgnoreCase)
-        && string.Equals(reference.Version, itemVersion, StringComparison.OrdinalIgnoreCase);
+    private sealed record ReferenceIndex(
+        IReadOnlyDictionary<(string Id, string Version), IReadOnlyList<string>> ReferencedBy,
+        int ReadableProjects,
+        int UnreadableProjects)
+    {
+        public static ReferenceIndex Build(Ports.ProjectSet projects, Ports.IFileSystem fs)
+        {
+            var reader = new NetReferenceReader(fs);
+            var byPackage = new Dictionary<(string, string), HashSet<string>>();
+            int readable = 0;
+            int unreadable = 0;
+
+            foreach (Ports.Project project in projects.Projects)
+            {
+                char separator = project.RootPath.Contains('\\', StringComparison.Ordinal) ? '\\' : '/';
+                IReadOnlyList<PackageReference>? references = reader.ReadReferences(project.RootPath, separator);
+
+                if (references is null)
+                {
+                    unreadable++;
+                    continue;
+                }
+
+                readable++;
+
+                foreach (PackageReference reference in references)
+                {
+                    // The old comparison ignored case on both fields; the keys must match that contract.
+                    var key = (reference.PackageId.ToUpperInvariant(), reference.Version.ToUpperInvariant());
+                    if (!byPackage.TryGetValue(key, out HashSet<string>? referencing))
+                    {
+                        byPackage[key] = referencing = new HashSet<string>(StringComparer.Ordinal);
+                    }
+
+                    referencing.Add(project.RootPath);
+                }
+            }
+
+            var index = new Dictionary<(string, string), IReadOnlyList<string>>(byPackage.Count);
+            foreach (var pair in byPackage)
+            {
+                index[pair.Key] = [.. pair.Value.Order(StringComparer.Ordinal)];
+            }
+
+            return new ReferenceIndex(index, readable, unreadable);
+        }
+    }
 
     /// <summary>
     /// Health checks (09-ecosystems "Health checks" table, T-013).
