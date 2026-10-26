@@ -1,5 +1,6 @@
 using System.Reflection;
 using Coppice.Adapters;
+using Coppice.Core.Config;
 using Coppice.Core.Domain;
 
 namespace Coppice.Cli;
@@ -93,13 +94,22 @@ public static class CoppiceApp
             new SystemApplyConsole())
             .Run(args);
 
-    private static int RunPlan(string[] args) =>
-        new PlanCommand(
+    private static int RunPlan(string[] args)
+    {
+        if (!TryLoadConfig(out CoppiceConfig config))
+        {
+            return ExitUsageError;
+        }
+
+        var command = new PlanCommand(
             new FileSystemStateStore(new PhysicalFileSystem(), new SystemEnvironment()),
             new SystemPlanFileWriter(),
             new SystemApplyConsole(),
-            registry: EcosystemRegistry.CreateDefault(new PhysicalFileSystem()))
-            .Run(args);
+            registry: EcosystemRegistry.CreateDefault(new PhysicalFileSystem()),
+            basePolicy: UserConfigService.PolicyOf(config));
+
+        return command.Run(args);
+    }
 
     private static int RunQuarantine(string[] args) =>
         new QuarantineCommand(
@@ -186,6 +196,11 @@ public static class CoppiceApp
 
     private static int RunScan(ScanFlags flags)
     {
+        if (!TryLoadConfig(out CoppiceConfig config))
+        {
+            return ExitUsageError;
+        }
+
         var service = BuildService();
         DoctorReport report = service.Inspect();
 
@@ -194,7 +209,8 @@ public static class CoppiceApp
         var roots = ScanWiring.FromDoctor(report, service.Registry);
 
         // Reference resolution needs project roots: without them every item is Unknown and a plan can
-        // propose nothing. They are explicit (repeated --projects), never inferred from the cwd.
+        // propose nothing. They are explicit (repeated --projects) or configured, never inferred from
+        // the cwd; an explicit flag wins over the file.
         var scanService = new ScanService(
             service.Fs,
             new SystemProcessRunner(),
@@ -202,7 +218,9 @@ public static class CoppiceApp
             service.State,
             clock: null,
             registry: service.Registry);
-        ScanReport scanReport = scanService.RunAsync(roots, flags.ProjectRoots).GetAwaiter().GetResult();
+        ScanReport scanReport = scanService
+            .RunAsync(roots, flags.ResolveProjectRoots(config))
+            .GetAwaiter().GetResult();
 
         if (flags.Json)
         {
@@ -260,6 +278,29 @@ public static class CoppiceApp
 
     private static DoctorService BuildService() =>
         new(new PhysicalFileSystem(), new SystemProcessRunner(), new SystemEnvironment());
+
+    private static bool TryLoadConfig(out CoppiceConfig config)
+    {
+        var env = new SystemEnvironment();
+        string path = UserConfigPath.For(env);
+        ConfigLoadResult loaded = UserConfigService.Load(new PhysicalFileSystem(), path);
+
+        if (loaded.IsSuccess)
+        {
+            config = loaded.Config!;
+            return true;
+        }
+
+        Console.Error.WriteLine($"coppice: {loaded.Message}");
+        foreach (ConfigDiagnostic diagnostic in loaded.Diagnostics)
+        {
+            Console.Error.WriteLine($"  {diagnostic}");
+        }
+
+        Console.Error.WriteLine("Run 'coppice help' for usage.");
+        config = CoppiceConfig.Defaults;
+        return false;
+    }
 
     private static int PrintVersion()
     {
@@ -333,6 +374,13 @@ public static class CoppiceApp
 public sealed record ScanFlags(bool Json, IReadOnlyList<string> ProjectRoots)
 {
     public static ScanFlags Parse(string[] args) => Parse(args.AsSpan());
+
+    /// <summary>An explicit <c>--projects</c> list wins; otherwise the config's list applies; otherwise none.</summary>
+    public IReadOnlyList<string> ResolveProjectRoots(CoppiceConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        return ProjectRoots.Count > 0 ? ProjectRoots : config.ProjectRoots;
+    }
 
     public static ScanFlags Parse(ReadOnlySpan<string> args)
     {

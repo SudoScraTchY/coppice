@@ -55,13 +55,13 @@ public sealed class SystemPlanFileWriter : IPlanFileWriter
 }
 
 /// <summary>The flags of the <c>plan</c> verb. Unknown flags are rejected, as everywhere else (07).</summary>
-public sealed record PlanFlags(string PolicyName, int? KeepLatest, string? OutPath, bool Json, bool Ci)
+public sealed record PlanFlags(string? PolicyName, int? KeepLatest, string? OutPath, bool Json, bool Ci)
 {
     public static PlanFlags Parse(string[] args)
     {
         ArgumentNullException.ThrowIfNull(args);
 
-        string policy = "default";
+        string? policy = null;
         int? keepLatest = null;
         string? outPath = null;
         bool json = false;
@@ -146,13 +146,15 @@ public sealed class PlanCommand
     private readonly IApplyConsole _console;
     private readonly IClock _clock;
     private readonly EcosystemRegistry? _registry;
+    private readonly Policy? _basePolicy;
 
     public PlanCommand(
         IStateStore state,
         IPlanFileWriter writer,
         IApplyConsole console,
         IClock? clock = null,
-        EcosystemRegistry? registry = null)
+        EcosystemRegistry? registry = null,
+        Policy? basePolicy = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(writer);
@@ -163,6 +165,7 @@ public sealed class PlanCommand
         _console = console;
         _clock = clock ?? new SystemClock();
         _registry = registry;
+        _basePolicy = basePolicy;
     }
 
     public int Run(string[] args)
@@ -258,14 +261,29 @@ public sealed class PlanCommand
         return ExitCodes.Success;
     }
 
-    private static Policy PolicyFor(PlanFlags flags)
+    private Policy PolicyFor(PlanFlags flags)
     {
-        Policy policy = flags.PolicyName switch
+        Policy policy;
+        if (flags.PolicyName is string name)
         {
-            "conservative" => Policy.Conservative,
-            "aggressive" => Policy.Aggressive,
-            _ => Policy.Default,
-        };
+            policy = name switch
+            {
+                "conservative" => Policy.Conservative,
+                "aggressive" => Policy.Aggressive,
+                _ => Policy.Default,
+            };
+
+            // Exclusions are an independent config list, not part of the preset the flag overrides.
+            // Dropping them because the user chose a preset would unprotect paths they excluded.
+            if (_basePolicy is not null)
+            {
+                policy = policy with { Exclusions = _basePolicy.Exclusions };
+            }
+        }
+        else
+        {
+            policy = _basePolicy ?? Policy.Default;
+        }
 
         return flags.KeepLatest is int keep ? policy with { KeepLatestN = keep } : policy;
     }

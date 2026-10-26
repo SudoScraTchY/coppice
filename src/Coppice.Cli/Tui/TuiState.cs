@@ -120,13 +120,14 @@ public sealed class TuiState
     private ApplySummary? _applySummary;
     private string? _progressPlanId;
 
-    public TuiState(TuiData data, Func<Snapshot, Policy, PlanPreview> previewFactory)
+    public TuiState(TuiData data, Func<Snapshot, Policy, PlanPreview> previewFactory, Policy? initialPolicy = null)
     {
         ArgumentNullException.ThrowIfNull(data);
         ArgumentNullException.ThrowIfNull(previewFactory);
 
         _data = data;
         _previewFactory = previewFactory;
+        _policy = initialPolicy ?? Policy.Default;
         IndexItems();
         RebuildPreview();
     }

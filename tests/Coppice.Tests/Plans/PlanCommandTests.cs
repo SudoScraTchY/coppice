@@ -45,7 +45,8 @@ public sealed class PlanCommandTests
 
         public FakeApplyConsole PlanConsole { get; } = new(interactive: false);
 
-        public PlanCommand Plan() => new(State, Writer, PlanConsole, Clock);
+        public PlanCommand Plan(Policy? basePolicy = null) =>
+            new(State, Writer, PlanConsole, Clock, basePolicy: basePolicy);
 
         public ApplyCommand Apply(FakeApplyConsole console) =>
             new(Fs, new FakeProcessRunner(), Env, State, Log, console, Clock);
@@ -143,6 +144,41 @@ public sealed class PlanCommandTests
 
         Assert.Equal(ExitCodes.Success, exit);
         Assert.Equal(3, LastJson(world.PlanConsole).GetProperty("stepCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task A_configured_policy_applies_when_no_policy_flag_is_given()
+    {
+        World world = BuildWorld("1.0.0", "2.0.0", "3.0.0");
+        Policy configured = Policy.Default with { KeepLatestN = 1 };
+
+        Assert.Equal(ExitCodes.Success, world.Plan(configured).Run(["--json"]));
+
+        Plan stored = (await new PlanStore(world.State).LoadAsync(StoredPlanId(world.State))).Plan!;
+        Assert.Equal(1, stored.Policy.KeepLatestN);
+        Assert.Equal(2, stored.Steps.Count);
+    }
+
+    [Fact]
+    public void An_explicit_policy_flag_overrides_the_configured_policy()
+    {
+        World world = BuildWorld("1.0.0", "2.0.0", "3.0.0");
+        Policy configured = Policy.Conservative with { KeepLatestN = 1 };
+
+        // The config says keep 1; `--policy default` must replace the whole preset, so keep 2 wins
+        // and only the oldest of three is proposed.
+        Assert.Equal(ExitCodes.Success, world.Plan(configured).Run(["--policy", "default", "--json"]));
+        Assert.Equal(1, LastJson(world.PlanConsole).GetProperty("stepCount").GetInt32());
+    }
+
+    [Fact]
+    public void Configured_exclusions_survive_an_explicit_policy_flag()
+    {
+        World world = BuildWorld("1.0.0", "2.0.0", "3.0.0");
+        Policy configured = Policy.Default with { KeepLatestN = 1, Exclusions = ["legacy.pkg"] };
+
+        Assert.Equal(ExitCodes.Success, world.Plan(configured).Run(["--policy", "aggressive", "--json"]));
+        Assert.Equal(0, LastJson(world.PlanConsole).GetProperty("stepCount").GetInt32());
     }
 
     [Fact]

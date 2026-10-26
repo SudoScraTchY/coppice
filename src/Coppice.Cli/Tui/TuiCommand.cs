@@ -1,4 +1,5 @@
 using Coppice.Core.Apply;
+using Coppice.Core.Config;
 using Coppice.Core.Quarantine;
 using Spectre.Console;
 
@@ -65,14 +66,16 @@ public sealed class TuiCommand
 {
     private readonly ITuiBackend _backend;
     private readonly ITuiTerminal _terminal;
+    private readonly Policy? _initialPolicy;
 
-    public TuiCommand(ITuiBackend backend, ITuiTerminal terminal)
+    public TuiCommand(ITuiBackend backend, ITuiTerminal terminal, Policy? initialPolicy = null)
     {
         ArgumentNullException.ThrowIfNull(backend);
         ArgumentNullException.ThrowIfNull(terminal);
 
         _backend = backend;
         _terminal = terminal;
+        _initialPolicy = initialPolicy;
     }
 
     /// <summary>The production entry point, wired to the real machine and console.</summary>
@@ -85,6 +88,22 @@ public sealed class TuiCommand
         var clock = new Adapters.SystemClock();
         var terminal = flags.NoColor ? CreateColorless() : new SystemTuiTerminal();
 
+        ConfigLoadResult loaded = UserConfigService.Load(fs, UserConfigPath.For(env));
+        if (!loaded.IsSuccess)
+        {
+            Console.Error.WriteLine($"coppice: {loaded.Message}");
+            foreach (ConfigDiagnostic diagnostic in loaded.Diagnostics)
+            {
+                Console.Error.WriteLine($"  {diagnostic}");
+            }
+
+            return ExitCodes.UsageError;
+        }
+
+        IReadOnlyList<string> projectRoots = flags.ProjectRoots.Count > 0
+            ? flags.ProjectRoots
+            : loaded.Config!.ProjectRoots;
+
         var backend = new TuiBackend(
             fs,
             new Adapters.SystemProcessRunner(),
@@ -92,9 +111,12 @@ public sealed class TuiCommand
             new Adapters.FileSystemStateStore(fs, env),
             new Adapters.FileAppendLog(env),
             clock,
-            flags.ProjectRoots);
+            projectRoots);
 
-        return new TuiCommand(backend, terminal).RunAsync(flags).GetAwaiter().GetResult();
+        return new TuiCommand(backend, terminal, UserConfigService.PolicyOf(loaded.Config!))
+            .RunAsync(flags)
+            .GetAwaiter()
+            .GetResult();
     }
 
     public async Task<int> RunAsync(TuiFlags flags)
@@ -102,7 +124,7 @@ public sealed class TuiCommand
         ArgumentNullException.ThrowIfNull(flags);
 
         TuiData data = await _backend.LoadAsync().ConfigureAwait(false);
-        var state = new TuiState(data, PlanPreviewService.Preview);
+        var state = new TuiState(data, PlanPreviewService.Preview, _initialPolicy);
 
         if (!_terminal.IsInteractive || flags.Once || flags.Ci)
         {

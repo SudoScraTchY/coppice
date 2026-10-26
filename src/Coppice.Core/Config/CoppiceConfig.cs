@@ -138,6 +138,9 @@ public enum ConfigFailure
 
     /// <summary>A table is present but empty where its contents are required.</summary>
     MissingSection,
+
+    /// <summary>The file exists but could not be read (permissions, I/O, or an oversized file).</summary>
+    Unreadable,
 }
 
 /// <summary>The outcome of loading a config: a document, or the reason there is not one.</summary>

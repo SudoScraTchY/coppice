@@ -129,8 +129,8 @@ public sealed class FakeEnvironment : IEnvironment
     public string? GetFolderPath(string wellKnownFolder) => wellKnownFolder.ToUpperInvariant() switch
     {
         "USERPROFILE" or "HOME" => HomeDirectory,
-        "LOCALAPPDATA" => HomeDirectory + (OS == OperatingSystemKind.Windows ? @"\AppData\Local" : "/.local/share"),
-        "APPDATA" => HomeDirectory + (OS == OperatingSystemKind.Windows ? @"\AppData\Roaming" : "/.config"),
+        "LOCALAPPDATA" or "LOCALAPPLICATIONDATA" => HomeDirectory + (OS == OperatingSystemKind.Windows ? @"\AppData\Local" : "/.local/share"),
+        "APPDATA" or "APPLICATIONDATA" => HomeDirectory + (OS == OperatingSystemKind.Windows ? @"\AppData\Roaming" : "/.config"),
         _ => null,
     };
 }

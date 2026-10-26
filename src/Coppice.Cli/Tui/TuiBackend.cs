@@ -222,14 +222,6 @@ public sealed class TuiBackend : ITuiBackend
     {
         ArgumentNullException.ThrowIfNull(env);
 
-        string home = env.HomeDirectory ?? string.Empty;
-
-        return env.OS switch
-        {
-            OperatingSystemKind.Windows => Path.Combine(
-                env.GetFolderPath("ApplicationData") ?? home, "coppice", "config.toml"),
-            OperatingSystemKind.MacOS => Path.Combine(home, "Library", "Application Support", "coppice", "config.toml"),
-            _ => Path.Combine(home, ".config", "coppice", "config.toml"),
-        };
+        return UserConfigPath.For(env);
     }
 }
