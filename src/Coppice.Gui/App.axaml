@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="using:Coppice.Gui.Converters"
              x:Class="Coppice.Gui.App"
              RequestedThemeVariant="Default">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://coppice-gui/Resources/Tokens.axaml" />
+        <ResourceInclude Source="avares://coppice-gui/Resources/Icons.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+      <converters:EqualsConverter x:Key="Equals" />
+    </ResourceDictionary>
+  </Application.Resources>
+
   <Application.Styles>
     <FluentTheme />
+    <StyleInclude Source="avares://coppice-gui/Styles/AppStyles.axaml" />
   </Application.Styles>
 </Application>

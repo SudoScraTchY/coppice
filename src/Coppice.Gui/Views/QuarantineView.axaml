@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Coppice.Gui.ViewModels"
+             x:Class="Coppice.Gui.Views.QuarantineView"
+             x:DataType="vm:MainWindowViewModel">
+  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="{StaticResource PagePadding}">
+
+    <StackPanel Spacing="10">
+      <TextBlock Classes="eyebrow" Text="STEP 5 OF 5" />
+      <TextBlock Classes="pageTitle" Text="Quarantine is your undo" />
+      <TextBlock Classes="pageSubtitle"
+                 Text="Moved items are not deleted. Restore puts an item back at its original path after re-checking the content hash, path containment and destination occupancy." />
+    </StackPanel>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,18,0,12">
+      <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+        <TextBlock Classes="muted" Text="{Binding QuarantineToolbar}" VerticalAlignment="Center" />
+        <ProgressBar IsIndeterminate="True" Width="90" IsVisible="{Binding IsQuarantineLoading}"
+                     AutomationProperties.Name="Reading quarantine" />
+      </StackPanel>
+      <Button Grid.Column="1" Classes="secondary"
+              Command="{Binding RefreshQuarantineCommand}"
+              AutomationProperties.Name="Refresh quarantine">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Path Data="{StaticResource IconRefresh}" Classes="icon sm" />
+          <TextBlock Text="Refresh" />
+        </StackPanel>
+      </Button>
+    </Grid>
+
+    <Panel Grid.Row="2">
+      <Border Classes="card" Padding="12" IsVisible="{Binding HasQuarantineEntries}">
+        <Grid RowDefinitions="Auto,*">
+          <Grid ColumnDefinitions="2*,100,170,110" Margin="10,0,10,6">
+            <TextBlock Classes="metricLabel" Text="ITEM" />
+            <TextBlock Grid.Column="1" Classes="metricLabel" Text="SIZE" />
+            <TextBlock Grid.Column="2" Classes="metricLabel" Text="QUARANTINED" />
+            <TextBlock Grid.Column="3" Classes="metricLabel" Text="CONTENT" />
+          </Grid>
+          <ListBox Grid.Row="1" Classes="rows"
+                   ItemsSource="{Binding QuarantineEntries}"
+                   SelectedItem="{Binding SelectedQuarantine, Mode=TwoWay}"
+                   AutomationProperties.Name="Quarantined items">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:QuarantineRow">
+                <Grid ColumnDefinitions="2*,100,170,110">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding OriginalPath}" Classes="path"
+                               ToolTip.Tip="{Binding OriginalPath}" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="1" Text="{Binding Size}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding QuarantinedAt}" Classes="caption"
+                             VerticalAlignment="Center" />
+                  <Border Grid.Column="3" Classes="pill" VerticalAlignment="Center"
+                          HorizontalAlignment="Left"
+                          Classes.success="{Binding IsPresent}"
+                          Classes.danger="{Binding !IsPresent}">
+                    <TextBlock Classes="pillText" Text="{Binding ContentState}" />
+                  </Border>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </Border>
+
+      <Border Classes="card" IsVisible="{Binding !HasQuarantineEntries}">
+        <StackPanel Spacing="14" HorizontalAlignment="Center" Margin="0,48">
+          <Border Classes="iconTile" HorizontalAlignment="Center">
+            <Path Data="{StaticResource IconArchive}" Classes="icon lg"
+                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Classes="sectionTitle" Text="Nothing is quarantined yet" HorizontalAlignment="Center" />
+          <TextBlock Classes="muted" TextAlignment="Center" MaxWidth="480" Text="{Binding QuarantineSummary}" />
+          <TextBlock Classes="caption" TextAlignment="Center" MaxWidth="480"
+                     Text="After an apply run, every moved item appears here with its original path. Restoring is reversible and verified." />
+          <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+            <Button Classes="secondary"
+                    Command="{Binding NavigateCommand}" CommandParameter="Scan"
+                    Content="Go to scan" AutomationProperties.Name="Go to scan" />
+            <Button Classes="primary"
+                    Command="{Binding NavigateCommand}" CommandParameter="Review"
+                    Content="Go to review" AutomationProperties.Name="Go to review" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Panel>
+
+    <Border Grid.Row="3" Classes="card" Margin="0,14,0,0">
+      <StackPanel Spacing="12">
+        <StackPanel IsVisible="{Binding !HasSelection}" Spacing="2">
+          <TextBlock Classes="cardTitle" Text="Select an item to restore" />
+          <TextBlock Classes="muted"
+                     Text="Coppice will re-check the item before moving it back. If the original path is occupied or the content changed, the restore refuses." />
+        </StackPanel>
+
+        <StackPanel IsVisible="{Binding HasSelection}" Spacing="10">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Classes="cardTitle" Text="{Binding SelectedQuarantine.Label}" />
+              <TextBlock Classes="path" Text="{Binding SelectedQuarantine.OriginalPath}" />
+            </StackPanel>
+            <Border Grid.Column="1" Classes="pill" VerticalAlignment="Center"
+                    Classes.success="{Binding SelectedQuarantine.IsPresent}"
+                    Classes.danger="{Binding !SelectedQuarantine.IsPresent}">
+              <TextBlock Classes="pillText" Text="{Binding SelectedQuarantine.ContentState}" />
+            </Border>
+          </Grid>
+
+          <CheckBox Content="I understand restore moves this item back to its original path."
+                    IsChecked="{Binding IsRestoreConfirmed, Mode=TwoWay}"
+                    IsEnabled="{Binding !IsRestoring}"
+                    AutomationProperties.Name="Confirm restore" />
+
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Classes="primary"
+                    Command="{Binding RestoreSelectedCommand}"
+                    AutomationProperties.Name="Restore selected item">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Path Data="{StaticResource IconRestore}" Classes="icon sm"
+                      Stroke="{DynamicResource TextOnAccentBrush}" />
+                <TextBlock Text="Restore selected" Foreground="{DynamicResource TextOnAccentBrush}" />
+              </StackPanel>
+            </Button>
+            <Button Classes="secondary" Command="{Binding RestoreSelectedCancelCommand}"
+                    Content="Cancel restore" IsVisible="{Binding IsRestoring}"
+                    AutomationProperties.Name="Cancel restore" />
+            <TextBlock Classes="caption" VerticalAlignment="Center"
+                       Text="The restore is verified against the stored content hash." />
+          </StackPanel>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+  </Grid>
+</UserControl>

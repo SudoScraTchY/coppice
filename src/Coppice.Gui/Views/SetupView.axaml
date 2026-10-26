@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Coppice.Gui.ViewModels"
+             x:Class="Coppice.Gui.Views.SetupView"
+             x:DataType="vm:MainWindowViewModel">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="{StaticResource PagePadding}">
+
+    <StackPanel Spacing="10">
+      <TextBlock Classes="eyebrow" Text="STEP 1 OF 5" />
+      <TextBlock Classes="pageTitle" Text="Tell Coppice where your projects live" />
+      <TextBlock Classes="pageSubtitle"
+                 Text="Coppice reads the lock and asset files under these folders to prove which versions are actually used. An item with no evidence is never proposed for cleanup." />
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1" Margin="0,20,0,0" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="20">
+
+        <Border Classes="card">
+          <StackPanel Spacing="14">
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Classes="iconTile">
+                <Path Data="{StaticResource IconFolder}" Classes="icon" Width="19" Height="19"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="3">
+                <TextBlock Classes="sectionTitle" Text="Project roots" />
+                <TextBlock Classes="muted"
+                           Text="One folder per line. Coppice searches below each folder for project markers such as *.csproj, go.mod, Cargo.toml and package.json. Your projects are only read, never modified." />
+              </StackPanel>
+            </Grid>
+
+            <StackPanel Spacing="6">
+              <TextBlock x:Name="RootsLabel" Classes="label" Text="Folders to read" />
+              <TextBox Text="{Binding ProjectRoots, Mode=TwoWay}"
+                       AcceptsReturn="True"
+                       TextWrapping="Wrap"
+                       Height="84"
+                       PlaceholderText="C:\src"
+                       AutomationProperties.LabeledBy="{Binding #RootsLabel}"
+                       AutomationProperties.Name="Project roots" />
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Classes="secondary" Click="OnAddFolderClick"
+                        AutomationProperties.Name="Add a project folder">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Path Data="{StaticResource IconPlus}" Classes="icon sm" />
+                    <TextBlock Text="Add folder" />
+                  </StackPanel>
+                </Button>
+                <Border Grid.Column="2" Classes="pill">
+                  <TextBlock Classes="pillText" Text="{Binding ProjectRootsSummary}" />
+                </Border>
+              </Grid>
+            </StackPanel>
+
+            <Border Classes="callout warning" IsVisible="{Binding !HasProjectRoots}">
+              <Grid ColumnDefinitions="Auto,*">
+                <Path Data="{StaticResource IconAlert}" Classes="icon"
+                      Stroke="{DynamicResource WarningBrush}" />
+                <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="2">
+                  <TextBlock Classes="label" Text="Without roots, nothing can be proven unused" />
+                  <TextBlock Classes="muted"
+                             Text="You can still scan, but every item stays Unknown and Coppice will propose nothing. That is the safety rule, not a bug." />
+                </StackPanel>
+              </Grid>
+            </Border>
+          </StackPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="*,*">
+          <Border Classes="card compact" Margin="0,0,7,0">
+            <StackPanel Spacing="12">
+              <TextBlock Classes="cardTitle" Text="What Coppice reads" />
+              <Grid ColumnDefinitions="Auto,*">
+                <Path Data="{StaticResource IconListChecks}" Classes="icon accentIcon" />
+                <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                           Text="Project lock or asset files, toolchain folders and every registered cache location." />
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*">
+                <Path Data="{StaticResource IconPackage}" Classes="icon accentIcon" />
+                <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                           Text="One row per item name and version, with its size and references." />
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*">
+                <Path Data="{StaticResource IconScan}" Classes="icon accentIcon" />
+                <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                           Text="The scan is read-only and can be cancelled at any point." />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Grid.Column="1" Classes="card compact" Margin="7,0,0,0">
+            <StackPanel Spacing="12">
+              <TextBlock Classes="cardTitle" Text="What it never does" />
+              <Grid ColumnDefinitions="Auto,*">
+                <Path Data="{StaticResource IconShieldCheck}" Classes="icon accentIcon" />
+                <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                           Text="Never edits a project, a lock file or an SDK installation." />
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*">
+                <Path Data="{StaticResource IconLock}" Classes="icon accentIcon" />
+                <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                           Text="Never elevates. Protected paths are reported and left alone." />
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*">
+                <Path Data="{StaticResource IconActivity}" Classes="icon accentIcon" />
+                <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                           Text="Never sends anything off this machine. No telemetry, no network." />
+              </Grid>
+            </StackPanel>
+          </Border>
+        </Grid>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+      <TextBlock Classes="muted" VerticalAlignment="Center"
+                 Text="Next: check every registered cache and compare it with these projects." />
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+        <Button Classes="secondary"
+                Command="{Binding NavigateCommand}"
+                CommandParameter="Roots"
+                Content="See machine locations"
+                AutomationProperties.Name="See machine locations" />
+        <Button Classes="primary"
+                Command="{Binding NavigateCommand}"
+                CommandParameter="Scan"
+                AutomationProperties.Name="Continue to scan">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="Continue to scan" Foreground="{DynamicResource TextOnAccentBrush}" />
+            <Path Data="{StaticResource IconArrowRight}" Classes="icon sm"
+                  Stroke="{DynamicResource TextOnAccentBrush}" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+  </Grid>
+</UserControl>

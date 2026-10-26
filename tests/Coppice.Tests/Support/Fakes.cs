@@ -142,6 +142,37 @@ public sealed class FakeClock : IClock
     public DateTimeOffset UtcNow { get; set; }
 }
 
+/// <summary>
+/// In-memory preferences store for the desktop shell. It records the round trip so a GUI test can assert
+/// the view model saved without touching a profile directory.
+/// </summary>
+public sealed class FakeShellPreferencesStore : IShellPreferencesStore
+{
+    public ShellPreferences Stored { get; set; } = new();
+
+    public int Loads { get; private set; }
+
+    public int Saves { get; private set; }
+
+    public ShellPreferences Load()
+    {
+        Loads++;
+        return Stored;
+    }
+
+    public void Save(ShellPreferences preferences)
+    {
+        ArgumentNullException.ThrowIfNull(preferences);
+        Saves++;
+        Stored = new ShellPreferences
+        {
+            ProjectRoots = [.. preferences.ProjectRoots],
+            HelpSeen = preferences.HelpSeen,
+            Theme = preferences.Theme,
+        };
+    }
+}
+
 public sealed class FakeStateStore : IStateStore
 {
     private readonly Dictionary<string, StateDocument> _documents = new(StringComparer.Ordinal);

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Coppice.Gui.ViewModels"
+             x:Class="Coppice.Gui.Views.HelpOverlay"
+             x:DataType="vm:MainWindowViewModel">
+  <Panel Background="{DynamicResource ScrimBrush}">
+    <Border Background="{DynamicResource OverlaySurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1"
+            CornerRadius="{StaticResource RadiusXl}"
+            MaxWidth="780"
+            MaxHeight="650"
+            Margin="24"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            KeyboardNavigation.TabNavigation="Cycle"
+            AutomationProperties.Name="How Coppice works">
+      <Grid RowDefinitions="Auto,*,Auto">
+
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="28,24,24,16">
+          <Border Background="{DynamicResource AccentBrush}" Width="42" Height="42"
+                  CornerRadius="{StaticResource RadiusLg}">
+            <Path Data="{StaticResource IconSprout}" Classes="icon"
+                  Stroke="{DynamicResource TextOnAccentBrush}" Width="24" Height="24"
+                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" Margin="14,0,0,0" Spacing="2" VerticalAlignment="Center">
+            <TextBlock Classes="sectionTitle" Text="How Coppice works" />
+            <TextBlock Classes="muted" Text="Harvest what regrows. Never touch the root." />
+          </StackPanel>
+          <Button Grid.Column="2" Classes="iconButton" x:Name="CloseButton"
+                  Command="{Binding CloseHelpCommand}"
+                  AutomationProperties.Name="Close the guide">
+            <Path Data="{StaticResource IconClose}" Classes="icon sm" />
+          </Button>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" Margin="28,0,28,0">
+          <StackPanel Spacing="24">
+
+            <TextBlock Classes="body"
+                       Text="Coppice does not guess. It gathers evidence, shows a reason for every proposed step, and moves only what you approve into a quarantine you can restore from." />
+
+            <StackPanel Spacing="12">
+              <TextBlock Classes="metricLabel" Text="THE FIVE-STEP FLOW" />
+              <Grid ColumnDefinitions="Auto,*">
+                <Border Classes="stepBadge"><TextBlock Text="1" /></Border>
+                <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="2">
+                  <TextBlock Classes="strong" Text="Add project roots" />
+                  <TextBlock Classes="muted" Text="Tell Coppice where your code lives. It reads only asset files under those folders." />
+                </StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*">
+                <Border Classes="stepBadge"><TextBlock Text="2" /></Border>
+                <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="2">
+                  <TextBlock Classes="strong" Text="Scan" />
+                  <TextBlock Classes="muted" Text="Inventory every registered cache and prove which versions projects actually reference." />
+                </StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*">
+                <Border Classes="stepBadge"><TextBlock Text="3" /></Border>
+                <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="2">
+                  <TextBlock Classes="strong" Text="Review the plan" />
+                  <TextBlock Classes="muted" Text="Every step carries a reason. Uncheck anything you want to keep, or choose a different retention policy." />
+                </StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*">
+                <Border Classes="stepBadge"><TextBlock Text="4" /></Border>
+                <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="2">
+                  <TextBlock Classes="strong" Text="Apply to quarantine" />
+                  <TextBlock Classes="muted" Text="The only step that changes anything. Items are moved, not deleted, and each move is written to the audit ledger." />
+                </StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*">
+                <Border Classes="stepBadge"><TextBlock Text="5" /></Border>
+                <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="2">
+                  <TextBlock Classes="strong" Text="Restore if needed" />
+                  <TextBlock Classes="muted" Text="Quarantine is the undo. A restore re-checks the content hash and original path before moving anything back." />
+                </StackPanel>
+              </Grid>
+            </StackPanel>
+
+            <Border Classes="callout">
+              <StackPanel Spacing="10">
+                <TextBlock Classes="cardTitle" Text="Safety promises" />
+                <Grid ColumnDefinitions="Auto,*">
+                  <Path Data="{StaticResource IconShieldCheck}" Classes="icon accentIcon" />
+                  <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                             Text="Dry-run until you confirm. Unknown usage is never proposed, because absence of evidence is not evidence of absence." />
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*">
+                  <Path Data="{StaticResource IconArchive}" Classes="icon accentIcon" />
+                  <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                             Text="Quarantine, not deletion. Every apply move can be reversed from the Quarantine step." />
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*">
+                  <Path Data="{StaticResource IconLock}" Classes="icon accentIcon" />
+                  <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                             Text="Local-only. No telemetry, no network, no elevation." />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Classes="caption"
+                       Text="Tip: press F1 at any time to reopen this guide. Esc closes it." />
+          </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="28,18,28,24">
+          <TextBlock Classes="caption" VerticalAlignment="Center"
+                     Text="You can leave any step and come back. Coppice keeps the flow visible." />
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+            <Button Classes="secondary" Command="{Binding CloseHelpCommand}"
+                    Content="Close" AutomationProperties.Name="Close the guide" />
+            <Button Classes="primary" Command="{Binding StartFromHelpCommand}"
+                    AutomationProperties.Name="Start with project roots">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Start with project roots" Foreground="{DynamicResource TextOnAccentBrush}" />
+                <Path Data="{StaticResource IconArrowRight}" Classes="icon sm"
+                      Stroke="{DynamicResource TextOnAccentBrush}" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+
+      </Grid>
+    </Border>
+  </Panel>
+</UserControl>

@@ -23,6 +23,19 @@ public sealed class FakeFileSystem : IFileSystem
 
     public char Separator => _separator;
 
+    /// <summary>
+    /// Artificial delay before every <see cref="EnumerateEntries"/> call. Zero keeps the fake instant;
+    /// a test that needs a scan still in flight sets this so the enumeration loop is deliberately slow.
+    /// One call per directory means a cancellation can be observed between entries, exactly where the
+    /// scan pipeline checks its token.
+    /// </summary>
+    public TimeSpan EnumerationDelay { get; set; } = TimeSpan.Zero;
+
+    private readonly TaskCompletionSource _firstEnumeration = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>Completes when the first enumeration starts, so a test knows the slow phase is running.</summary>
+    public Task FirstEnumeration => _firstEnumeration.Task;
+
     private sealed record Node(
         EntryKind Kind,
         byte[]? Content,
@@ -149,6 +162,13 @@ public sealed class FakeFileSystem : IFileSystem
 
     public IReadOnlyList<FileEntry> EnumerateEntries(string path, EnumerationRequest? options = null)
     {
+        _firstEnumeration.TrySetResult();
+
+        if (EnumerationDelay > TimeSpan.Zero)
+        {
+            Thread.Sleep(EnumerationDelay);
+        }
+
         options ??= new EnumerationRequest();
         string root = Normalize(path);
         if (!_nodes.TryGetValue(root, out Node? rootNode) || rootNode.Kind != EntryKind.Directory)

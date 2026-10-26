@@ -4,7 +4,10 @@ using Coppice.Core.Domain;
 namespace Coppice.Gui.ViewModels;
 
 /// <summary>One retention choice. The policy carried here is the same object the CLI and TUI use.</summary>
-public sealed record PolicyOption(string Name, string Detail, Policy Policy);
+public sealed record PolicyOption(string Name, string Detail, Policy Policy)
+{
+    public override string ToString() => Name;
+}
 
 public sealed record ItemRow(
     string ItemId,
@@ -16,7 +19,14 @@ public sealed record ItemRow(
     string Size,
     bool Proposed,
     string Decision,
-    string Reason);
+    string Reason)
+{
+    public bool IsUnknown => Usage == "Unknown";
+
+    public bool IsReferenced => Usage == "Referenced";
+
+    public override string ToString() => $"{Name} {Version} — {Usage} — {Decision}";
+}
 
 /// <summary>One proposed step with a two-way selection state for the review screen.</summary>
 public sealed partial class PlanStepRow : ObservableObject
@@ -39,6 +49,8 @@ public sealed partial class PlanStepRow : ObservableObject
 
     [ObservableProperty]
     private bool _isSelected = true;
+
+    public override string ToString() => Label;
 }
 
 public sealed record RootRow(
@@ -48,9 +60,19 @@ public sealed record RootRow(
     string Role,
     string Validity,
     bool Cleanable,
-    string Problem);
+    string Problem)
+{
+    public override string ToString() => $"{LocationId} — {Validity} — {Path}";
+}
 
-public sealed record ProblemRow(string Code, string Severity, string Summary, string? Path);
+public sealed record ProblemRow(string Code, string Severity, string Summary, string? Path)
+{
+    public bool IsWarning => Severity == "Warning";
+
+    public bool IsError => Severity == "Error";
+
+    public override string ToString() => $"{Code} — {Severity} — {Summary}";
+}
 
 public sealed record QuarantineRow(
     string Id,
@@ -61,4 +83,8 @@ public sealed record QuarantineRow(
     bool ContentPresent)
 {
     public string ContentState => ContentPresent ? "present" : "missing";
+
+    public bool IsPresent => ContentPresent;
+
+    public override string ToString() => $"{Label} — {Size} — {ContentState}";
 }

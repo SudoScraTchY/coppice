@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Coppice.Gui.ViewModels"
+             x:Class="Coppice.Gui.Views.ProblemsView"
+             x:DataType="vm:MainWindowViewModel">
+  <Grid RowDefinitions="Auto,Auto,*" Margin="{StaticResource PagePadding}">
+
+    <StackPanel Spacing="10">
+      <TextBlock Classes="eyebrow" Text="REFERENCE · HEALTH" />
+      <TextBlock Classes="pageTitle" Text="Findings from the last scan" />
+      <TextBlock Classes="pageSubtitle"
+                 Text="A problem is information, not a proposed removal. Coppice reports it so the diagnosis is visible, then leaves your files alone." />
+    </StackPanel>
+
+    <Border Grid.Row="1" Classes="callout info" Margin="0,18,0,12">
+      <Grid ColumnDefinitions="Auto,*">
+        <Path Data="{StaticResource IconActivity}" Classes="icon"
+              Stroke="{DynamicResource InfoBrush}" />
+        <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                   Text="Health findings come from a scan. They never become plan steps on their own, and they never unlock a cleanup that the safety rules would otherwise refuse." />
+      </Grid>
+    </Border>
+
+    <Panel Grid.Row="2">
+      <Border Classes="card" Padding="12" IsVisible="{Binding HasProblems}">
+        <Grid RowDefinitions="Auto,*">
+          <Grid ColumnDefinitions="180,100,2*,*" Margin="10,0,10,6">
+            <TextBlock Classes="metricLabel" Text="CODE" />
+            <TextBlock Grid.Column="1" Classes="metricLabel" Text="SEVERITY" />
+            <TextBlock Grid.Column="2" Classes="metricLabel" Text="SUMMARY" />
+            <TextBlock Grid.Column="3" Classes="metricLabel" Text="PATH" />
+          </Grid>
+          <ListBox Grid.Row="1" Classes="rows" ItemsSource="{Binding Problems}"
+                   AutomationProperties.Name="Health findings">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:ProblemRow">
+                <Grid ColumnDefinitions="180,100,2*,*">
+                  <TextBlock Text="{Binding Code}" FontWeight="SemiBold"
+                             TextTrimming="CharacterEllipsis" />
+                  <Border Grid.Column="1" Classes="pill" VerticalAlignment="Center"
+                          HorizontalAlignment="Left"
+                          Classes.warning="{Binding IsWarning}"
+                          Classes.danger="{Binding IsError}">
+                    <TextBlock Classes="pillText" Text="{Binding Severity}" />
+                  </Border>
+                  <TextBlock Grid.Column="2" Text="{Binding Summary}" Classes="muted"
+                             VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="2"
+                             TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Summary}" />
+                  <TextBlock Grid.Column="3" Text="{Binding Path}" Classes="path"
+                             VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </Border>
+
+      <Border Classes="card" IsVisible="{Binding !HasProblems}">
+        <StackPanel Spacing="14" HorizontalAlignment="Center" Margin="0,48">
+          <Border Classes="iconTile" HorizontalAlignment="Center">
+            <Path Data="{StaticResource IconActivity}" Classes="icon lg"
+                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Classes="sectionTitle" Text="No health findings to show" HorizontalAlignment="Center" />
+          <TextBlock Classes="muted" TextAlignment="Center" MaxWidth="460"
+                     Text="Run a scan to collect them. Findings may include a cache that is missing, an ambiguous root, or a location that would need elevation." />
+          <Button Classes="primary" HorizontalAlignment="Center"
+                  Command="{Binding NavigateCommand}" CommandParameter="Scan"
+                  Content="Go to scan" AutomationProperties.Name="Go to scan" />
+        </StackPanel>
+      </Border>
+    </Panel>
+
+  </Grid>
+</UserControl>

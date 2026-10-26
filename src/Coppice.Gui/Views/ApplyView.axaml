@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Coppice.Gui.ViewModels"
+             x:Class="Coppice.Gui.Views.ApplyView"
+             x:DataType="vm:MainWindowViewModel">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="{StaticResource PagePadding}" Spacing="20">
+
+      <StackPanel Spacing="10">
+        <TextBlock Classes="eyebrow" Text="STEP 4 OF 5" />
+        <TextBlock Classes="pageTitle" Text="Move selected items to quarantine" />
+        <TextBlock Classes="pageSubtitle"
+                   Text="This is the only step that changes your machine. Every selected item is renamed into a quarantine on the same volume, recorded in the audit ledger, and can be restored later." />
+      </StackPanel>
+
+      <Border Classes="card" IsVisible="{Binding CanShowApplyReady}">
+        <StackPanel Spacing="16">
+          <Grid ColumnDefinitions="Auto,*">
+            <Border Classes="iconTile">
+              <Path Data="{StaticResource IconArchive}" Classes="icon" Width="19" Height="19"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="3">
+              <TextBlock Classes="sectionTitle"
+                         Text="{Binding SelectedStepCount, StringFormat='Ready to move {0} item(s)'}" />
+              <TextBlock Classes="muted" Text="{Binding SelectedStepBytes, StringFormat='{}Selected size: {0}. Nothing is deleted.'}" />
+            </StackPanel>
+          </Grid>
+
+          <Border Classes="card muted compact">
+            <StackPanel Spacing="10">
+              <Grid ColumnDefinitions="Auto,*">
+                <Path Data="{StaticResource IconArchive}" Classes="icon accentIcon" />
+                <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                           Text="Items are moved into .coppice/quarantine on the cache volume. No bytes are deleted." />
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*">
+                <Path Data="{StaticResource IconShieldCheck}" Classes="icon accentIcon" />
+                <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                           Text="Each move is hash-chained into the audit ledger before and after the rename." />
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*">
+                <Path Data="{StaticResource IconRestore}" Classes="icon accentIcon" />
+                <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                           Text="The Quarantine step can restore any item after re-checking its content hash and original path." />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <CheckBox Content="I understand the selected items will be moved out of their current locations."
+                    IsChecked="{Binding IsApplyConfirmed, Mode=TwoWay}"
+                    IsEnabled="{Binding !IsApplying}"
+                    AutomationProperties.Name="Confirm moving items to quarantine" />
+
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Classes="primary"
+                    Command="{Binding ApplyCommand}"
+                    Content="{Binding SelectedStepCount, StringFormat='Move {0} item(s) to quarantine'}"
+                    AutomationProperties.Name="Move selected items to quarantine" />
+            <Button Classes="secondary" Command="{Binding ApplyCancelCommand}"
+                    Content="Cancel apply" IsVisible="{Binding IsApplying}"
+                    AutomationProperties.Name="Cancel apply" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" IsVisible="{Binding IsApplying}">
+        <StackPanel Spacing="12">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Classes="cardTitle" Text="Moving items…" />
+            <TextBlock Grid.Column="1" Classes="strong" Text="{Binding ApplyPercentLabel}" />
+          </Grid>
+          <ProgressBar Minimum="0" Maximum="1" Value="{Binding ApplyPercent}"
+                       AutomationProperties.Name="Apply progress" />
+          <TextBlock Classes="muted" Text="{Binding Status}" />
+          <Border Classes="card muted compact" Padding="8">
+            <ListBox ItemsSource="{Binding ApplyLog}" MaxHeight="176"
+                     AutomationProperties.Name="Apply progress log">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Text="{Binding}" Classes="path" />
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Border>
+          <TextBlock Classes="caption"
+                     Text="Cancel stops between steps, never mid-move. A cancelled run leaves earlier moves in quarantine." />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" IsVisible="{Binding HasApplyOutcome}">
+        <StackPanel Spacing="16">
+          <Grid ColumnDefinitions="Auto,*">
+            <Border Classes="iconTile">
+              <Path Data="{StaticResource IconCheck}" Classes="icon" Width="20" Height="20"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="4">
+              <TextBlock Classes="sectionTitle" Text="{Binding ApplyOutcomeTitle}" />
+              <TextBlock Classes="muted" Text="{Binding ApplyOutcomeDetail}" />
+            </StackPanel>
+          </Grid>
+
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Border Classes="pill success">
+              <TextBlock Classes="pillText"
+                         Text="{Binding LastAppliedCount, StringFormat='{}{0} moved'}" />
+            </Border>
+            <Border Classes="pill">
+              <TextBlock Classes="pillText" Text="{Binding LastAppliedBytes}" />
+            </Border>
+            <Border Classes="pill">
+              <TextBlock Classes="pillText" Text="Nothing deleted" />
+            </Border>
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Classes="primary"
+                    Command="{Binding NavigateCommand}" CommandParameter="Quarantine"
+                    Content="Open quarantine" AutomationProperties.Name="Open quarantine" />
+            <Button Classes="secondary"
+                    Command="{Binding NavigateCommand}" CommandParameter="Scan"
+                    Content="Scan again" AutomationProperties.Name="Scan again" />
+          </StackPanel>
+
+          <Expander Header="Run details" IsExpanded="False">
+            <Border Classes="pathBox" Margin="0,8,0,0">
+              <ListBox ItemsSource="{Binding ApplyLog}" MaxHeight="180"
+                       AutomationProperties.Name="Apply run details">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <TextBlock Text="{Binding}" Classes="path" />
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </Border>
+          </Expander>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" IsVisible="{Binding CanShowApplyEmpty}">
+        <StackPanel Spacing="14" HorizontalAlignment="Center" Margin="0,24">
+          <Border Classes="iconTile" HorizontalAlignment="Center">
+            <Path Data="{StaticResource IconListChecks}" Classes="icon lg"
+                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Classes="sectionTitle" Text="Choose the steps you want to move" HorizontalAlignment="Center" />
+          <TextBlock Classes="muted" TextAlignment="Center" MaxWidth="480"
+                     Text="There is no selected plan on this screen. Go back to Review, choose the steps, then continue here for the final confirmation." />
+          <Border Classes="callout warning" IsVisible="{Binding WasApplyCancelled}">
+            <Grid ColumnDefinitions="Auto,*">
+              <Path Data="{StaticResource IconAlert}" Classes="icon"
+                    Stroke="{DynamicResource WarningBrush}" />
+              <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                         Text="The last run was cancelled between steps. Some items may already be in quarantine, so rescan before applying again." />
+            </Grid>
+          </Border>
+          <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+            <Button Classes="secondary"
+                    Command="{Binding NavigateCommand}" CommandParameter="Scan"
+                    Content="Scan again" AutomationProperties.Name="Scan again" />
+            <Button Classes="primary"
+                    Command="{Binding NavigateCommand}" CommandParameter="Review"
+                    Content="Go to review" AutomationProperties.Name="Go to review" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

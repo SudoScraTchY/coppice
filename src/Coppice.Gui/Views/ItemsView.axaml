@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Coppice.Gui.ViewModels"
+             x:Class="Coppice.Gui.Views.ItemsView"
+             x:DataType="vm:MainWindowViewModel">
+  <Grid RowDefinitions="Auto,Auto,*" Margin="{StaticResource PagePadding}">
+
+    <StackPanel Spacing="10">
+      <TextBlock Classes="eyebrow" Text="REFERENCE · EVIDENCE" />
+      <TextBlock Classes="pageTitle" Text="What the scan found" />
+      <TextBlock Classes="pageSubtitle"
+                 Text="Every item Coppice inventoried, with its usage verdict and the decision the current policy makes. This page explains a keep; it does not change anything." />
+    </StackPanel>
+
+    <Border Grid.Row="1" Classes="callout info" Margin="0,18,0,12">
+      <Grid ColumnDefinitions="Auto,*">
+        <Path Data="{StaticResource IconInfo}" Classes="icon"
+              Stroke="{DynamicResource InfoBrush}" />
+        <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                   Text="Referenced means a project lock or asset file names the version. Unreferenced means no readable project does. Unknown means there was not enough evidence — and Unknown is never proposed." />
+      </Grid>
+    </Border>
+
+    <Panel Grid.Row="2">
+      <Border Classes="card" Padding="12" IsVisible="{Binding HasSnapshot}">
+        <Grid RowDefinitions="Auto,Auto,*">
+          <Grid ColumnDefinitions="*,Auto" Margin="4,0,4,10">
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+              <TextBlock Classes="muted" Text="{Binding ItemsSummary}" VerticalAlignment="Center" />
+              <ProgressBar IsIndeterminate="True" Width="90" IsVisible="{Binding IsItemsLoading}"
+                           AutomationProperties.Name="Building the item list" />
+            </StackPanel>
+            <Border Grid.Column="1" Classes="pill">
+              <TextBlock Classes="pillText" Text="{Binding EvidenceDetail}" />
+            </Border>
+          </Grid>
+
+          <Grid Grid.Row="1" ColumnDefinitions="2*,110,80,80,100,*" Margin="10,0,10,6">
+            <TextBlock Classes="metricLabel" Text="ITEM / VERSION" />
+            <TextBlock Grid.Column="1" Classes="metricLabel" Text="USAGE" />
+            <TextBlock Grid.Column="2" Classes="metricLabel" Text="RISK" />
+            <TextBlock Grid.Column="3" Classes="metricLabel" Text="SIZE" />
+            <TextBlock Grid.Column="4" Classes="metricLabel" Text="DECISION" />
+            <TextBlock Grid.Column="5" Classes="metricLabel" Text="WHY" />
+          </Grid>
+
+          <ListBox Grid.Row="2" Classes="rows" ItemsSource="{Binding Items}"
+                   AutomationProperties.Name="All items">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:ItemRow">
+                <Grid ColumnDefinitions="2*,110,80,80,100,*">
+                  <StackPanel Spacing="1">
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Version}" Classes="caption" />
+                  </StackPanel>
+                  <Border Grid.Column="1" Classes="pill" VerticalAlignment="Center"
+                          HorizontalAlignment="Left"
+                          Classes.warning="{Binding IsUnknown}"
+                          Classes.success="{Binding IsReferenced}">
+                    <TextBlock Classes="pillText" Text="{Binding Usage}" />
+                  </Border>
+                  <TextBlock Grid.Column="2" Text="{Binding Risk}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="3" Text="{Binding Size}" VerticalAlignment="Center" />
+                  <Border Grid.Column="4" Classes="pill" VerticalAlignment="Center"
+                          HorizontalAlignment="Left" Classes.accent="{Binding Proposed}">
+                    <TextBlock Classes="pillText" Text="{Binding Decision}" />
+                  </Border>
+                  <TextBlock Grid.Column="5" Text="{Binding Reason}" Classes="muted"
+                             VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="2"
+                             TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Reason}" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </Border>
+
+      <Border Classes="card" IsVisible="{Binding !HasSnapshot}">
+        <StackPanel Spacing="14" HorizontalAlignment="Center" Margin="0,48">
+          <Border Classes="iconTile" HorizontalAlignment="Center">
+            <Path Data="{StaticResource IconList}" Classes="icon lg"
+                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Classes="sectionTitle" Text="No cache evidence yet" HorizontalAlignment="Center" />
+          <TextBlock Classes="muted" TextAlignment="Center" MaxWidth="460"
+                     Text="Run a scan to inventory the registered caches and compare them with your project roots." />
+          <Button Classes="primary" HorizontalAlignment="Center"
+                  Command="{Binding NavigateCommand}" CommandParameter="Scan"
+                  Content="Go to scan" AutomationProperties.Name="Go to scan" />
+        </StackPanel>
+      </Border>
+    </Panel>
+
+  </Grid>
+</UserControl>

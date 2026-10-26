@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Coppice.Gui.ViewModels"
+             x:Class="Coppice.Gui.Views.ScanView"
+             x:DataType="vm:MainWindowViewModel">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="{StaticResource PagePadding}">
+
+    <StackPanel Spacing="10">
+      <TextBlock Classes="eyebrow" Text="STEP 2 OF 5" />
+      <TextBlock Classes="pageTitle" Text="Scan the machine, change nothing" />
+      <TextBlock Classes="pageSubtitle"
+                 Text="Coppice finds every registered cache, inventories each version, and checks your project roots to separate used items from unused ones." />
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1" Margin="0,20,0,0" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="20">
+
+        <Border Classes="card">
+          <StackPanel Spacing="0">
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Classes="iconTile">
+                <Path Data="{StaticResource IconScan}" Classes="icon" Width="19" Height="19"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="4">
+                <TextBlock Classes="sectionTitle" Text="Ready when you are" />
+                <TextBlock Classes="muted"
+                           Text="The scan is read-only. It reads the registered caches, toolchain folders and project lock or asset files. Nothing is moved or deleted." />
+              </StackPanel>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" Margin="0,18,0,0">
+              <Button Classes="primary"
+                      Command="{Binding ScanCommand}"
+                      IsVisible="{Binding !IsScanning}"
+                      AutomationProperties.Name="Scan this machine">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Path Data="{StaticResource IconScan}" Classes="icon sm"
+                        Stroke="{DynamicResource TextOnAccentBrush}" />
+                  <TextBlock Text="Scan this machine" Foreground="{DynamicResource TextOnAccentBrush}" />
+                </StackPanel>
+              </Button>
+
+              <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsScanning}">
+                <ProgressBar IsIndeterminate="True" Width="240" VerticalAlignment="Center"
+                             AutomationProperties.Name="Scan in progress" />
+                <Button Classes="secondary"
+                        Command="{Binding ScanCancelCommand}"
+                        Content="Cancel scan"
+                        AutomationProperties.Name="Cancel scan" />
+              </StackPanel>
+
+              <TextBlock Grid.Column="1" Classes="caption" Margin="14,0,0,0" VerticalAlignment="Center"
+                         Text="Cancel stops between steps. A cancelled scan changes nothing." />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="callout info">
+          <Grid ColumnDefinitions="Auto,*">
+            <Path Data="{StaticResource IconInfo}" Classes="icon"
+                  Stroke="{DynamicResource InfoBrush}" />
+            <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted"
+                       Text="Unknown is not unused. If Coppice cannot find evidence that a version is referenced, it reports the version but never proposes it for cleanup." />
+          </Grid>
+        </Border>
+
+        <StackPanel Spacing="14" IsVisible="{Binding HasSnapshot}">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="3">
+              <TextBlock Classes="sectionTitle" Text="Latest scan" />
+              <TextBlock Classes="muted" Text="{Binding ScanSummary}" />
+            </StackPanel>
+            <Border Grid.Column="1" Classes="pill accent">
+              <TextBlock Classes="pillText" Text="{Binding SnapshotLabel}" />
+            </Border>
+          </Grid>
+
+          <UniformGrid Columns="4">
+            <Border Classes="stat" Margin="0,0,6,0">
+              <StackPanel Spacing="2">
+                <TextBlock Classes="metricLabel" Text="ITEMS" />
+                <TextBlock Classes="metric" Text="{Binding ItemCount}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="stat" Margin="6,0">
+              <StackPanel Spacing="2">
+                <TextBlock Classes="metricLabel" Text="REFERENCED" />
+                <TextBlock Classes="metric" Text="{Binding ReferencedCount}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="stat" Margin="6,0">
+              <StackPanel Spacing="2">
+                <TextBlock Classes="metricLabel" Text="UNREFERENCED" />
+                <TextBlock Classes="metric" Text="{Binding UnreferencedCount}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="stat" Margin="6,0,0,0">
+              <StackPanel Spacing="2">
+                <TextBlock Classes="metricLabel" Text="UNKNOWN" />
+                <TextBlock Classes="metric" Text="{Binding UnknownCount}" />
+              </StackPanel>
+            </Border>
+          </UniformGrid>
+
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Border Classes="pill accent" IsVisible="{Binding HasPlan}">
+              <TextBlock Classes="pillText"
+                         Text="{Binding PotentialReclaim, StringFormat='{}{0} can be reclaimed'}" />
+            </Border>
+            <Border Classes="pill" IsVisible="{Binding HasProjects}">
+              <TextBlock Classes="pillText"
+                         Text="{Binding ProjectCount, StringFormat='{}{0} project(s) read'}" />
+            </Border>
+          </StackPanel>
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,16,0,0"
+          IsVisible="{Binding HasSnapshot}">
+      <TextBlock Classes="muted" VerticalAlignment="Center"
+                 Text="Next: review every proposed step and uncheck anything you want to keep." />
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+        <Button Classes="secondary"
+                Command="{Binding ScanCommand}"
+                Content="Scan again"
+                AutomationProperties.Name="Scan again" />
+        <Button Classes="primary"
+                Command="{Binding NavigateCommand}"
+                CommandParameter="Review"
+                AutomationProperties.Name="{Binding ReviewCtaLabel}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="{Binding ReviewCtaLabel}" Foreground="{DynamicResource TextOnAccentBrush}" />
+            <Path Data="{StaticResource IconArrowRight}" Classes="icon sm"
+                  Stroke="{DynamicResource TextOnAccentBrush}" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+  </Grid>
+</UserControl>

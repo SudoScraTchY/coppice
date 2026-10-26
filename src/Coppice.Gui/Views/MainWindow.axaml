@@ -2,334 +2,314 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Coppice.Gui.ViewModels"
+        xmlns:controls="using:Coppice.Gui.Controls"
+        xmlns:views="using:Coppice.Gui.Views"
         x:Class="Coppice.Gui.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="Coppice — harvest what regrows"
-        Width="1180" Height="780"
-        MinWidth="920" MinHeight="620"
-        Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+        Width="1280" Height="860"
+        MinWidth="1040" MinHeight="700"
+        Background="{DynamicResource AppBackgroundBrush}">
 
-  <Window.Styles>
-    <Style Selector="TextBlock.h1">
-      <Setter Property="FontSize" Value="22" />
-      <Setter Property="FontWeight" Value="SemiBold" />
-    </Style>
-    <Style Selector="TextBlock.h2">
-      <Setter Property="FontSize" Value="15" />
-      <Setter Property="FontWeight" Value="SemiBold" />
-    </Style>
-    <Style Selector="Border.card">
-      <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="8" />
-      <Setter Property="Padding" Value="16" />
-      <Setter Property="Margin" Value="0,0,0,12" />
-    </Style>
-    <Style Selector="TextBlock.muted">
-      <Setter Property="Opacity" Value="0.72" />
-      <Setter Property="TextWrapping" Value="Wrap" />
-    </Style>
-  </Window.Styles>
+  <Window.KeyBindings>
+    <KeyBinding Gesture="F1" Command="{Binding ToggleHelpCommand}" />
+    <KeyBinding Gesture="Escape" Command="{Binding CloseHelpCommand}" />
+    <KeyBinding Gesture="Ctrl+1" Command="{Binding NavigateCommand}" CommandParameter="Setup" />
+    <KeyBinding Gesture="Ctrl+2" Command="{Binding NavigateCommand}" CommandParameter="Scan" />
+    <KeyBinding Gesture="Ctrl+3" Command="{Binding NavigateCommand}" CommandParameter="Review" />
+    <KeyBinding Gesture="Ctrl+4" Command="{Binding NavigateCommand}" CommandParameter="Apply" />
+    <KeyBinding Gesture="Ctrl+5" Command="{Binding NavigateCommand}" CommandParameter="Quarantine" />
+    <KeyBinding Gesture="Cmd+1" Command="{Binding NavigateCommand}" CommandParameter="Setup" />
+    <KeyBinding Gesture="Cmd+2" Command="{Binding NavigateCommand}" CommandParameter="Scan" />
+    <KeyBinding Gesture="Cmd+3" Command="{Binding NavigateCommand}" CommandParameter="Review" />
+    <KeyBinding Gesture="Cmd+4" Command="{Binding NavigateCommand}" CommandParameter="Apply" />
+    <KeyBinding Gesture="Cmd+5" Command="{Binding NavigateCommand}" CommandParameter="Quarantine" />
+  </Window.KeyBindings>
 
-  <Grid RowDefinitions="Auto,*">
-    <Border Background="#1E3A2C" Padding="20,14">
-      <Grid ColumnDefinitions="Auto,*,Auto">
-        <StackPanel Spacing="2">
-          <TextBlock Text="coppice" FontSize="24" FontWeight="Bold" Foreground="White" />
-          <TextBlock Text="Harvest what regrows. Never touch the root."
-                     Foreground="#CFE3D8" FontSize="12" />
-        </StackPanel>
-        <TextBlock Grid.Column="2" Text="{Binding Status}" Foreground="White"
-                   TextWrapping="Wrap" MaxWidth="620" VerticalAlignment="Center"
-                   AutomationProperties.Name="Status" />
-      </Grid>
-    </Border>
+  <Panel>
 
-    <TabControl x:Name="Sections" Grid.Row="1" Margin="12">
-      <!-- ============================ DASHBOARD ============================ -->
-      <TabItem Header="Dashboard">
-        <ScrollViewer>
-          <StackPanel Margin="16" Spacing="4">
-            <TextBlock Classes="h1" Text="Scan, keep, and harvest" />
-            <TextBlock Classes="muted"
-                       Text="A plan is built from evidence. Nothing is moved until you review it and confirm." />
+    <Grid RowDefinitions="Auto,*,Auto">
 
-            <Border Classes="card" Margin="0,14,0,12">
-              <StackPanel Spacing="8">
-                <TextBlock Classes="h2" Text="Project roots" />
-                <TextBlock Classes="muted"
-                           Text="One path per line (or separated by semicolons). Coppice reads obj/project.assets.json under each path. Without roots, every item is Unknown and nothing is proposed." />
-                <TextBox Text="{Binding ProjectRoots, Mode=TwoWay}"
-                         AcceptsReturn="True" Height="86"
-                         PlaceholderText="C:\src"
-                         AutomationProperties.Name="Project roots" />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button Content="Scan"
-                          Command="{Binding ScanCommand}"
-                          AutomationProperties.Name="Scan" />
-                  <Button Content="Cancel scan"
-                          Command="{Binding ScanCancelCommand}"
-                          AutomationProperties.Name="Cancel scan" />
-                  <ProgressBar IsIndeterminate="True" Width="220"
-                               IsVisible="{Binding IsBusy}"
-                               VerticalAlignment="Center" />
-                </StackPanel>
-                <TextBlock Text="{Binding ScanSummary}" Classes="muted" />
+      <!-- ================================ TOP BAR ================================ -->
+      <Border Background="{DynamicResource TopBarBrush}" Padding="20,12">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <Border Width="40" Height="40" CornerRadius="{StaticResource RadiusLg}"
+                    Background="{DynamicResource AccentBrush}">
+              <Path Data="{StaticResource IconSprout}" Classes="icon"
+                    Stroke="{DynamicResource TextOnAccentBrush}" Width="23" Height="23"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Spacing="0" VerticalAlignment="Center">
+              <TextBlock Text="coppice" Classes="onDark" FontSize="20" FontWeight="Bold" />
+              <TextBlock Text="Harvest what regrows. Never touch the root."
+                         Classes="onDarkMuted" FontSize="12" />
+            </StackPanel>
+            <Border Classes="topChip" Margin="6,0,0,0">
+              <TextBlock Text="v0.4 preview" Classes="onDarkMuted" FontSize="11" />
+            </Border>
+          </StackPanel>
+
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+            <Border Classes="topChip" IsVisible="{Binding HasSnapshot}"
+                    ToolTip.Tip="{Binding SnapshotId}">
+              <StackPanel Orientation="Horizontal" Spacing="7">
+                <Border Classes="statusDot success" />
+                <TextBlock Text="{Binding SnapshotLabel}" Classes="onDark" FontSize="12" />
               </StackPanel>
             </Border>
+            <Button Classes="iconButton onDark"
+                    Command="{Binding ToggleThemeCommand}"
+                    ToolTip.Tip="Switch between light and dark"
+                    AutomationProperties.Name="Switch between light and dark theme">
+              <Panel>
+                <Path Data="{StaticResource IconMoon}" Classes="icon sm"
+                      Stroke="{DynamicResource TopBarTextBrush}" IsVisible="{Binding !IsDarkTheme}" />
+                <Path Data="{StaticResource IconSun}" Classes="icon sm"
+                      Stroke="{DynamicResource TopBarTextBrush}" IsVisible="{Binding IsDarkTheme}" />
+              </Panel>
+            </Button>
+            <Button Classes="topBar"
+                    Command="{Binding ToggleHelpCommand}"
+                    AutomationProperties.Name="How Coppice works">
+              <StackPanel Orientation="Horizontal" Spacing="7">
+                <Path Data="{StaticResource IconHelp}" Classes="icon sm"
+                      Stroke="{DynamicResource TopBarTextBrush}" />
+                <TextBlock Text="How it works" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
 
-            <Border Classes="card">
-              <StackPanel Spacing="8">
-                <TextBlock Classes="h2" Text="Retention policy" />
-                <ComboBox ItemsSource="{Binding Policies}"
-                          SelectedItem="{Binding SelectedPolicy, Mode=TwoWay}"
-                          HorizontalAlignment="Stretch"
-                          AutomationProperties.Name="Retention policy">
-                  <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:PolicyOption">
-                      <StackPanel Margin="0,4">
-                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                        <TextBlock Text="{Binding Detail}" Classes="muted" />
+      <!-- ================================= SHELL ================================= -->
+      <Grid Grid.Row="1" ColumnDefinitions="284,*">
+
+        <Border Background="{DynamicResource SidebarBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,1,0">
+          <Grid RowDefinitions="*,Auto" Margin="14,20,14,14">
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+              <StackPanel Spacing="20">
+
+                <StackPanel Spacing="6">
+                  <TextBlock Classes="metricLabel" Margin="10,0,0,4" Text="THE CLEANUP FLOW" />
+
+                  <Button Classes="nav"
+                          Classes.active="{Binding CurrentPage, Converter={StaticResource Equals}, ConverterParameter=Setup}"
+                          Command="{Binding NavigateCommand}" CommandParameter="Setup"
+                          AutomationProperties.Name="Step 1, project roots">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <Border Classes="stepBadge" Classes.done="{Binding IsSetupDone}">
+                        <Panel>
+                          <TextBlock Text="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     IsVisible="{Binding !IsSetupDone}" />
+                          <Path Data="{StaticResource IconCheck}" Classes="icon" Width="13" Height="13"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                IsVisible="{Binding IsSetupDone}" />
+                        </Panel>
+                      </Border>
+                      <StackPanel Grid.Column="1" Margin="10,2,0,0" Spacing="1">
+                        <TextBlock Classes="navTitle" Text="Project roots" />
+                        <TextBlock Classes="navDetail" Text="Where your code lives" />
                       </StackPanel>
-                    </DataTemplate>
-                  </ComboBox.ItemTemplate>
-                </ComboBox>
+                    </Grid>
+                  </Button>
 
-                <StackPanel Orientation="Horizontal" Spacing="8"
-                            IsVisible="{Binding IsCustomPolicy}">
-                  <TextBlock Text="Keep the newest" VerticalAlignment="Center" />
-                  <NumericUpDown Value="{Binding CustomKeepLatest, Mode=TwoWay}"
-                                 Minimum="0" Maximum="1000" Increment="1" Width="150"
-                                 AutomationProperties.Name="Custom keep count" />
-                  <TextBlock Text="version(s) of each package" VerticalAlignment="Center" />
+                  <Button Classes="nav"
+                          Classes.active="{Binding CurrentPage, Converter={StaticResource Equals}, ConverterParameter=Scan}"
+                          Command="{Binding NavigateCommand}" CommandParameter="Scan"
+                          AutomationProperties.Name="Step 2, scan">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <Border Classes="stepBadge" Classes.done="{Binding IsScanDone}">
+                        <Panel>
+                          <TextBlock Text="2" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     IsVisible="{Binding !IsScanDone}" />
+                          <Path Data="{StaticResource IconCheck}" Classes="icon" Width="13" Height="13"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                IsVisible="{Binding IsScanDone}" />
+                        </Panel>
+                      </Border>
+                      <StackPanel Grid.Column="1" Margin="10,2,0,0" Spacing="1">
+                        <TextBlock Classes="navTitle" Text="Scan" />
+                        <TextBlock Classes="navDetail" Text="Read the cache, change nothing" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+
+                  <Button Classes="nav"
+                          Classes.active="{Binding CurrentPage, Converter={StaticResource Equals}, ConverterParameter=Review}"
+                          Command="{Binding NavigateCommand}" CommandParameter="Review"
+                          ToolTip.Tip="Scan first to unlock the plan"
+                          AutomationProperties.Name="Step 3, review plan">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <Border Classes="stepBadge" Classes.done="{Binding IsReviewDone}">
+                        <Panel>
+                          <TextBlock Text="3" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     IsVisible="{Binding !IsReviewDone}" />
+                          <Path Data="{StaticResource IconCheck}" Classes="icon" Width="13" Height="13"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                IsVisible="{Binding IsReviewDone}" />
+                        </Panel>
+                      </Border>
+                      <StackPanel Grid.Column="1" Margin="10,2,0,0" Spacing="1">
+                        <TextBlock Classes="navTitle" Text="Review plan" />
+                        <TextBlock Classes="navDetail" Text="See the reason for every step" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+
+                  <Button Classes="nav"
+                          Classes.active="{Binding CurrentPage, Converter={StaticResource Equals}, ConverterParameter=Apply}"
+                          Command="{Binding NavigateCommand}" CommandParameter="Apply"
+                          ToolTip.Tip="Review a plan to unlock apply"
+                          AutomationProperties.Name="Step 4, apply">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <Border Classes="stepBadge" Classes.done="{Binding IsApplyDone}">
+                        <Panel>
+                          <TextBlock Text="4" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     IsVisible="{Binding !IsApplyDone}" />
+                          <Path Data="{StaticResource IconCheck}" Classes="icon" Width="13" Height="13"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                IsVisible="{Binding IsApplyDone}" />
+                        </Panel>
+                      </Border>
+                      <StackPanel Grid.Column="1" Margin="10,2,0,0" Spacing="1">
+                        <TextBlock Classes="navTitle" Text="Apply" />
+                        <TextBlock Classes="navDetail" Text="Move approved items to quarantine" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+
+                  <Button Classes="nav"
+                          Classes.active="{Binding CurrentPage, Converter={StaticResource Equals}, ConverterParameter=Quarantine}"
+                          Command="{Binding NavigateCommand}" CommandParameter="Quarantine"
+                          AutomationProperties.Name="Step 5, quarantine">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <Border Classes="stepBadge">
+                        <Panel>
+                          <TextBlock Text="5" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Panel>
+                      </Border>
+                      <StackPanel Grid.Column="1" Margin="10,2,0,0" Spacing="1">
+                        <TextBlock Classes="navTitle" Text="Quarantine" />
+                        <TextBlock Classes="navDetail" Text="{Binding QuarantineDetail}" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
                 </StackPanel>
 
-                <TextBlock Text="{Binding PolicySummary}" FontStyle="Italic" />
-                <TextBlock Classes="muted"
-                           Text="Keep newest only keeps one version of each package and proposes the older eligible ones. Referenced versions and items whose usage is Unknown are never proposed." />
+                <StackPanel Spacing="6">
+                  <TextBlock Classes="metricLabel" Margin="10,0,0,4" Text="REFERENCE" />
+
+                  <Button Classes="nav"
+                          Classes.active="{Binding CurrentPage, Converter={StaticResource Equals}, ConverterParameter=Items}"
+                          Command="{Binding NavigateCommand}" CommandParameter="Items"
+                          AutomationProperties.Name="Evidence, all items">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <Path Data="{StaticResource IconList}" Classes="icon" Margin="4,3,0,0" />
+                      <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="1">
+                        <TextBlock Classes="navTitle" Text="Evidence" />
+                        <TextBlock Classes="navDetail" Text="{Binding EvidenceDetail}" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+
+                  <Button Classes="nav"
+                          Classes.active="{Binding CurrentPage, Converter={StaticResource Equals}, ConverterParameter=Roots}"
+                          Command="{Binding NavigateCommand}" CommandParameter="Roots"
+                          AutomationProperties.Name="Locations, where Coppice looks">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <Path Data="{StaticResource IconMapPin}" Classes="icon" Margin="4,3,0,0" />
+                      <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="1">
+                        <TextBlock Classes="navTitle" Text="Locations" />
+                        <TextBlock Classes="navDetail" Text="{Binding RootsDetail}" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+
+                  <Button Classes="nav"
+                          Classes.active="{Binding CurrentPage, Converter={StaticResource Equals}, ConverterParameter=Problems}"
+                          Command="{Binding NavigateCommand}" CommandParameter="Problems"
+                          AutomationProperties.Name="Health findings">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <Path Data="{StaticResource IconActivity}" Classes="icon" Margin="4,3,0,0" />
+                      <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="1">
+                        <TextBlock Classes="navTitle" Text="Health" />
+                        <TextBlock Classes="navDetail" Text="{Binding ProblemsDetail}" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+                </StackPanel>
+
+              </StackPanel>
+            </ScrollViewer>
+
+            <Border Grid.Row="1" Classes="callout" Margin="0,16,0,0">
+              <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <Path Data="{StaticResource IconShieldCheck}" Classes="icon sm"
+                        Stroke="{DynamicResource AccentSoftTextBrush}" />
+                  <TextBlock Classes="label" Text="Safe by default" />
+                </StackPanel>
+                <TextBlock Classes="caption"
+                           Text="Unknown usage is never proposed. Apply moves items into quarantine; nothing is deleted." />
               </StackPanel>
             </Border>
-          </StackPanel>
-        </ScrollViewer>
-      </TabItem>
 
-      <!-- ============================== ITEMS ============================== -->
-      <TabItem Header="Items">
-        <Grid RowDefinitions="Auto,Auto,*" Margin="16">
-          <StackPanel Spacing="4">
-            <TextBlock Classes="h1" Text="Every package Coppice found" />
-            <TextBlock Classes="muted"
-                       Text="Usage is Referenced, Unreferenced, or Unknown. Unknown is never proposed. The decision shows what the current policy would do." />
-          </StackPanel>
-
-          <Grid Grid.Row="1" ColumnDefinitions="2*,110,90,90,110,*" Margin="0,16,0,6">
-            <TextBlock Text="PACKAGE" FontWeight="SemiBold" />
-            <TextBlock Grid.Column="1" Text="USAGE" FontWeight="SemiBold" />
-            <TextBlock Grid.Column="2" Text="RISK" FontWeight="SemiBold" />
-            <TextBlock Grid.Column="3" Text="SIZE" FontWeight="SemiBold" />
-            <TextBlock Grid.Column="4" Text="DECISION" FontWeight="SemiBold" />
-            <TextBlock Grid.Column="5" Text="WHY" FontWeight="SemiBold" />
           </Grid>
+        </Border>
 
-          <ListBox Grid.Row="2" ItemsSource="{Binding Items}"
-                   AutomationProperties.Name="Items">
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:ItemRow">
-                <Grid ColumnDefinitions="2*,110,90,90,110,*" Margin="0,4">
-                  <StackPanel>
-                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Version}" Classes="muted" />
-                  </StackPanel>
-                  <TextBlock Grid.Column="1" Text="{Binding Usage}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="2" Text="{Binding Risk}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="3" Text="{Binding Size}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="4" Text="{Binding Decision}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="5" Text="{Binding Reason}" Classes="muted"
-                             VerticalAlignment="Center" />
-                </Grid>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </Grid>
-      </TabItem>
+        <Grid Grid.Column="1">
+          <controls:PageHost Page="{Binding CurrentPage}" />
 
-      <!-- =============================== PLAN ============================== -->
-      <TabItem Header="Plan">
-        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="16">
-          <StackPanel Spacing="4">
-            <TextBlock Classes="h1" Text="Review the plan" />
-            <TextBlock Text="{Binding PlanSummary}" FontWeight="SemiBold" />
-            <TextBlock Classes="muted"
-                       Text="Every step is moved to quarantine, not deleted. Uncheck anything you want to keep this time." />
-          </StackPanel>
-
-          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,12,0,8">
-            <Button Content="Select all" Command="{Binding SelectAllStepsCommand}" />
-            <Button Content="Clear" Command="{Binding ClearStepsCommand}" />
-            <TextBlock Text="{Binding SelectedStepCount, StringFormat='{}{0} selected'}"
-                       VerticalAlignment="Center" />
-            <TextBlock Text="{Binding SelectedStepBytes, StringFormat='· {0}'}"
-                       VerticalAlignment="Center" />
-          </StackPanel>
-
-          <Grid Grid.Row="2" ColumnDefinitions="44,2*,110,*" Margin="0,0,0,6">
-            <TextBlock Grid.Column="1" Text="STEP" FontWeight="SemiBold" />
-            <TextBlock Grid.Column="2" Text="SIZE" FontWeight="SemiBold" />
-            <TextBlock Grid.Column="3" Text="WHY" FontWeight="SemiBold" />
-          </Grid>
-
-          <ListBox Grid.Row="3" ItemsSource="{Binding PlanSteps}"
-                   AutomationProperties.Name="Plan steps">
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:PlanStepRow">
-                <Grid ColumnDefinitions="44,2*,110,*" Margin="0,4">
-                  <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                            AutomationProperties.Name="Include step" />
-                  <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="2" Text="{Binding Size}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="3" Text="{Binding Reason}" Classes="muted"
-                             VerticalAlignment="Center" />
-                </Grid>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-
-          <Border Grid.Row="4" Classes="card" Margin="0,12,0,8">
-            <StackPanel Spacing="8">
-              <CheckBox Content="I understand the selected path steps are moved to quarantine."
-                        IsChecked="{Binding IsApplyConfirmed, Mode=TwoWay}"
-                        AutomationProperties.Name="Confirm apply" />
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Apply selected steps"
-                        Command="{Binding ApplyCommand}"
-                        AutomationProperties.Name="Apply selected steps" />
-                <Button Content="Cancel apply"
-                        Command="{Binding ApplyCancelCommand}"
-                        AutomationProperties.Name="Cancel apply" />
-                <ProgressBar Minimum="0" Maximum="1" Value="{Binding ApplyPercent}"
-                             Width="260" VerticalAlignment="Center" />
-              </StackPanel>
+          <Border Background="{DynamicResource AppBackgroundBrush}"
+                  IsVisible="{Binding IsInitializing}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Spacing="16" MaxWidth="380">
+              <Border Width="54" Height="54" CornerRadius="{StaticResource RadiusXl}"
+                      Background="{DynamicResource AccentBrush}" HorizontalAlignment="Center">
+                <Path Data="{StaticResource IconSprout}" Classes="icon"
+                      Stroke="{DynamicResource TextOnAccentBrush}" Width="30" Height="30"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <TextBlock Classes="sectionTitle" Text="Getting your workspace ready"
+                         HorizontalAlignment="Center" />
+              <TextBlock Classes="muted" TextAlignment="Center" Text="{Binding StartupStatus}" />
+              <ProgressBar IsIndeterminate="True" Width="260" HorizontalAlignment="Center"
+                           AutomationProperties.Name="Loading your last scan" />
+              <TextBlock Classes="caption" TextAlignment="Center"
+                         Text="This only reads your last scan. Nothing on your machine is changed." />
             </StackPanel>
           </Border>
         </Grid>
-      </TabItem>
 
-      <!-- =============================== APPLY ============================= -->
-      <TabItem Header="Apply">
-        <Grid RowDefinitions="Auto,Auto,*" Margin="16">
-          <StackPanel Spacing="4">
-            <TextBlock Classes="h1" Text="Apply progress" />
-            <TextBlock Classes="muted"
-                       Text="A cancel stops between steps, never mid-move. An interrupted run stays resumable from the journal." />
+      </Grid>
+
+      <!-- ================================= FOOTER ================================= -->
+      <Border Grid.Row="2" Background="{DynamicResource SidebarBrush}"
+              BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0"
+              Padding="20,9">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Border Classes="statusDot"
+                    Classes.success="{Binding StatusTone, Converter={StaticResource Equals}, ConverterParameter=Success}"
+                    Classes.warning="{Binding StatusTone, Converter={StaticResource Equals}, ConverterParameter=Warning}"
+                    Classes.error="{Binding StatusTone, Converter={StaticResource Equals}, ConverterParameter=Error}" />
+            <TextBlock Text="{Binding Status}" Classes="caption" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Status}"
+                       AutomationProperties.LiveSetting="Polite"
+                       AutomationProperties.Name="Status" />
           </StackPanel>
-
-          <StackPanel Grid.Row="1" Spacing="8" Margin="0,14,0,10">
-            <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
-            <ProgressBar Minimum="0" Maximum="1" Value="{Binding ApplyPercent}" Height="18" />
-          </StackPanel>
-
-          <ListBox Grid.Row="2" ItemsSource="{Binding ApplyLog}"
-                   AutomationProperties.Name="Apply progress" />
+          <TextBlock Grid.Column="1" Classes="caption" VerticalAlignment="Center"
+                     Text="Runs locally · no telemetry" Margin="16,0,0,0" />
         </Grid>
-      </TabItem>
+      </Border>
 
-      <!-- ============================= QUARANTINE ========================== -->
-      <TabItem Header="Quarantine">
-        <Grid RowDefinitions="Auto,*,Auto" Margin="16">
-          <StackPanel Spacing="4">
-            <TextBlock Classes="h1" Text="Quarantine" />
-            <TextBlock Classes="muted"
-                       Text="Restore re-checks the content hash, containment and destination occupancy before moving anything back." />
-          </StackPanel>
+    </Grid>
 
-          <ListBox Grid.Row="1" ItemsSource="{Binding QuarantineEntries}"
-                   SelectedItem="{Binding SelectedQuarantine, Mode=TwoWay}"
-                   Margin="0,14,0,10"
-                   AutomationProperties.Name="Quarantine entries">
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:QuarantineRow">
-                <Grid ColumnDefinitions="2*,90,180,*" Margin="0,4">
-                  <StackPanel>
-                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding OriginalPath}" Classes="muted" />
-                  </StackPanel>
-                  <TextBlock Grid.Column="1" Text="{Binding Size}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="2" Text="{Binding QuarantinedAt}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="3" Text="{Binding ContentState}" VerticalAlignment="Center"
-                             Margin="16,0,0,0" />
-                </Grid>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
+    <views:HelpOverlay IsVisible="{Binding IsHelpOpen}" />
 
-          <Border Grid.Row="2" Classes="card">
-            <StackPanel Spacing="8">
-              <CheckBox Content="I understand restore moves the selected item back to its original path."
-                        IsChecked="{Binding IsRestoreConfirmed, Mode=TwoWay}"
-                        AutomationProperties.Name="Confirm restore" />
-              <Button Content="Restore selected"
-                      Command="{Binding RestoreSelectedCommand}"
-                      HorizontalAlignment="Left"
-                      AutomationProperties.Name="Restore selected" />
-            </StackPanel>
-          </Border>
-        </Grid>
-      </TabItem>
-
-      <!-- =============================== ROOTS ============================= -->
-      <TabItem Header="Roots">
-        <Grid RowDefinitions="Auto,*" Margin="16">
-          <StackPanel Spacing="4">
-            <TextBlock Classes="h1" Text="Resolved locations" />
-            <TextBlock Classes="muted"
-                       Text="Where each location was found, how it was found, and whether it validated. Read-only." />
-          </StackPanel>
-
-          <ListBox Grid.Row="1" ItemsSource="{Binding Roots}" Margin="0,14,0,0"
-                   AutomationProperties.Name="Resolved roots">
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:RootRow">
-                <Grid ColumnDefinitions="160,2*,90,90,110,*" Margin="0,4">
-                  <TextBlock Text="{Binding LocationId}" FontWeight="SemiBold" />
-                  <TextBlock Grid.Column="1" Text="{Binding Path}" Classes="muted" />
-                  <TextBlock Grid.Column="2" Text="{Binding Via}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="3" Text="{Binding Role}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="4" Text="{Binding Validity}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="5" Text="{Binding Problem}" Classes="muted"
-                             VerticalAlignment="Center" />
-                </Grid>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </Grid>
-      </TabItem>
-
-      <!-- ============================= PROBLEMS ============================ -->
-      <TabItem Header="Problems">
-        <Grid RowDefinitions="Auto,*" Margin="16">
-          <StackPanel Spacing="4">
-            <TextBlock Classes="h1" Text="Health problems" />
-            <TextBlock Classes="muted"
-                       Text="Findings from the last scan. A problem is information, not a proposed removal." />
-          </StackPanel>
-
-          <ListBox Grid.Row="1" ItemsSource="{Binding Problems}" Margin="0,14,0,0"
-                   AutomationProperties.Name="Health problems">
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:ProblemRow">
-                <Grid ColumnDefinitions="180,90,2*,*" Margin="0,4">
-                  <TextBlock Text="{Binding Code}" FontWeight="SemiBold" />
-                  <TextBlock Grid.Column="1" Text="{Binding Severity}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="2" Text="{Binding Summary}" Classes="muted"
-                             VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="3" Text="{Binding Path}" Classes="muted"
-                             VerticalAlignment="Center" />
-                </Grid>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </Grid>
-      </TabItem>
-    </TabControl>
-  </Grid>
+  </Panel>
 </Window>
