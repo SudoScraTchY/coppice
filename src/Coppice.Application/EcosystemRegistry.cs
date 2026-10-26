@@ -69,6 +69,12 @@ public sealed class EcosystemRegistry
                 .Where(manifest => !manifest.IsValid)
                 .SelectMany(manifest => manifest.Validation.Errors.Select(error =>
                     $"[manifest {manifest.Path}] {error.ToDisplayString()}")),
+            .. manifests
+                .Where(manifest => manifest.IsValid
+                    && manifest.Id is not null
+                    && EcosystemCatalog.BuiltInEcosystemIds.Contains(manifest.Id))
+                .Select(manifest =>
+                    $"[manifest {manifest.Path}] shadows the built-in profile '{manifest.Id}'"),
         ];
 
         return new EcosystemRegistry(

@@ -115,6 +115,43 @@ public sealed class UserManifestTests
     }
 
     [Fact]
+    public void A_drop_in_with_a_built_in_id_shadows_it_and_is_reported()
+    {
+        var fs = new FakeFileSystem(OperatingSystemKind.Linux);
+        fs.AddFile($"{ManifestDirectory}/go.toml", """
+            schema = 1
+            id = "go"
+            display_name = "Go (user)"
+
+            [[location]]
+            id = "user-go-cache"
+            kind = "package-cache"
+            layout = "{name}/{version}"
+            resolve = "first"
+            sources = [{ via = "default", path = "/home/dev/.go-cache" }]
+            fingerprint = { required_markers = ["pkg"] }
+            risk_ceiling = "review"
+            """);
+
+        ConfigLoadResult config = ConfigLoader.Load("""
+            version = 1
+
+            [ecosystems]
+            trust_user_manifests = true
+            """);
+
+        EcosystemRegistry registry = EcosystemRegistry.CreateForConfig(
+            fs,
+            new FakeEnvironment(OperatingSystemKind.Linux),
+            config.Config!);
+
+        EcosystemPlugin go = Assert.IsType<EcosystemPlugin>(registry.FindEcosystem("go"));
+        Assert.Contains(go.Locations, location => location.Id == "user-go-cache");
+        Assert.DoesNotContain(go.Locations, location => location.Id == "go-mod-cache");
+        Assert.Contains(registry.ManifestErrors, error => error.Contains("shadows", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void An_invalid_drop_in_is_refused_with_diagnostics_not_silently_ignored()
     {
         FakeFileSystem fs = Fixture("""

@@ -57,14 +57,30 @@ public static class EcosystemCatalog
     internal static IReadOnlyList<EcosystemPlugin> CreatePlugins(
         IFileSystem fs,
         IEnumerable<EcosystemPlugin>? additional = null,
-        IReadOnlyList<ManifestLoadResult>? userManifests = null) =>
-    [
-        .. Definitions.Select(d => CreatePlugin(d, fs)),
-        .. (userManifests ?? [])
-            .Where(m => m.IsValid && m.Id is not null)
-            .Select(m => CreateUserPlugin(fs, m)),
-        .. additional ?? [],
-    ];
+        IReadOnlyList<ManifestLoadResult>? userManifests = null)
+    {
+        IReadOnlyList<ManifestLoadResult> users =
+        [
+            .. (userManifests ?? []).Where(manifest => manifest.IsValid && manifest.Id is not null),
+        ];
+
+        HashSet<string> userIds = new(
+            users.Select(manifest => manifest.Id!),
+            StringComparer.OrdinalIgnoreCase);
+        return
+        [
+            // A user manifest with a built-in id shadows that profile; the loader's documented rule.
+            .. Definitions
+                .Where(definition => !userIds.Contains(definition.Id))
+                .Select(definition => CreatePlugin(definition, fs)),
+            .. users.Select(manifest => CreateUserPlugin(fs, manifest)),
+            .. additional ?? [],
+        ];
+    }
+
+    /// <summary>The shipped ids, used to report a user manifest that shadows one.</summary>
+    internal static IReadOnlySet<string> BuiltInEcosystemIds =>
+        Definitions.Select(definition => definition.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// A manifest-only ecosystem. It has no compiled plugin, so the generic cache inventory is the
