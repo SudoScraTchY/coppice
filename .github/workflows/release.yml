@@ -282,9 +282,64 @@ jobs:
           path: assets
           retention-days: 7
 
+  smoke:
+    name: install smoke (linux-x64)
+    needs: [prepare, artifacts]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist-linux-x64
+          path: dist
+
+      # The human fresh-VM gate is still a person's pass. This is the machine half: the exact
+      # self-contained archive a user downloads, run with no .NET on PATH against a scratch cache and
+      # project. It proves the Linux artifact can read, plan, quarantine, restore and audit; a failure
+      # here blocks the Release job.
+      - name: Exercise the published self-contained binary
+        shell: bash
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/smoke"
+          mkdir -p "$work"/{tool,home,state,tmp,project/obj}
+          mkdir -p "$work/cache/pkg.a/1.0.0" "$work/cache/pkg.a/2.0.0"
+          printf 'one' > "$work/cache/pkg.a/1.0.0/payload.bin"
+          printf 'two' > "$work/cache/pkg.a/2.0.0/payload.bin"
+          printf '<Project Sdk="Microsoft.NET.Sdk"></Project>' > "$work/project/app.csproj"
+          printf '{"targets":{"net10.0":{"pkg.a/2.0.0":{"type":"package"}}}}' \
+            > "$work/project/obj/project.assets.json"
+
+          tar -xzf "dist/coppice-$VERSION-linux-x64-self-contained.tar.gz" -C "$work/tool"
+          export COPPICE="$work/tool/coppice"
+          export HOME="$work/home" XDG_DATA_HOME="$work/state" TMPDIR="$work/tmp" \
+            NUGET_PACKAGES="$work/cache" PATH=/usr/bin:/bin
+
+          "$COPPICE" version
+          "$COPPICE" scan --projects "$work/project" --json > "$work/scan.json"
+          grep -q '"usage": "Unreferenced"' "$work/scan.json"
+          "$COPPICE" plan --keep-latest 1 --out "$work/plan.json" --json > "$work/plan-report.json"
+          grep -q '"stepCount": 1' "$work/plan-report.json"
+          "$COPPICE" apply --plan "$work/plan.json" --yes --json > "$work/apply.json"
+          grep -q '"status": "Completed"' "$work/apply.json"
+          "$COPPICE" quarantine list --json > "$work/quarantine.json"
+          grep -q '"count": 1' "$work/quarantine.json"
+          id="$(grep -o '"id": "[a-f0-9]*"' "$work/quarantine.json" | head -1 | cut -d'"' -f4)"
+          "$COPPICE" quarantine restore "$id" --yes --json > "$work/restore.json"
+          grep -q '"restored": true' "$work/restore.json"
+          "$COPPICE" audit verify | tee "$work/audit.txt"
+          grep -q 'verified:' "$work/audit.txt"
+          test -f "$work/cache/pkg.a/1.0.0/payload.bin"
+          test -f "$work/cache/pkg.a/2.0.0/payload.bin"
+          echo "linux-x64 self-contained install smoke passed"
+
   release:
     name: publish the release
-    needs: [prepare, artifacts, package]
+    needs: [prepare, artifacts, package, smoke]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
