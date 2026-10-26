@@ -58,6 +58,7 @@ public sealed class PageHost : ContentControl
                 PageKey.Items => new ItemsView(),
                 PageKey.Roots => new RootsView(),
                 PageKey.Problems => new ProblemsView(),
+                PageKey.History => new HistoryView(),
                 _ => new SetupView(),
             };
 

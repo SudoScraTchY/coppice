@@ -43,6 +43,7 @@ public static class CoppiceApp
             ["apply"] = RunApply,
             ["quarantine"] = RunQuarantine,
             ["audit"] = RunAudit,
+            ["history"] = RunHistory,
             ["tui"] = RunTui,
             ["completions"] = RunCompletions,
         };
@@ -127,6 +128,10 @@ public static class CoppiceApp
             new FileSystemStateStore(new PhysicalFileSystem(), new SystemEnvironment()),
             new FileAppendLog(new SystemEnvironment()),
             new SystemApplyConsole())
+            .Run(args);
+
+    private static int RunHistory(string[] args) =>
+        new HistoryCommand(new FileSystemStateStore(new PhysicalFileSystem(), new SystemEnvironment()))
             .Run(args);
 
     private static int RunTui(string[] args) => Tui.TuiCommand.RunSystem(args);
@@ -361,6 +366,8 @@ public static class CoppiceApp
         Console.WriteLine("                      inspect, restore or permanently discard quarantined items");
         Console.WriteLine("  audit  show|verify [--json]");
         Console.WriteLine("                      show the mutation log, or replay it against the quarantine index");
+        Console.WriteLine("  history [--limit <n>] [--json]");
+        Console.WriteLine("                      show recent scans and how the caches grew since the previous one");
         Console.WriteLine("  tui    [--once] [--no-color] [--projects <path>]...");
         Console.WriteLine("                      keyboard-driven screens: dashboard, roots, items, problems, plan, apply, quarantine");
         Console.WriteLine("  completions <powershell|bash|zsh|fish>");

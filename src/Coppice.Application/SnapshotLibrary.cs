@@ -25,4 +25,33 @@ public sealed class SnapshotLibrary
         SnapshotLoadResult loaded = await _store.LoadAsync(newest, cancellationToken).ConfigureAwait(false);
         return loaded.Ok ? loaded.Snapshot : null;
     }
+
+    /// <summary>
+    /// The newest <paramref name="limit"/> snapshots, oldest first, with each one's diff against the
+    /// previous. A stored snapshot that cannot be loaded (old schema, truncated file) is named in
+    /// <see cref="SnapshotHistory.SkippedSnapshotIds"/> instead of failing the whole report: one bad
+    /// file must not erase the history around it.
+    /// </summary>
+    public async Task<SnapshotHistory> LoadHistoryAsync(int limit, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+
+        var loaded = new List<Snapshot>(limit);
+        var skipped = new List<string>();
+
+        foreach (string id in _store.ListIds(limit))
+        {
+            SnapshotLoadResult result = await _store.LoadAsync(id, cancellationToken).ConfigureAwait(false);
+            if (result.Ok)
+            {
+                loaded.Add(result.Snapshot!);
+            }
+            else
+            {
+                skipped.Add(id);
+            }
+        }
+
+        return SnapshotHistory.Build(loaded, skipped);
+    }
 }

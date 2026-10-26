@@ -303,6 +303,8 @@ public sealed class ReadOnlyAuditTests
         // or --yes). None of these is a new mutation path: the pinned types remain the only ones that call
         // a filesystem mutator, which the tests above enforce independently of this verb list.
         // T-042 widens it for `completions`, which prints a script to stdout and reads nothing.
+        // T-041 widens it for `history`, which reads stored snapshots and prints their deltas; it
+        // opens no file for writing and goes through the state store's read methods only.
         string[] forbidden = ["clean", "delete", "remove", "prune", "purge", "uninstall", "rm"];
 
         string[] dispatched = CommandVerbs(typeof(Coppice.Cli.CoppiceApp));
@@ -313,7 +315,7 @@ public sealed class ReadOnlyAuditTests
         }
 
         Assert.Equal(
-            ["apply", "audit", "completions", "doctor", "plan", "quarantine", "roots", "scan", "tui"],
+            ["apply", "audit", "completions", "doctor", "history", "plan", "quarantine", "roots", "scan", "tui"],
             dispatched.Order(StringComparer.Ordinal));
     }
 

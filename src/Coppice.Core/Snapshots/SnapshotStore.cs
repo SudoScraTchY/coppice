@@ -131,6 +131,17 @@ public sealed class SnapshotStore
         .ThenByDescending(id => id, StringComparer.Ordinal)];
 
     /// <summary>
+    /// The newest <paramref name="limit"/> ids, in the same order as <see cref="ListIds()"/>. A trend
+    /// report asks for a bounded window rather than the whole history, so this is the query it needs.
+    /// </summary>
+    public IReadOnlyList<string> ListIds(int limit)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+
+        return [.. ListIds().Take(limit)];
+    }
+
+    /// <summary>
     /// The timestamp encoded in a canonical snapshot id, or <see cref="DateTimeOffset.MinValue"/> for
     /// an id that does not carry one (a user-named or hand-written snapshot).
     /// </summary>

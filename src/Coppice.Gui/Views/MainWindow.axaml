@@ -241,6 +241,19 @@
                       </StackPanel>
                     </Grid>
                   </Button>
+
+                  <Button Classes="nav"
+                          Classes.active="{Binding CurrentPage, Converter={StaticResource Equals}, ConverterParameter=History}"
+                          Command="{Binding NavigateCommand}" CommandParameter="History"
+                          AutomationProperties.Name="History, how the caches grew">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <Path Data="{StaticResource IconClock}" Classes="icon" Margin="4,3,0,0" />
+                      <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="1">
+                        <TextBlock Classes="navTitle" Text="History" />
+                        <TextBlock Classes="navDetail" Text="{Binding HistoryDetail}" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
                 </StackPanel>
 
               </StackPanel>

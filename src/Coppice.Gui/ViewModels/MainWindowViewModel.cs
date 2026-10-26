@@ -29,6 +29,7 @@ public enum PageKey
     Items,
     Roots,
     Problems,
+    History,
 }
 
 public enum StatusTone
@@ -150,6 +151,30 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RefreshQuarantineCommand))]
     private bool _isQuarantineLoading;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(RefreshHistoryCommand))]
+    private bool _isHistoryLoading;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HistoryDetail))]
+    private bool _hasHistory;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HistoryDetail))]
+    private int _historyCount;
+
+    [ObservableProperty]
+    private string _historySummary = "No snapshots yet. Run a scan to start a history.";
+
+    [ObservableProperty]
+    private string _historyLatest = "Scan once to create a baseline; scan again to see growth.";
+
+    [ObservableProperty]
+    private IReadOnlyList<HistoryTrendPoint> _historyPoints = [];
+
+    [ObservableProperty]
+    private IReadOnlyList<HistoryTrendPoint> _historyRows = [];
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(NavigateCommand))]
@@ -323,6 +348,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
         ? "0 item(s) in quarantine"
         : string.Create(CultureInfo.InvariantCulture, $"{QuarantineCount} item(s) in quarantine · restore is hash-checked");
 
+    public string HistoryDetail => !HasHistory
+        ? "Growth over time"
+        : string.Create(CultureInfo.InvariantCulture, $"{HistoryCount} snapshot(s)");
+
     public string ReviewCtaLabel => HasPlan ? "Review the plan" : "See what was kept";
 
     public bool HasQuarantineEntries => QuarantineCount > 0;
@@ -436,6 +465,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
                 break;
             case PageKey.Quarantine:
                 _ = LoadQuarantineAsync(showSpinner: true, CancellationToken.None);
+                break;
+            case PageKey.History:
+                _ = LoadHistoryAsync(showSpinner: true, CancellationToken.None);
                 break;
         }
     }
@@ -728,6 +760,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     private bool CanRefreshQuarantine() => !IsQuarantineLoading;
 
+    [RelayCommand(CanExecute = nameof(CanRefreshHistory))]
+    private Task RefreshHistoryAsync() => LoadHistoryAsync(showSpinner: true, CancellationToken.None);
+
+    private bool CanRefreshHistory() => !IsHistoryLoading;
+
     [RelayCommand]
     private void ToggleHelp()
     {
@@ -924,6 +961,45 @@ public sealed partial class MainWindowViewModel : ObservableObject
         finally
         {
             IsQuarantineLoading = false;
+        }
+    }
+
+    /// <summary>How many stored scans the history page loads. One window for the chart and the list.</summary>
+    private const int HistoryLimit = 12;
+
+    private async Task LoadHistoryAsync(bool showSpinner, CancellationToken cancellationToken)
+    {
+        if (showSpinner)
+        {
+            IsHistoryLoading = true;
+        }
+
+        try
+        {
+            SnapshotHistory history = await Task.Run(
+                () => _services.Snapshots.LoadHistoryAsync(HistoryLimit, cancellationToken),
+                cancellationToken);
+
+            HistoryTrend trend = HistoryTrend.From(history);
+            HistoryPoints = trend.Points;
+            HistoryRows = trend.Recent;
+            HistoryCount = trend.SnapshotCount;
+            HasHistory = !trend.IsEmpty;
+            HistorySummary = trend.Summary;
+            HistoryLatest = trend.LatestSummary;
+        }
+        catch (OperationCanceledException)
+        {
+            // A replaced request is not an error.
+        }
+        catch (Exception ex)
+        {
+            HistorySummary = "History could not be read.";
+            SetStatus($"History failed: {ex.Message}", StatusTone.Error);
+        }
+        finally
+        {
+            IsHistoryLoading = false;
         }
     }
 
