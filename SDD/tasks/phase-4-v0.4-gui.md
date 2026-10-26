@@ -133,9 +133,9 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - Keep the egress canary enabled and named in the TRX.
 
 **Acceptance**
-- [ ] E-7 passes and is named in the escape suite
-- [ ] The escape job runs E-1…E-12 at 100k cases, including E-10/E-12
-- [ ] The CI TRX shows every escape test executed, not silently filtered out
+- [x] E-7 passes and is named in the escape suite
+- [x] The escape job runs E-1…E-12 at 100k cases, including E-10/E-12
+- [x] The CI TRX shows every escape test executed, not silently filtered out
 
 ### T-055 · SDD reconciliation and agent skills
 **Refs** 12-roadmap, 11-testing, 07-cli-tui · **Depends** T-018 · **Effort** M
