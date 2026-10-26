@@ -64,6 +64,7 @@ public sealed class DoctorService
     private readonly OperatingSystemKind _os;
     private readonly EcosystemRegistry _registry;
     private readonly IReadOnlyDictionary<string, string> _pins;
+    private readonly TimeSpan _probeBudget;
 
     public DoctorService(IFileSystem fs, IProcessRunner runner, IEnvironment env)
         : this(fs, runner, env, env.OS, registry: null)
@@ -75,7 +76,7 @@ public sealed class DoctorService
     {
     }
 
-    public DoctorService(IFileSystem fs, IProcessRunner runner, IEnvironment env, OperatingSystemKind os, EcosystemRegistry? registry, IReadOnlyDictionary<string, string>? pins = null)
+    public DoctorService(IFileSystem fs, IProcessRunner runner, IEnvironment env, OperatingSystemKind os, EcosystemRegistry? registry, IReadOnlyDictionary<string, string>? pins = null, TimeSpan? probeBudget = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(runner);
@@ -87,6 +88,7 @@ public sealed class DoctorService
         _os = os;
         _registry = registry ?? EcosystemRegistry.CreateDefault(fs);
         _pins = pins ?? new Dictionary<string, string>(StringComparer.Ordinal);
+        _probeBudget = probeBudget ?? TimeSpan.FromSeconds(4);
     }
 
     /// <summary>The machine's home directory, used only to abbreviate paths for display.</summary>
@@ -145,11 +147,36 @@ public sealed class DoctorService
         var roots = new List<RootReport>();
         var issues = new List<string>();
 
+        // NFR-04: doctor is an interactive health check. A per-probe timeout is not a total budget:
+        // several hung tools can each consume their 2 s and still exceed 5 s. This linked budget bounds
+        // the whole probe phase. Sizing is caller-cancellable and runs only for `roots`.
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        budget.CancelAfter(_probeBudget);
+        bool budgetExhausted = false;
+
         foreach (EcosystemLocation location in _registry.Locations.Where(l => l.AppliesTo(_os)))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            LocationSpec spec = BuildSpec(location, cancellationToken);
+            if (budget.IsCancellationRequested)
+            {
+                budgetExhausted = true;
+                issues.Add("[doctor] probe budget exhausted; the remaining locations were not probed");
+                break;
+            }
+
+            LocationSpec spec;
+            try
+            {
+                spec = BuildSpec(location, budget.Token);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                budgetExhausted = true;
+                issues.Add($"[{location.Id}] probe budget exhausted; this location and the remaining probes were not resolved");
+                break;
+            }
+
             ResolutionOutcome outcome = engine.Resolve(spec, validator.AsPredicate(FingerprintFor(location)));
 
             issues.AddRange(outcome.Issues.Select(i => $"[{location.Id}] {i.Code}: {i.Summary}"));
@@ -198,8 +225,24 @@ public sealed class DoctorService
 
         // FR-01: presence is its own question, answered by the profile's declared probe — not by
         // whether a cache happens to exist. The registry supplies both the list and the descriptors.
-        IReadOnlyList<EcosystemDetectionReport> detection =
-            new EcosystemDetector(_fs, _runner, _env).Detect(_registry.Ecosystems, cancellationToken);
+        IReadOnlyList<EcosystemDetectionReport> detection;
+        if (budgetExhausted)
+        {
+            detection = [];
+            issues.Add("[ecosystems] detection skipped: the doctor probe budget was exhausted");
+        }
+        else
+        {
+            try
+            {
+                detection = new EcosystemDetector(_fs, _runner, _env).Detect(_registry.Ecosystems, budget.Token);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                detection = [];
+                issues.Add("[ecosystems] detection budget exhausted; presence was not answered");
+            }
+        }
 
         return new DoctorReport(_os, roots, issues, ecosystems)
         {

@@ -33,6 +33,15 @@ public sealed class FakeFileSystem : IFileSystem
 
     private readonly TaskCompletionSource _firstEnumeration = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+    /// <summary>
+    /// Enumerate through a per-parent child index instead of scanning every node. The 30k-item perf
+    /// fixture sets this after building its tree; the default path stays the exact order-preserving
+    /// scan the other tests rely on. Do not mutate the tree after enabling it.
+    /// </summary>
+    public bool UseFastEnumeration { get; set; }
+
+    private Dictionary<string, List<string>>? _fastChildren;
+
     /// <summary>Completes when the first enumeration starts, so a test knows the slow phase is running.</summary>
     public Task FirstEnumeration => _firstEnumeration.Task;
 
@@ -43,7 +52,15 @@ public sealed class FakeFileSystem : IFileSystem
         string? FileIdentity,
         LockState Lock,
         bool ReadOnly,
-        DateTimeOffset LastWrite);
+        DateTimeOffset LastWrite)
+    {
+        /// <summary>
+        /// A directory whose size is known without materialising its bytes. Used by the 30k-item perf
+        /// fixture: 30 GB of real content would OOM the test host, and the measurement is about scan
+        /// enumeration, not disk throughput.
+        /// </summary>
+        public ulong? LogicalSize { get; init; }
+    }
 
     // ---- Fixture construction ----
 
@@ -104,6 +121,28 @@ public sealed class FakeFileSystem : IFileSystem
         }
 
         AddFileOfSize(Normalize(full + _separator + "payload.bin"), sizeInBytes);
+        return this;
+    }
+
+    /// <summary>
+    /// A directory with a recorded logical size but no payload bytes. The 30k-item perf fixture uses
+    /// this so 30 GB of logical content costs 30k dictionary entries, not 30 GB of RAM.
+    /// </summary>
+    public FakeFileSystem AddSparseDirectoryOfSize(string path, ulong sizeInBytes, LockState lockState = LockState.Unlocked, DateTimeOffset? lastWrite = null)
+    {
+        string full = Normalize(path);
+        _nodes[full] = new Node(
+            EntryKind.Directory,
+            null,
+            null,
+            null,
+            lockState,
+            false,
+            lastWrite ?? DateTimeOffset.UnixEpoch)
+        {
+            LogicalSize = sizeInBytes,
+        };
+        EnsureParentDirectories(full);
         return this;
     }
 
@@ -177,6 +216,15 @@ public sealed class FakeFileSystem : IFileSystem
         }
 
         string prefix = root.EndsWith(_separator) ? root : root + _separator;
+
+        if (UseFastEnumeration)
+        {
+            _fastChildren ??= BuildFastChildren();
+            var fastResults = new List<FileEntry>();
+            WalkFast(root, level: 1, options, fastResults);
+            return fastResults;
+        }
+
         var results = new List<FileEntry>();
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { root };
 
@@ -212,6 +260,63 @@ public sealed class FakeFileSystem : IFileSystem
         }
 
         return results;
+    }
+
+    private Dictionary<string, List<string>> BuildFastChildren()
+    {
+        var children = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (string full in _nodes.Keys)
+        {
+            string? parent = ParentOf(full);
+            if (parent is null)
+            {
+                continue;
+            }
+
+            if (!children.TryGetValue(parent, out List<string>? list))
+            {
+                list = [];
+                children[parent] = list;
+            }
+
+            list.Add(full);
+        }
+
+        foreach (List<string> list in children.Values)
+        {
+            list.Sort(StringComparer.Ordinal);
+        }
+
+        return children;
+    }
+
+    private void WalkFast(string directory, int level, EnumerationRequest options, List<FileEntry> results)
+    {
+        if (!_fastChildren!.TryGetValue(directory, out List<string>? children))
+        {
+            return;
+        }
+
+        foreach (string full in children)
+        {
+            FileEntry? entry = GetEntry(full);
+            if (entry is null || (entry.IsLink && !options.IncludeLinks))
+            {
+                continue;
+            }
+
+            if (options.MaxDepth is int max && level > max)
+            {
+                continue;
+            }
+
+            results.Add(entry);
+
+            if (entry.Kind == EntryKind.Directory && (options.MaxDepth is not int limit || level < limit))
+            {
+                WalkFast(full, level + 1, options, results);
+            }
+        }
     }
 
     public FileEntry? GetEntry(string path)
@@ -313,6 +418,11 @@ public sealed class FakeFileSystem : IFileSystem
         if (node.Kind == EntryKind.File)
         {
             return (ulong)node.Content!.LongLength;
+        }
+
+        if (node.LogicalSize is ulong logical)
+        {
+            return logical;
         }
 
         string prefix = full.EndsWith(_separator) ? full : full + _separator;
