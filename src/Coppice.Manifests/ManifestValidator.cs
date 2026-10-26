@@ -77,6 +77,8 @@ public static class ManifestValidator
         var locations = new List<LocationRecord>();
         IReadOnlyList<TomlTable> declared = root.GetTableArray("location");
 
+        ManifestDetection detection = ValidateDetection(root, sourceName, errors, warnings);
+
         if (declared.Count == 0)
         {
             errors.Add(new ManifestError(
@@ -105,7 +107,101 @@ public static class ManifestValidator
             ValidateLocation(table, where, errors, warnings, locations);
         }
 
-        return new ManifestValidationResult(errors, warnings, schemaVersion, id, displayName, locations, origin, sourceName);
+        return new ManifestValidationResult(errors, warnings, schemaVersion, id, displayName, locations, origin, sourceName)
+        {
+            Detection = detection,
+        };
+    }
+
+    /// <summary>
+    /// Reads the optional <c>[detection]</c> table (FR-01). Both keys are local evidence: a version
+    /// command and/or a marker path. The table is flat on purpose — a manifest declares how to ask
+    /// "are you installed?", not a resolution chain, and a probe can never name a cache.
+    /// </summary>
+    private static ManifestDetection ValidateDetection(
+        TomlTable root,
+        string sourceName,
+        List<ManifestError> errors,
+        List<ManifestWarning> warnings)
+    {
+        if (!root.Contains("detection"))
+        {
+            return new ManifestDetection();
+        }
+
+        TomlTable? table = root.GetTable("detection");
+        if (table is null)
+        {
+            errors.Add(new ManifestError(
+                "detection",
+                sourceName,
+                $"expected a table, found {root.Describe("detection")}",
+                "write `[detection]` with `tool = \"...\"` and/or `marker = \"...\"`"));
+            return new ManifestDetection();
+        }
+
+        foreach (string key in table.Keys)
+        {
+            if (key is not ("tool" or "marker"))
+            {
+                errors.Add(new ManifestError(
+                    $"detection.{key}",
+                    sourceName,
+                    "is not a detection key",
+                    "detection accepts only `tool` (a version command) and `marker` (a path that exists)"));
+            }
+        }
+
+        string? tool = ReadDetectionValue(table, "tool", sourceName, errors);
+        string? marker = ReadDetectionValue(table, "marker", sourceName, errors);
+
+        if (!string.IsNullOrWhiteSpace(tool)
+            && (tool.Contains('\n', StringComparison.Ordinal) || tool.Contains('\r', StringComparison.Ordinal)))
+        {
+            errors.Add(new ManifestError(
+                "detection.tool",
+                sourceName,
+                "must be a single command line",
+                "split the probe into one executable and its arguments, e.g. \"go version\""));
+            tool = null;
+        }
+
+        var detection = new ManifestDetection { Tool = tool, Marker = marker };
+
+        if (table.Keys.Count > 0 && !detection.IsDeclared)
+        {
+            warnings.Add(new ManifestWarning(
+                "detection",
+                sourceName,
+                "declares neither `tool` nor `marker`, so the ecosystem can only be reported absent"));
+        }
+
+        return detection;
+    }
+
+    private static string? ReadDetectionValue(
+        TomlTable table,
+        string key,
+        string sourceName,
+        List<ManifestError> errors)
+    {
+        if (!table.Has(key))
+        {
+            return null;
+        }
+
+        string? value = table.GetString(key);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            errors.Add(new ManifestError(
+                $"detection.{key}",
+                sourceName,
+                "present but empty",
+                $"give the {key}, or remove the key"));
+            return null;
+        }
+
+        return value.Trim();
     }
 
     private static void ValidateLocation(

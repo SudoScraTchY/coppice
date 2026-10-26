@@ -14,6 +14,11 @@ schema = 1
 id = "go"
 display_name = "Go"
 
+# FR-01: how this ecosystem proves it is installed. `go version` is the one command every Go
+# distribution answers, and its answer is local evidence only — it never names a cache.
+[detection]
+tool = "go version"
+
 [[location]]
 id = "go-mod-cache"
 kind = "package-cache"

@@ -180,7 +180,10 @@ public static class CoppiceApp
     private static int RunRoots(CommandFlags flags)
     {
         var service = BuildService();
-        DoctorReport report = service.Inspect();
+
+        // `roots` is the one verb that pays for sizing: the answer "how much is this candidate?" is
+        // the reason the command is run. `doctor` stays inside its budget and reports no sizes.
+        DoctorReport report = service.InspectWithSizes();
 
         if (flags.Json)
         {
@@ -188,30 +191,7 @@ public static class CoppiceApp
             return ExitSuccess;
         }
 
-        Console.Out.WriteLine("coppice roots");
-        Console.Out.WriteLine();
-        Console.Out.WriteLine(TextReport.RootHeader());
-        Console.Out.WriteLine(new string('-', 100));
-
-        foreach (RootReport root in report.Roots)
-        {
-            Console.Out.WriteLine(TextReport.RootRow(root.LocationId, root.Root, service.HomeDirectory));
-            Console.Out.WriteLine(
-                $"      via: {TextReport.Via(root.Root.Via)}"
-                + $"{(root.Root.ViaDetail is null ? string.Empty : $" ({root.Root.ViaDetail})")}"
-                + $", validity: {TextReport.Validity(root.Root.Validity)}"
-                + $", role: {TextReport.Role(root.Root.Role)}");
-
-            // Named explicitly here as well as marked in the table: `roots` is the command a user runs when
-            // they want to know WHY a path was chosen, which is exactly the question a guessed path invites.
-            if (TextReport.ConfidenceNote(root.Root) is { } note)
-            {
-                Console.Out.WriteLine($"      confidence: LOW — {note}");
-            }
-        }
-
-        Console.Out.WriteLine();
-        Console.Out.WriteLine($"{report.Roots.Count} location(s). This command only reads; it changes nothing.");
+        Console.Out.Write(RootsText.ToText(report, service.HomeDirectory));
         return ExitSuccess;
     }
 
@@ -240,7 +220,13 @@ public static class CoppiceApp
             clock: null,
             registry: service.Registry);
         ScanReport scanReport = scanService
-            .RunAsync(roots, flags.ResolveProjectRoots(config))
+            .RunAsync(
+                roots,
+                flags.ResolveProjectRoots(config),
+                CancellationToken.None,
+                // doctor already probed each ecosystem; pass its answers instead of running every
+                // version command twice in one command invocation.
+                report.Detection)
             .GetAwaiter().GetResult();
 
         if (flags.Json)
@@ -255,6 +241,20 @@ public static class CoppiceApp
         Console.Out.WriteLine($"os: {scanReport.OS}");
         Console.Out.WriteLine($"projects: {scanReport.ProjectCount}");
         Console.Out.WriteLine($"ecosystems: {string.Join(", ", scanReport.Ecosystems)}");
+
+        if (scanReport.Detection.Count > 0)
+        {
+            Console.Out.WriteLine();
+            Console.Out.WriteLine("ECOSYSTEM PRESENCE:");
+            Console.Out.WriteLine(TextReport.DetectionHeader());
+            Console.Out.WriteLine(new string('-', 100));
+
+            foreach (EcosystemDetectionReport detection in scanReport.Detection)
+            {
+                Console.Out.WriteLine(TextReport.DetectionRow(detection));
+            }
+        }
+
         Console.Out.WriteLine();
         Console.Out.WriteLine(TextReport.UsageHeader());
         Console.Out.WriteLine(new string('-', 60));
@@ -349,8 +349,8 @@ public static class CoppiceApp
         Console.WriteLine("  Harvest what regrows. Never touch the root.");
         Console.WriteLine();
         Console.WriteLine("Commands:");
-        Console.WriteLine("  doctor [--json]     resolve locations and report what was found");
-        Console.WriteLine("  roots  [--json]     show each location, how it was resolved, and its validity");
+        Console.WriteLine("  doctor [--json]     resolve locations, prove each ecosystem's presence, report health");
+        Console.WriteLine("  roots  [--json]     print EVERY candidate location: via, role, validity, owner, path and size");
         Console.WriteLine("  scan   [--projects <path>]... [--json]");
         Console.WriteLine("                      inventory the caches and store a snapshot; project roots make usage provable");
         Console.WriteLine("  plan   [--policy <preset>] [--keep-latest <n>] [--out <file>] [--json]");

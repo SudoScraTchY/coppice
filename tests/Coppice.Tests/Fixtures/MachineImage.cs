@@ -318,6 +318,13 @@ public sealed class MachineImage
         char s = os == OperatingSystemKind.Windows ? '\\' : '/';
         var outputs = new Dictionary<string, string>(StringComparer.Ordinal)
         {
+            // FR-01 detection probes. A fixture machine is an installed machine, so every tool that
+            // the scan asks "are you here?" answers with a version.
+            ["dotnet --version"] = (sdkVersions.Count > 0 ? sdkVersions[0] : "10.0.100") + "\n",
+            ["go version"] = "go version go1.22.1 fixture/amd64\n",
+            ["rustc --version"] = "rustc 1.79.0 (129f3b996 2024-06-10)\n",
+            ["node --version"] = "v20.15.0\n",
+
             ["dotnet --list-sdks"] = string.Join('\n', sdkVersions.Select(v => $"{v} [{dotnetRoot}{s}sdk]")) + "\n",
 
             ["dotnet --list-runtimes"] =
@@ -490,7 +497,9 @@ public static class FixtureGenerator
         new FakeProcessRunner().Respond("dotnet", request => Match(outputs, "dotnet", request.Arguments))
             .Respond("go", request => Match(outputs, "go", request.Arguments))
             .Respond("npm", request => Match(outputs, "npm", request.Arguments))
-            .Respond("rustup", request => Match(outputs, "rustup", request.Arguments));
+            .Respond("node", request => Match(outputs, "node", request.Arguments))
+            .Respond("rustup", request => Match(outputs, "rustup", request.Arguments))
+            .Respond("rustc", request => Match(outputs, "rustc", request.Arguments));
 
     private static Ports.ProcessResult Match(
         IReadOnlyDictionary<string, string> outputs,

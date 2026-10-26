@@ -37,7 +37,13 @@ public sealed record ResolvedRoot(
     RootConfidence Confidence = RootConfidence.Full,
     string? ConfidenceDetail = null)
 {
-    public bool IsCleanable => Validity == RootValidity.Ok;
+    /// <summary>
+    /// The cleanability floor: a root is cleanable only when it validated AND is in use. An inactive
+    /// root is a known folder nobody points at — often the biggest win, and never something a plan
+    /// may step on without the user promoting it (LR-5). The role is part of the floor rather than a
+    /// filter each caller remembers, so a report, a plan binder and a GUI cannot disagree.
+    /// </summary>
+    public bool IsCleanable => Validity == RootValidity.Ok && Role != RootRole.Inactive;
 
     /// <summary>True when this root was located without asking a tool, and the report should say so.</summary>
     public bool IsLowConfidence => Confidence == RootConfidence.Lowered;

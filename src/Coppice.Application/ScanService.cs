@@ -24,7 +24,15 @@ public sealed record ScanReport(
     UsageBreakdown Usage,
     IReadOnlyList<string> Ecosystems,
     int ProjectCount,
-    string[] OnboardingHints);
+    string[] OnboardingHints)
+{
+    /// <summary>
+    /// Every declared ecosystem's presence and the evidence for it (FR-01). An ecosystem can be
+    /// absent here and still have items: a cache outlives the toolchain that made it, and saying so
+    /// is more useful than pretending the install is healthy.
+    /// </summary>
+    public IReadOnlyList<EcosystemDetectionReport> Detection { get; init; } = [];
+}
 
 /// <summary>
 /// Runs a full read-only scan and stores it (T-015), across every registered ecosystem (T-048).
@@ -81,10 +89,22 @@ public sealed class ScanService
     public Task<ScanReport> RunAsync(IReadOnlyList<Ports.ScanRoot> roots, IReadOnlyList<string> projectRoots) =>
         RunAsync(roots, projectRoots, CancellationToken.None);
 
+    public Task<ScanReport> RunAsync(
+        IReadOnlyList<Ports.ScanRoot> roots,
+        IReadOnlyList<string> projectRoots,
+        CancellationToken cancellationToken) =>
+        RunAsync(roots, projectRoots, cancellationToken, detection: null);
+
+    /// <summary>
+    /// The full form. <paramref name="detection"/> lets a caller that already probed (the CLI asks
+    /// doctor for the roots it scans) pass the answers instead of spawning every version command a
+    /// second time. Null means "ask the registry yourself", which is what every non-CLI caller does.
+    /// </summary>
     public async Task<ScanReport> RunAsync(
         IReadOnlyList<Ports.ScanRoot> roots,
         IReadOnlyList<string> projectRoots,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyList<EcosystemDetectionReport>? detection)
     {
         ArgumentNullException.ThrowIfNull(roots);
         ArgumentNullException.ThrowIfNull(projectRoots);
@@ -181,6 +201,12 @@ public sealed class ScanService
 
         string[] hints = BuildOnboardingHints(projects, ordered);
 
+        // FR-01: presence is answered from the registry's own descriptors, not from the items this
+        // scan happened to find. A cache without its toolchain is exactly the case the report must
+        // be able to say out loud.
+        IReadOnlyList<EcosystemDetectionReport> presence = detection
+            ?? new EcosystemDetector(_fs, _runner, _env).Detect(_registry.Ecosystems, cancellationToken);
+
         return new ScanReport(
             snapshot.SnapshotId,
             os,
@@ -190,7 +216,10 @@ public sealed class ScanService
             UsageBreakdown.FromItems(ordered),
             ecosystems,
             projects.Projects.Count,
-            hints);
+            hints)
+        {
+            Detection = presence,
+        };
     }
 
     /// <summary>

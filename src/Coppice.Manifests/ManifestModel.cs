@@ -25,10 +25,35 @@ public sealed record EcosystemManifest
 
     public required IReadOnlyList<LocationSpec> Locations { get; init; }
 
+    /// <summary>How this ecosystem declares its own presence (FR-01).</summary>
+    public ManifestDetection Detection { get; init; } = new();
+
     /// <summary>Where this manifest came from, for the doctor report and shadowing warnings.</summary>
     public ManifestOrigin Origin { get; init; }
 
     public string Display => DisplayName.Length == 0 ? Id : DisplayName;
+}
+
+/// <summary>
+/// How a manifest says "this ecosystem is installed here" (FR-01).
+/// <para>
+/// A detection answer is local evidence only: a tool's own version command, or a marker path the
+/// ecosystem always creates. It is deliberately NOT a location source — a detection probe never
+/// names a cache and can never grant a delete right. The registry reads this descriptor so the scan
+/// coordinator can report present/absent without learning any ecosystem's name.
+/// </para>
+/// </summary>
+public sealed record ManifestDetection
+{
+    /// <summary>A local command that answers only when the toolchain is installed, e.g. <c>go version</c>.</summary>
+    public string? Tool { get; init; }
+
+    /// <summary>A path that exists only when the ecosystem is installed. May contain <c>{home}</c>.</summary>
+    public string? Marker { get; init; }
+
+    /// <summary>True when the manifest asked for detection at all.</summary>
+    public bool IsDeclared =>
+        !string.IsNullOrWhiteSpace(Tool) || !string.IsNullOrWhiteSpace(Marker);
 }
 
 /// <summary>Where a manifest was loaded from (10-formats: built-ins are embedded resources).</summary>

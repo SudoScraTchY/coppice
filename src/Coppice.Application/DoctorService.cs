@@ -9,15 +9,41 @@ using Coppice.Ports;
 
 namespace Coppice.Application;
 
-/// <summary>One resolved location, ready to report (FR-02).</summary>
-public sealed record RootReport(string LocationId, ResolvedRoot Root, string? Problem);
+/// <summary>
+/// One resolved location candidate, ready to report (FR-02).
+/// <para>
+/// Every candidate the resolver considered gets one of these — the winner, an additional root, an
+/// inactive default, and every rejected path. <see cref="Size"/> is measured only when the candidate
+/// exists, is a directory, and is safe to walk; <see cref="SizeNote"/> says why it is absent instead
+/// of leaving a blank that reads like zero.
+/// </para>
+/// </summary>
+public sealed record RootReport(
+    string LocationId,
+    ResolvedRoot Root,
+    string? Problem,
+    string? EcosystemId = null,
+    string? Owner = null,
+    ulong? Size = null,
+    string? SizeNote = null)
+{
+    /// <summary>True when two live sources disagreed and no pin settled it (LR-4). Never cleanable.</summary>
+    public bool Ambiguous => Root.Validity == RootValidity.Ambiguous;
+}
 
 /// <summary>The whole machine's location picture.</summary>
 public sealed record DoctorReport(
     OperatingSystemKind OS,
     IReadOnlyList<RootReport> Roots,
     IReadOnlyList<string> Issues,
-    IReadOnlyList<string> Ecosystems);
+    IReadOnlyList<string> Ecosystems)
+{
+    /// <summary>Every declared ecosystem's presence and the evidence for it (FR-01).</summary>
+    public IReadOnlyList<EcosystemDetectionReport> Detection { get; init; } = [];
+
+    /// <summary>True only for the report <c>roots</c> builds, which is the verb that pays for sizing.</summary>
+    public bool SizesMeasured { get; init; }
+}
 
 /// <summary>
 /// Builds the doctor/roots view from the real machine (T-014), across every registered ecosystem
@@ -90,6 +116,14 @@ public sealed class DoctorService
     public DoctorReport Inspect() => Inspect(CancellationToken.None);
 
     /// <summary>
+    /// The same report, with each existing root candidate's size measured (FR-02). Sizing walks the
+    /// tree, so only <c>roots</c> asks for it: <c>doctor</c> is an interactive health check and must
+    /// stay inside its budget (NFR-04).
+    /// </summary>
+    public DoctorReport InspectWithSizes(CancellationToken cancellationToken = default) =>
+        Inspect(cancellationToken, measureSizes: true);
+
+    /// <summary>
     /// The cancellable form the GUI drives. The token is passed to every tool probe and checked
     /// between locations, so cancelling a scan does not wait for the remaining tools to answer.
     /// <para>
@@ -98,7 +132,10 @@ public sealed class DoctorService
     /// cancellation to be observable regardless of which runner implementation is installed.
     /// </para>
     /// </summary>
-    public DoctorReport Inspect(CancellationToken cancellationToken)
+    public DoctorReport Inspect(CancellationToken cancellationToken) =>
+        Inspect(cancellationToken, measureSizes: false);
+
+    private DoctorReport Inspect(CancellationToken cancellationToken, bool measureSizes)
     {
         var engine = new ResolutionEngine(_fs, _os, _env.HomeDirectory);
         var validator = new FingerprintValidator(_fs, _os);
@@ -117,7 +154,18 @@ public sealed class DoctorService
 
             foreach (ResolvedRoot root in outcome.Roots)
             {
-                roots.Add(new RootReport(location.Id, root, FixHint(root)));
+                (ulong? size, string? sizeNote) = measureSizes
+                    ? MeasureRoot(root, cancellationToken)
+                    : (null, null);
+
+                roots.Add(new RootReport(
+                    location.Id,
+                    root,
+                    FixHint(root),
+                    location.EcosystemId,
+                    location.Owner,
+                    size,
+                    sizeNote));
             }
 
             // A location that resolved to nothing at all still deserves a line: "no idea where
@@ -146,7 +194,55 @@ public sealed class DoctorService
                 .Order(StringComparer.Ordinal),
         ];
 
-        return new DoctorReport(_os, roots, issues, ecosystems);
+        // FR-01: presence is its own question, answered by the profile's declared probe — not by
+        // whether a cache happens to exist. The registry supplies both the list and the descriptors.
+        IReadOnlyList<EcosystemDetectionReport> detection =
+            new EcosystemDetector(_fs, _runner, _env).Detect(_registry.Ecosystems, cancellationToken);
+
+        return new DoctorReport(_os, roots, issues, ecosystems)
+        {
+            Detection = detection,
+            SizesMeasured = measureSizes,
+        };
+    }
+
+    /// <summary>
+    /// Measures one candidate, or explains why not (FR-02).
+    /// <para>
+    /// A denied root is never walked, even to size it: the denylist says "do not follow this", and a
+    /// recursive read is following it. A path that is not a directory has no tree to measure. Any I/O
+    /// or permission failure is a note, not an exception — one unreadable cache must not take the
+    /// whole report down.
+    /// </para>
+    /// </summary>
+    private (ulong? Size, string? Note) MeasureRoot(ResolvedRoot root, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (root.Validity == RootValidity.Denied)
+        {
+            return (null, "not measured: a denied root is never followed");
+        }
+
+        if (!_fs.DirectoryExists(root.RealPath))
+        {
+            return (null, "not measured: the path is not a directory");
+        }
+
+        try
+        {
+            ulong size = _fs.MeasureSize(root.RealPath);
+            cancellationToken.ThrowIfCancellationRequested();
+            return (size, null);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return (null, $"not measured: {ex.Message.Replace('\r', ' ').Replace('\n', ' ').Trim()}");
+        }
     }
 
     /// <summary>
@@ -172,7 +268,11 @@ public sealed class DoctorService
                 case ResolvedVia.Tool:
                     if (RunToolQuery(source, cancellationToken) is { } toolPath)
                     {
-                        sources[ResolvedVia.Tool] = SourceResult.Of(toolPath, ResolvedVia.Tool, source.Run);
+                        sources[ResolvedVia.Tool] = SourceResult.Of(
+                            toolPath,
+                            ResolvedVia.Tool,
+                            source.Run,
+                            isLive: !source.Inactive);
                     }
 
                     break;
@@ -184,7 +284,8 @@ public sealed class DoctorService
                         sources[ResolvedVia.Env] = SourceResult.Of(
                             AppendRelative(value, source.PathTemplate, _os),
                             ResolvedVia.Env,
-                            source.Variable);
+                            source.Variable,
+                            isLive: !source.Inactive);
                     }
 
                     break;
@@ -414,7 +515,11 @@ public sealed class DoctorService
         _ => string.Empty,
     };
 
-    /// <summary>Machine-readable output. Paths are REAL here, never shortened or abbreviated.</summary>
+    /// <summary>
+    /// Machine-readable output. Paths are REAL here, never shortened or abbreviated. Every candidate
+    /// appears — including the ones that will not be cleaned — because a report that showed only the
+    /// winner could not answer "why is my cache not listed?" (FR-02).
+    /// </summary>
     public static string ToJson(DoctorReport report)
     {
         ArgumentNullException.ThrowIfNull(report);
@@ -424,17 +529,31 @@ public sealed class DoctorService
             {
                 schema = 1,
                 os = report.OS.ToString(),
+                sizesMeasured = report.SizesMeasured,
                 ecosystems = report.Ecosystems,
+                detection = report.Detection.Select(d => new
+                {
+                    ecosystem = d.EcosystemId,
+                    displayName = d.DisplayName,
+                    present = d.Present,
+                    source = d.Source,
+                    detail = d.Detail,
+                }),
                 roots = report.Roots.Select(r => new
                 {
                     locationId = r.LocationId,
+                    ecosystem = r.EcosystemId,
+                    owner = r.Owner,
                     path = r.Root.RealPath,
                     declaredPath = r.Root.DeclaredPath,
                     role = r.Root.Role.ToString(),
                     validity = r.Root.Validity.ToString(),
+                    ambiguous = r.Ambiguous,
                     via = r.Root.Via.ToString(),
                     viaDetail = r.Root.ViaDetail,
                     cleanable = r.Root.IsCleanable,
+                    sizeBytes = r.Size,
+                    sizeNote = r.SizeNote,
                     problem = r.Problem,
                 }),
                 issues = report.Issues,

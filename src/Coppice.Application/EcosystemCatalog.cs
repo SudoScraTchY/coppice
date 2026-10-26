@@ -58,18 +58,30 @@ public static class EcosystemCatalog
         IFileSystem fs,
         IEnumerable<EcosystemPlugin>? additional = null) =>
     [
-        .. Definitions.Select(d => new EcosystemPlugin(
-            d.Id,
-            d.DisplayName,
-            d.Locations(),
-            d.CreatePlugin(fs),
-            d.CreateVersions())),
+        .. Definitions.Select(d => CreatePlugin(d, fs)),
         .. additional ?? [],
     ];
 
+    /// <summary>
+    /// One definition, materialised once so the manifest is parsed once and its locations and its
+    /// detection descriptor cannot disagree about which profile is in force.
+    /// </summary>
+    private static EcosystemPlugin CreatePlugin(EcosystemDefinition definition, IFileSystem fs)
+    {
+        ManifestValidationResult? manifest = definition.LoadManifest();
+
+        return new EcosystemPlugin(
+            definition.Id,
+            definition.DisplayName,
+            definition.Locations(manifest),
+            definition.CreatePlugin(fs),
+            definition.CreateVersions(),
+            definition.Detection(manifest));
+    }
+
     private static IReadOnlyList<EcosystemLocation> BuildLocations() =>
     [
-        .. Definitions.SelectMany(d => d.Locations()),
+        .. Definitions.SelectMany(d => d.Locations(d.LoadManifest())),
     ];
 
     // A definition is registration data: id, where its locations come from, how to build the plugin,
@@ -91,7 +103,10 @@ public static class EcosystemCatalog
             CreatePlugin: fs => new DotnetEcosystem(fs),
             CreateVersions: () => new DotnetEcosystem().Versions,
             Allowlists: NetAllowlists,
-            CodeLocations: NetLocations()),
+            CodeLocations: NetLocations(),
+            // FR-01: the SDK answers its own version. A .NET machine with a NuGet cache but no
+            // `dotnet` on PATH (a GUI launch) is reported absent, which is the honest answer.
+            CodeDetection: new EcosystemDetection(Tool: "dotnet --version")),
 
         new(
             Id: "go",
@@ -291,39 +306,77 @@ public static class EcosystemCatalog
         Func<IFileSystem, IEcosystem> CreatePlugin,
         Func<IVersionOrdering> CreateVersions,
         IReadOnlyDictionary<string, string> Allowlists,
-        IReadOnlyList<EcosystemLocation>? CodeLocations)
+        IReadOnlyList<EcosystemLocation>? CodeLocations,
+        EcosystemDetection? CodeDetection = null)
     {
         /// <summary>
-        /// Manifest-backed locations are loaded lazily on first use, so a definition whose profile is
-        /// missing (or invalid) contributes nothing rather than taking the whole catalog down.
+        /// The shipped profile, when this definition is manifest-backed. Loaded lazily and only once
+        /// per materialisation, so a missing or invalid profile contributes nothing rather than
+        /// taking the whole catalog down.
         /// </summary>
-        public IReadOnlyList<EcosystemLocation> Locations()
+        public ManifestValidationResult? LoadManifest()
+        {
+            if (ManifestId is null)
+            {
+                return null;
+            }
+
+            ManifestLoadResult? manifest = ManifestLoader.LoadBuiltInResources()
+                .FirstOrDefault(m => string.Equals(m.Id, ManifestId, StringComparison.Ordinal));
+
+            return manifest is { IsValid: true } ? manifest.Validation : null;
+        }
+
+        public IReadOnlyList<EcosystemLocation> Locations(ManifestValidationResult? manifest)
         {
             if (CodeLocations is not null)
             {
                 return CodeLocations;
             }
 
-            ManifestLoadResult? manifest = ManifestLoader.LoadBuiltInResources()
-                .FirstOrDefault(m => string.Equals(m.Id, ManifestId, StringComparison.Ordinal));
-
-            if (manifest is null || !manifest.IsValid)
+            if (manifest is null)
             {
                 return [];
             }
 
             return
             [
-                .. manifest.Validation.Locations.Select(record => FromManifest(this, record)),
+                .. manifest.Locations.Select(record => FromManifest(this, record)),
             ];
+        }
+
+        /// <summary>
+        /// The detection descriptor: code for a built-in profile, the manifest's <c>[detection]</c>
+        /// table for a declarative one. Null means the profile says nothing, which the detector
+        /// reports as "no probe declared" rather than guessing a tool name.
+        /// </summary>
+        public EcosystemDetection? Detection(ManifestValidationResult? manifest)
+        {
+            if (CodeDetection is not null)
+            {
+                return CodeDetection;
+            }
+
+            if (manifest is null)
+            {
+                return null;
+            }
+
+            ManifestDetection declared = manifest.Detection;
+            return declared.IsDeclared ? new EcosystemDetection(declared.Tool, declared.Marker) : null;
         }
     }
 }
 
 /// <summary>One ecosystem as the registry sees it: its locations plus live capability implementations.</summary>
+/// <remarks>
+/// <c>Detection</c> is how the ecosystem declares its own presence (FR-01). Null means the profile
+/// declares no probe; the detector reports that honestly instead of inventing one.
+/// </remarks>
 public sealed record EcosystemPlugin(
     string Id,
     string DisplayName,
     IReadOnlyList<EcosystemLocation> Locations,
     IEcosystem Instance,
-    IVersionOrdering Versions);
+    IVersionOrdering Versions,
+    EcosystemDetection? Detection = null);

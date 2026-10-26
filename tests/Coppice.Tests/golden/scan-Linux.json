@@ -464,5 +464,35 @@
   "ProjectCount": 0,
   "OnboardingHints": [
     "No projects were found. Reference resolution needs project roots: pass --projects \u003Cpath\u003E. Until then every package is Unknown and nothing is Safe."
+  ],
+  "Detection": [
+    {
+      "EcosystemId": "dotnet",
+      "DisplayName": "NET",
+      "Present": true,
+      "Source": "tool",
+      "Detail": "dotnet --version -\u003E 10.0.200"
+    },
+    {
+      "EcosystemId": "go",
+      "DisplayName": "Go",
+      "Present": true,
+      "Source": "tool",
+      "Detail": "go version -\u003E go version go1.22.1 fixture/amd64"
+    },
+    {
+      "EcosystemId": "node",
+      "DisplayName": "Node.js",
+      "Present": true,
+      "Source": "tool",
+      "Detail": "node --version -\u003E v20.15.0"
+    },
+    {
+      "EcosystemId": "rust",
+      "DisplayName": "Rust",
+      "Present": true,
+      "Source": "tool",
+      "Detail": "rustc --version -\u003E rustc 1.79.0 (129f3b996 2024-06-10)"
+    }
   ]
 }

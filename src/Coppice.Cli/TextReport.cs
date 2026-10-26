@@ -9,8 +9,8 @@ namespace Coppice.Cli;
 /// </summary>
 public static class TextReport
 {
-    /// <summary>Renders one resolved root as a fixed-width row, the way `roots` prints it.</summary>
-    public static string RootRow(string locationId, ResolvedRoot root, string? home)
+    /// <summary>Renders one candidate root as a fixed-width row, the way `roots` prints it.</summary>
+    public static string RootRow(string locationId, ResolvedRoot root, string? owner, ulong? size)
     {
         ArgumentNullException.ThrowIfNull(root);
 
@@ -19,8 +19,42 @@ public static class TextReport
             locationId.PadRight(20),
             Role(root.Role).PadRight(11),
             Validity(root.Validity).PadRight(17),
-            Via(root.Via, root).PadRight(9),
-            Shorten(DisplayPath(root.RealPath, home), 46));
+            Via(root.Via, root).PadRight(10),
+            Owner(owner).PadRight(10),
+            Size(size).PadRight(10));
+    }
+
+    /// <summary>
+    /// The owner column. A root whose profile declares no owner is unknown, not "user": guessing
+    /// "user" would imply the user may delete it.
+    /// </summary>
+    public static string Owner(string? owner) =>
+        string.IsNullOrWhiteSpace(owner) ? "unknown" : owner;
+
+    /// <summary>
+    /// A size for a table. A dash is "not measured", which is different from zero bytes and must not
+    /// read like an empty cache. Binary units, invariant formatting, so output is byte-stable.
+    /// </summary>
+    public static string Size(ulong? bytes)
+    {
+        if (bytes is not { } value)
+        {
+            return "-";
+        }
+
+        string[] units = ["B", "KB", "MB", "GB", "TB", "PB"];
+        double scaled = value;
+        int unit = 0;
+
+        while (scaled >= 1024 && unit < units.Length - 1)
+        {
+            scaled /= 1024;
+            unit++;
+        }
+
+        return unit == 0
+            ? $"{value} B"
+            : scaled.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " " + units[unit];
     }
 
     /// <summary>
@@ -44,14 +78,40 @@ public static class TextReport
     /// A concrete next step for a root that will not be cleaned. NFR-10 requires a fix hint: a
     /// denylist hit with no explanation leaves the user thinking the tool is broken.
     /// </summary>
-    /// <summary>Header for the `roots` table.</summary>
+    /// <summary>
+    /// Header for the `roots` table. The paths are printed on their own lines under each row: a
+    /// declared path and a real path are different facts, and truncating both into one column would
+    /// hide the difference on exactly the long paths a user is investigating.
+    /// </summary>
     public static string RootHeader() => string.Join(
         "  ",
         "LOCATION".PadRight(20),
         "ROLE".PadRight(11),
         "VALIDITY".PadRight(17),
-        "VIA".PadRight(9),
-        "PATH");
+        "VIA".PadRight(10),
+        "OWNER".PadRight(10),
+        "SIZE".PadRight(10));
+
+    /// <summary>Header for the ecosystem-presence table (FR-01).</summary>
+    public static string DetectionHeader() => string.Join(
+        "  ",
+        "ECOSYSTEM".PadRight(12),
+        "STATUS".PadRight(10),
+        "SOURCE".PadRight(8),
+        "DETAIL");
+
+    /// <summary>One ecosystem's presence, with the evidence that answered.</summary>
+    public static string DetectionRow(EcosystemDetectionReport detection)
+    {
+        ArgumentNullException.ThrowIfNull(detection);
+
+        return string.Join(
+            "  ",
+            detection.EcosystemId.PadRight(12),
+            (detection.Present ? "present" : "absent").PadRight(10),
+            detection.Source.PadRight(8),
+            detection.Detail);
+    }
 
     /// <summary>
     /// Renders the machine's home as `~` so a path stays readable. Purely cosmetic, and only for

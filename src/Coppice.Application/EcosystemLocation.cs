@@ -13,6 +13,12 @@ namespace Coppice.Application;
 /// has one kind of location to resolve and never asks which ecosystem it came from.
 /// </para>
 /// </summary>
+/// <remarks>
+/// <c>Inactive</c> is true when the source names a location that is known but not in use — the folder
+/// left behind after a cache was moved. The engine assigns it <see cref="RootRole.Inactive"/>, reports
+/// it, and never lets it become a plan step (LR-5). No shipped profile sets this yet; it is descriptor
+/// data so the inactive case travels the same resolution path instead of a test-only stub.
+/// </remarks>
 public sealed record LocationSource(
     ResolvedVia Via,
     string? Run = null,
@@ -20,7 +26,10 @@ public sealed record LocationSource(
     string? Label = null,
     string? Variable = null,
     string? PathTemplate = null,
-    bool PathIsSdkInstall = false);
+    bool PathIsSdkInstall = false,
+    // True when the source names a known-but-unused location. Descriptor data, not a per-ecosystem
+    // switch: the resolver already understands IsLive, and this is the only place the chain sets it.
+    bool Inactive = false);
 
 /// <summary>
 /// Everything the application needs to resolve and scan one location, independent of whether the

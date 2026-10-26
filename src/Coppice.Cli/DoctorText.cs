@@ -26,19 +26,22 @@ public static class DoctorText
 
         foreach (RootReport root in report.Roots)
         {
-            sb.AppendLine(TextReport.RootRow(root.LocationId, root.Root, home));
-
-            // A convention-only path gets its caveat on its own line. 09 requires the reduced confidence to
-            // be SURFACED, and a marker in the provenance column is easy to miss when the row is long.
-            string? confidence = TextReport.ConfidenceNote(root.Root);
-            if (confidence is not null)
+            foreach (string line in RootsText.Lines(root, home))
             {
-                sb.AppendLine($"      ~ {confidence}");
+                sb.AppendLine(line);
             }
+        }
 
-            if (!string.IsNullOrEmpty(root.Problem))
+        if (report.Detection.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Ecosystems:");
+            sb.AppendLine(TextReport.DetectionHeader());
+            sb.AppendLine(new string('-', 100));
+
+            foreach (EcosystemDetectionReport detection in report.Detection)
             {
-                sb.AppendLine($"      -> {root.Problem}");
+                sb.AppendLine(TextReport.DetectionRow(detection));
             }
         }
 

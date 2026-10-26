@@ -16,7 +16,11 @@ public static class ScanWiring
         return
         [
             .. report.Roots
-                .Where(r => r.Root.Validity == RootValidity.Ok && r.Root.Role != RootRole.Inactive)
+                // The cleanability floor, applied twice on purpose: the domain says an Ok root must
+                // also be in use, and this filter says it in the one place a plan is born. An
+                // ambiguous, denied, missing or inactive candidate can therefore never become a
+                // scan root — and a scan root is the only thing a plan step can bind to.
+                .Where(r => r.Root.IsCleanable && r.Root.Role != RootRole.Inactive)
                 .Select(r =>
                 {
                     // Every location the registry knows carries its own kind, owner, tier and

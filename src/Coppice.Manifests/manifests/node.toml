@@ -21,6 +21,11 @@ schema = 1
 id = "node"
 display_name = "Node.js"
 
+# FR-01: `node --version` is the install's own answer. It detects the runtime, not the cache; a
+# machine with a leftover ~/.npm and no node is reported absent, which is the truth.
+[detection]
+tool = "node --version"
+
 [[location]]
 id = "npm-cache"
 kind = "download-cache"

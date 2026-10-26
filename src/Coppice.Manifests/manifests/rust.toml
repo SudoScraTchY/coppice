@@ -18,6 +18,13 @@ schema = 1
 id = "rust"
 display_name = "Rust"
 
+# FR-01: the shim answers normally; the marker covers the case 05 warns about — a GUI launched from
+# the dock does not see shell-profile PATH exports, so `rustc` can be missing while the toolchains
+# are plainly installed. A marker is evidence too, but only when no tool answered.
+[detection]
+tool = "rustc --version"
+marker = "{home}/.rustup/toolchains"
+
 [[location]]
 id = "cargo-registry"
 kind = "package-cache"

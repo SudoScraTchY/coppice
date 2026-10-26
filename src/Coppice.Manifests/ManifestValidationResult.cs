@@ -66,6 +66,9 @@ public sealed record ManifestValidationResult(
     ManifestOrigin Origin,
     string SourceName)
 {
+    /// <summary>How the profile says its ecosystem is installed (FR-01). Empty when it does not say.</summary>
+    public ManifestDetection Detection { get; init; } = new();
+
     public bool IsValid => Errors.Count == 0;
 
     /// <summary>Parses a manifest and validates it in one step.</summary>
@@ -130,6 +133,7 @@ public sealed record ManifestValidationResult(
             Id = Id,
             DisplayName = DisplayName,
             Locations = specs,
+            Detection = Detection,
             Origin = Origin,
         };
     }

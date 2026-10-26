@@ -108,6 +108,24 @@ public sealed class GoldenReportTests
         sb.Append($"os: {report.OS}\n");
         sb.Append($"projects: {report.ProjectCount}\n");
         sb.Append($"ecosystems: {string.Join(", ", report.Ecosystems)}\n\n");
+
+        // FR-01: presence and its evidence are part of the console report, so they are part of the
+        // golden bytes too. The CLI prints this same section; a copy that omitted it would pin a
+        // report the product no longer produces.
+        if (report.Detection.Count > 0)
+        {
+            sb.Append("ECOSYSTEM PRESENCE:\n");
+            sb.Append(TextReport.DetectionHeader()).Append('\n');
+            sb.Append(new string('-', 100)).Append('\n');
+
+            foreach (EcosystemDetectionReport detection in report.Detection)
+            {
+                sb.Append(TextReport.DetectionRow(detection)).Append('\n');
+            }
+
+            sb.Append('\n');
+        }
+
         sb.Append(TextReport.UsageHeader()).Append('\n');
         sb.Append(new string('-', 60)).Append('\n');
         sb.Append(TextReport.UsageRow(report.Usage)).Append('\n');
