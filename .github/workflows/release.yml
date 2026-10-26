@@ -1,0 +1,373 @@
+name: release
+
+# T-043: a tag is the release. `build.yml` proves the commit; this workflow turns that commit into
+# downloadable, measured artifacts and a GitHub Release.
+#
+# It is deliberately not a second CI system. The `prepare` job refuses to proceed unless `build.yml`
+# (tests, escape suite, format, goldens, publish, egress canary, license) already succeeded on the
+# SAME commit with event=push on main — the 0.3.0 lesson was that a release claim without evidence is
+# worse than no release. What this workflow adds is the part `build.yml` does not do: the self-contained
+# CLI and the GUI on all six RIDs, a version check of the actual binaries, a measured size table, and
+# the release assets themselves.
+#
+# The tag must equal <Version> in Directory.Build.props. `v0.4.0` cannot publish a 0.4.0-rc.1 binary.
+#
+# workflow_dispatch runs the same matrix and uploads the bundle as a workflow artifact but creates no
+# GitHub Release (set publish_release only for a tag ref). That is how the tag path is validated
+# before a human creates the tag.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Create the GitHub Release (only acts when the ref is a tag)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  prepare:
+    name: verify the tag has a green commit
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read the version and require the tag to match it
+        id: version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's:.*<Version>\([^<]*\)</Version>.*:\1:p' Directory.Build.props | head -n 1)"
+          if [[ -z "$version" ]]; then
+            echo "::error::no <Version> in Directory.Build.props"
+            exit 1
+          fi
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            tag="${GITHUB_REF_NAME#v}"
+            if [[ "$tag" != "$version" ]]; then
+              echo "::error::tag '$GITHUB_REF_NAME' does not match <Version> '$version'"
+              exit 1
+            fi
+            echo "tag $GITHUB_REF_NAME matches <Version> $version"
+          else
+            echo "not a tag ref ($GITHUB_REF); building $version without publishing a release"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # This is the release gate the roadmap has been missing since 0.3.0: the artifacts below are
+      # built from a commit whose full six-cell CI (including the egress canary and license check)
+      # already passed. A tag on a red or never-pushed commit stops here.
+      - name: Require a successful build.yml run on this exact commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          runs="$(gh run list --workflow build.yml --commit "$GITHUB_SHA" --limit 20 \
+            --json event,headBranch,conclusion,url)"
+          echo "$runs"
+          ok="$(echo "$runs" | jq -r \
+            'any(.[]; .conclusion == "success" and .event == "push" and .headBranch == "main")')"
+          if [[ "$ok" != "true" ]]; then
+            echo "::error::no successful push-to-main build.yml run for $GITHUB_SHA; refusing to release"
+            exit 1
+          fi
+
+  artifacts:
+    name: ${{ matrix.os }} · ${{ matrix.arch }}
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            arch: x64
+            runner: ubuntu-24.04
+            rid: linux-x64
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            rid: linux-arm64
+          - os: macOS
+            arch: x64
+            runner: macos-15-intel
+            rid: osx-x64
+          - os: macOS
+            arch: arm64
+            runner: macos-15
+            rid: osx-arm64
+          - os: windows
+            arch: x64
+            runner: windows-2025
+            rid: win-x64
+          - os: windows
+            arch: arm64
+            runner: windows-11-arm
+            rid: win-arm64
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+          architecture: ${{ matrix.arch }}
+
+      # Same assertion as build.yml: an arm64 cell that silently got an x64 SDK must fail rather
+      # than produce an artifact labelled arm64.
+      - name: Verify the SDK matches the cell
+        shell: bash
+        run: |
+          arch="${{ matrix.arch }}"
+          rid="$(dotnet --info | tr -d '\r' | awk '/RID:/{print $2; exit}')"
+          echo "cell: ${{ matrix.os }} / $arch (RID $rid)"
+          if [[ "$rid" != *"-${arch}" ]]; then
+            echo "::error::expected a $arch SDK in this cell, got $rid"
+            exit 1
+          fi
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build (warnings are errors)
+        run: dotnet build -warnaserror --configuration Release --no-restore
+
+      - name: Test
+        run: >
+          dotnet test --configuration Release --no-build
+          --filter 'Category!=Network'
+          --logger "trx;LogFileName=tests.trx"
+          --results-directory "${{ runner.temp }}/test-results"
+
+      - name: Escape suite (property-based safety gate)
+        env:
+          COPPICE_ESCAPE_CASES: '100000'
+        run: >
+          dotnet test --configuration Release --no-build
+          --filter 'FullyQualifiedName~Coppice.Tests.Safety|Escape=E-7|Escape=E-10|Escape=E-12'
+
+      - name: Verify formatting
+        run: dotnet format --verify-no-changes
+
+      - name: Verify golden reports are unchanged
+        shell: bash
+        run: bash scripts/verify-golden.sh Release
+
+      # Every variant is published into its own directory so the framework-dependent and
+      # self-contained builds cannot overwrite each other.
+      - name: Publish CLI (framework-dependent and self-contained)
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUTPUT_ROOT=dist/fd bash scripts/publish.sh "${{ matrix.rid }}"
+          OUTPUT_ROOT=dist/sc SELF_CONTAINED=1 bash scripts/publish.sh "${{ matrix.rid }}"
+
+      - name: Publish the GUI (self-contained)
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUTPUT_ROOT=dist/gui bash scripts/publish-gui.sh "${{ matrix.rid }}"
+
+      # The artifact is only as honest as the version it reports. This runs the binary the user will
+      # download, on the architecture it was built for, and compares its own output to the props file.
+      - name: Verify the published binary reports the release version
+        shell: bash
+        run: |
+          set -euo pipefail
+          bin="dist/fd/${{ matrix.rid }}/coppice"
+          [[ -f "$bin" ]] || bin="$bin.exe"
+          if [[ ! -f "$bin" ]]; then
+            echo "::error::no published binary for ${{ matrix.rid }}"
+            exit 1
+          fi
+          actual="$("$bin" version)"
+          if [[ "$actual" != "coppice $VERSION" ]]; then
+            echo "::error::binary reports '$actual', expected 'coppice $VERSION'"
+            exit 1
+          fi
+          echo "$actual"
+
+      - name: Measure every variant
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets
+          fd="dist/fd/${{ matrix.rid }}/coppice"
+          [[ -f "$fd" ]] || fd="$fd.exe"
+          sc="dist/sc/${{ matrix.rid }}/coppice"
+          [[ -f "$sc" ]] || sc="$sc.exe"
+          gui="dist/gui/gui-${{ matrix.rid }}/coppice-gui"
+          [[ -f "$gui" ]] || gui="$gui.exe"
+          fd_bytes=$(wc -c < "$fd")
+          sc_bytes=$(wc -c < "$sc")
+          gui_bytes=$(wc -c < "$gui")
+          printf '%s\t%s\t%s\t%s\n' "${{ matrix.rid }}" "$fd_bytes" "$sc_bytes" "$gui_bytes" \
+            | tee "assets/sizes-${{ matrix.rid }}.txt"
+          {
+            echo "### ${{ matrix.rid }}"
+            echo "| variant | bytes |"
+            echo "|---|---:|"
+            echo "| framework-dependent | $fd_bytes |"
+            echo "| self-contained | $sc_bytes |"
+            echo "| GUI self-contained | $gui_bytes |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Archives rather than loose binaries: a single-file executable loses its executable bit when
+      # downloaded as a bare asset, and the docs the binary ships with must travel with it.
+      - name: Archive the artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          rid="${{ matrix.rid }}"
+          if [[ "$rid" == win-* ]]; then
+            pwsh -NoProfile -Command "Compress-Archive -Path 'dist/fd/$rid/*' -DestinationPath 'assets/coppice-$VERSION-$rid.zip' -CompressionLevel Optimal -Force"
+            pwsh -NoProfile -Command "Compress-Archive -Path 'dist/sc/$rid/*' -DestinationPath 'assets/coppice-$VERSION-$rid-self-contained.zip' -CompressionLevel Optimal -Force"
+            pwsh -NoProfile -Command "Compress-Archive -Path 'dist/gui/gui-$rid/*' -DestinationPath 'assets/coppice-gui-$VERSION-$rid.zip' -CompressionLevel Optimal -Force"
+          else
+            tar -czf "assets/coppice-$VERSION-$rid.tar.gz" -C "dist/fd/$rid" .
+            tar -czf "assets/coppice-$VERSION-$rid-self-contained.tar.gz" -C "dist/sc/$rid" .
+            tar -czf "assets/coppice-gui-$VERSION-$rid.tar.gz" -C "dist/gui/gui-$rid" .
+          fi
+          ls -l assets
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-${{ matrix.rid }}
+          path: assets
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: tests-${{ matrix.os }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/test-results
+          retention-days: 7
+
+  package:
+    name: dotnet tool package
+    needs: prepare
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Pack
+        run: dotnet pack src/Coppice.Cli/Coppice.Cli.csproj --configuration Release -o assets
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-package
+          path: assets
+          retention-days: 7
+
+  release:
+    name: publish the release
+    needs: [prepare, artifacts, package]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: dist-*
+          path: assets
+          merge-multiple: true
+
+      # A release missing one RID is not a release. Fail loudly rather than publishing a bundle whose
+      # gap is discovered by a user on that platform.
+      - name: Require every variant for every RID
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          archives=(assets/*.zip assets/*.tar.gz)
+          expected=18   # six RIDs x (framework-dependent, self-contained, GUI)
+          if (( ${#archives[@]} != expected )); then
+            printf '%s\n' "${archives[@]}"
+            echo "::error::expected $expected archives, found ${#archives[@]}"
+            exit 1
+          fi
+          packages=(assets/*.nupkg)
+          if (( ${#packages[@]} != 1 )); then
+            echo "::error::expected exactly one .nupkg, found ${#packages[@]}"
+            exit 1
+          fi
+
+      - name: Checksums and size table
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            printf '%-12s %12s %12s %12s\n' rid fd sc gui
+            cat assets/sizes-*.txt | sort | while IFS=$'\t' read -r rid fd sc gui; do
+              printf '%-12s %12d %12d %12d\n' "$rid" "$fd" "$sc" "$gui"
+            done
+          } > SIZES.txt
+          rm assets/sizes-*.txt
+          cp SIZES.txt assets/SIZES.txt
+          (
+            cd assets
+            sha256sum *.zip *.tar.gz *.nupkg > SHA256SUMS.txt
+          )
+          cat SIZES.txt
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat SIZES.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-bundle
+          path: assets
+          retention-days: 30
+
+      # Only a tag gets a Release. A dry-run dispatch keeps the bundle as a workflow artifact so the
+      # tag path can be exercised without claiming a release that the human gates have not signed.
+      - name: Create the GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') && (github.event_name == 'push' || inputs.publish_release == true)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          prerelease=()
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            prerelease+=(--prerelease)
+          fi
+          gh release create "$GITHUB_REF_NAME" \
+            --title "Coppice ${GITHUB_REF_NAME#v}" \
+            --notes-file docs/release-notes-v0.4.md \
+            --verify-tag \
+            "${prerelease[@]}" \
+            assets/*
+
+      - name: Say what happened
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "release $GITHUB_REF_NAME published (or requested)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "dry run on $GITHUB_REF: no Release created; download the release-bundle artifact" \
+              >> "$GITHUB_STEP_SUMMARY"
+          fi

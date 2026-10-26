@@ -38,7 +38,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | W3 | T-051 FR-01/FR-02 | T-052 FR-22/FR-23 | T-056 / T-049 | B/T/G; pin-denied and drop-in-manifest tests |
 | W4 | T-040 pin editor/provenance | T-041 history/trends | T-050 / T-048 | B/T; headless GUI; two-snapshot delta |
 | W5 | T-053 NFR-04 perf/doctor | T-042 completions + HTML | T-051 / T-015 | B/T/P; recorded perf evidence; offline HTML |
-| W6 | T-043 v0.4 release | — | all | full CI on release commit; human gates; tag |
+| W6 | T-043 v0.4 release | — | all | full CI on release commit; release dry run (18 archives + package); human gates; tag |
 
 ## Card status (as of 2026-10-26)
 
@@ -58,7 +58,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-039 Avalonia shell | `done` except box 4 human | boxes 1/2 closed by T-050; box 4 is `blocked-human` |
 | T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
 | T-040 GUI pin editor | `done` | `110dc84`; run `40311141426` green on all six cells; pin/roots tests |
-| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; run `40313952759` green on all six cells; CLI 2.19/36.73 MB, GUI 47.71 MB; tag withheld until human gates |
+| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; run `40313952759` green on all six cells; CLI 2.19/36.73 MB, GUI 47.71 MB; release workflow added, dry run pending; tag withheld until human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
 | T-057 FR-23 user manifests | `done` | `b0f1871` + `346a460`; runs `40309220254`, `40311675742` green |

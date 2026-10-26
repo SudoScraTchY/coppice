@@ -75,10 +75,17 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 
 **Build**
 - Release notes, GUI screenshots in README, tag + binaries.
+- Tag-to-release packaging in `.github/workflows/release.yml`: six-RID framework-dependent,
+  self-contained and GUI archives plus the `dotnet tool` package, `SHA256SUMS.txt` and `SIZES.txt`.
+  It checks each binary's own `version` output and refuses a tag that disagrees with `<Version>` or
+  names a commit with no green `build.yml` run. `workflow_dispatch` is the dry run: same matrix,
+  same bundle, no Release off-tag.
 
 **Acceptance**
 - [x] GUI release artifact self-contained and < reasonable size (record actual) — 50,034,463 bytes (47.71 MB) via `scripts/publish-gui.sh win-x64`
 - [x] Roadmap updated: v1.0 items become the only open cards
+- [ ] A release dry run produces 18 archives + the package, with no Release created off-tag
+- [ ] GUI screenshots in README, taken from the running shell
 
 > T-043 prepared `0.4.0-rc.1`, not a tag. Run `40313952759` is green on all six cells. The CLI is
 > 2.19 MB framework-dependent / 36.73 MB self-contained; the GUI is 47.71 MB self-contained. The

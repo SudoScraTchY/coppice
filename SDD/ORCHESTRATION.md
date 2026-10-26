@@ -57,7 +57,9 @@ commit before merging, so one card still equals one commit.
    `main`, and pushes.
 4. CI cadence: dispatch a run for cards touching workflows/publish, and one full run on `main`
    per wave. Do not push the same branch twice to "see if it works"; change a hypothesis first.
-5. A release tag is created only after the AGENDA evidence bundle is complete.
+5. A release tag is created only after the AGENDA evidence bundle is complete. The tag is then
+   checked by `.github/workflows/release.yml`: it refuses to publish unless the tag equals
+   `<Version>` and `build.yml` already succeeded on that exact commit.
 
 ## Gates
 
@@ -71,6 +73,7 @@ commit before merging, so one card still equals one commit.
 | **E** escape | `COPPICE_ESCAPE_CASES=100000 dotnet test ... --filter 'FullyQualifiedName~Coppice.Tests.Safety\|Escape=E-7\|Escape=E-10\|Escape=E-12'` |
 | **P** publish | `bash scripts/publish.sh win-x64`; `SELF_CONTAINED=1 bash scripts/publish.sh win-x64` for release |
 | **C** CI | `gh workflow run build.yml --ref <branch>`; inspect six cells, egress canary, license job, artifacts |
+| **R** release | `gh workflow run release.yml --ref main` (dry run); require 18 archives + nupkg, green version/size checks, no Release off-tag |
 
 ## Reviewer checklist
 

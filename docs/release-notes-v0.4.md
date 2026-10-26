@@ -76,6 +76,13 @@ SELF_CONTAINED=1 bash scripts/publish.sh win-x64
 bash scripts/publish-gui.sh win-x64       # GUI, self-contained
 ```
 
+A tagged release is produced by `.github/workflows/release.yml`. The workflow runs the suite on all six
+RIDs, publishes every variant into its own directory, checks that each binary reports the release
+version, and attaches archives, the `dotnet tool` package, `SHA256SUMS.txt` and `SIZES.txt`. It refuses
+to publish if the tag disagrees with `<Version>` in `Directory.Build.props` or if the tagged commit has
+no green six-cell `build.yml` run. The current candidate has no GitHub Release; the commands above are
+the source path.
+
 ## Measured artifacts (win-x64, 0.4.0-rc.1)
 
 | Artifact | Exact bytes | Cold start |

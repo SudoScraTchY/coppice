@@ -53,6 +53,13 @@ dotnet pack src/Coppice.Cli/Coppice.Cli.csproj -c Release -o artifacts/packages
 dotnet tool install --global --add-source ./artifacts/packages coppice --version 0.4.0-rc.1
 ```
 
+**Release downloads.** A tag builds all six RIDs through
+[`.github/workflows/release.yml`](./.github/workflows/release.yml): framework-dependent and
+self-contained CLI archives, a self-contained GUI archive, the `dotnet tool` package, plus
+`SHA256SUMS.txt` and `SIZES.txt`. The workflow refuses to publish unless the tag matches `<Version>`
+and the tagged commit already has a green six-cell `build.yml` run. No `v0.4.0` tag exists yet;
+`0.4.0-rc.1` is the candidate, so build from a checkout with the commands above.
+
 The publish directory contains the binary, `README.md`, `CHANGELOG.md`, `LICENSE`, `NOTICE` and
 `docs/`. See [docs/quickstart.md](./docs/quickstart.md) for every install path and the PowerShell
 equivalent of the publish command.
