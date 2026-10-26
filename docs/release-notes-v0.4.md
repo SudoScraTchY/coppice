@@ -133,6 +133,8 @@ the published linux-x64 self-contained archive through scan→plan→apply→res
   archives, the linux-x64 install smoke green, and no Release created off-tag
 - Linux install smoke: the published linux-x64 self-contained archive ran scan→plan→apply→restore→audit
   with no .NET on `PATH`; the publish job depends on it
+- Release-artifact tamper checks: corrupted quarantine refused with `ContentAltered`; edited or
+  deleted audit records fail `audit verify`; a trailing torn append is flagged as INFO, not a chain break
 - Build run `40333340213`: six cells green, and the egress canary TRX is archived as `egress-results`
   (the upload silently skipped the dot-prefixed directory before `c97ae9c`)
 - Clean-environment E2E: the rc.1 self-contained binary, `PATH` without .NET, isolated state, completed

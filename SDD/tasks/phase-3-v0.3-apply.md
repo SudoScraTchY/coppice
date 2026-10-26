@@ -62,6 +62,11 @@ Exit criteria per 12-roadmap.
 - [x] `verify` detects a deliberately tampered log line
 - [x] Log rotates safely (size cap) without losing entries
 
+> 2026-10-27: release-artifact tamper checks on the rc.1 self-contained binary. An edited audit record
+> fails with `chain-hash` (exit 1); a deleted middle link fails `chain-seq`/`chain-link` (exit 1). A
+> garbage line appended at the end is classified as a recoverable torn append (INFO, exit 0), which is
+> the intended crash-tail behaviour, not a silent pass over an edited record.
+
 ### T-036 · TUI screens
 **Refs** FR-20, 07-cli-tui · **Depends** T-034, T-015 · **Effort** XL
 
@@ -140,6 +145,9 @@ Exit criteria per 12-roadmap.
 
 > T-044: the safety card's second-reviewer sign-off has not been obtained; the command paths are covered by
 > unit tests through the same `QuarantineRestore`/`ApplyWiring` types the existing safety tests exercise.
+>
+> 2026-10-27: on the rc.1 self-contained binary, a corrupted quarantined payload makes restore refuse
+> with `ContentAltered` (exit 3) and leaves the original path absent.
 
 ### T-045 · Project roots on `scan` and `tui`
 **Refs** FR-06, FR-07, 07-cli-tui · **Depends** T-015, T-036, T-044 · **Effort** S
