@@ -61,4 +61,6 @@ Windows, Linux and macOS × x64/arm64 on GitHub-hosted runners (six real cells; 
 a cell that silently falls back to x64). The egress job and license job run on Linux. The build matrix
 publishes the framework-dependent single file per cell on every commit; a tag additionally runs
 `.github/workflows/release.yml`, which produces framework-dependent, self-contained and GUI archives
-for all six RIDs plus the `dotnet tool` package.
+for all six RIDs plus the `dotnet tool` package. The release workflow also runs the published
+linux-x64 self-contained archive through scan→plan→apply→restore→audit with no .NET on `PATH`; a
+failure blocks the Release.

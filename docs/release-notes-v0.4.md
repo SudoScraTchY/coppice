@@ -95,8 +95,9 @@ The GUI has no size budget; 47.72 MB is the recorded candidate. The CLI budgets 
 50 MB self-contained) are enforced by `scripts/publish.sh`. Cold start is from the pre-T-058 local build;
 the resolver fix is not on the startup path.
 
-A strict release dry run (run `40411290645` on `238dbdd`) built every variant on all six RIDs and
-refused to create a Release off-tag. Ranges across those cells:
+A strict release dry run (run `40416009642` on `020431c`) built every variant on all six RIDs, ran
+the published linux-x64 self-contained archive through scan→plan→apply→restore→audit with no .NET on
+`PATH`, and refused to create a Release off-tag. Ranges across those cells:
 
 | Variant | Bytes | Size |
 |---|---:|---:|
@@ -127,9 +128,11 @@ refused to create a Release off-tag. Ranges across those cells:
 - 1,371 unit tests + 33 architecture tests (local, after the last code card)
 - 12 golden reports, `dotnet format --verify-no-changes`, the 100k-case escape suite
 - Six-cell GitHub Actions run per code card; the release candidate's run is `40313952759` on `4bb1b7e`
-- Strict release dry run `40411290645` on `238dbdd`: exact 18 archive names plus the `dotnet tool`
+- Strict release dry run `40416009642` on `020431c`: exact 18 archive names plus the `dotnet tool`
   package and checksums, both CLI variants version-checked, screenshots inside the SC and GUI
-  archives, and no Release created off-tag
+  archives, the linux-x64 install smoke green, and no Release created off-tag
+- Linux install smoke: the published linux-x64 self-contained archive ran scan→plan→apply→restore→audit
+  with no .NET on `PATH`; the publish job depends on it
 - Build run `40333340213`: six cells green, and the egress canary TRX is archived as `egress-results`
   (the upload silently skipped the dot-prefixed directory before `c97ae9c`)
 - Clean-environment E2E: the rc.1 self-contained binary, `PATH` without .NET, isolated state, completed
