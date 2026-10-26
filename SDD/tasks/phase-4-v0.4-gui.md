@@ -80,10 +80,11 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - [x] GUI release artifact self-contained and < reasonable size (record actual) — 50,034,463 bytes (47.71 MB) via `scripts/publish-gui.sh win-x64`
 - [x] Roadmap updated: v1.0 items become the only open cards
 
-> T-043 prepared `0.4.0-rc.1`, not a tag. The CLI is 2.19 MB framework-dependent / 36.73 MB
-> self-contained; the GUI is 47.71 MB self-contained. The release remains `blocked-human`: screen
-> reader, fresh VM, dogfood reports and the second safety reviewer are still open in `SDD/AGENDA.md`.
-> Tagging before those are signed would repeat the 0.3.0 mistake.
+> T-043 prepared `0.4.0-rc.1`, not a tag. Run `40313952759` is green on all six cells. The CLI is
+> 2.19 MB framework-dependent / 36.73 MB self-contained; the GUI is 47.71 MB self-contained. The
+> release remains `blocked-human`: screen reader, fresh VM, dogfood reports and the second safety
+> reviewer are still open in `SDD/AGENDA.md`. Tagging before those are signed would repeat the 0.3.0
+> mistake.
 
 ### T-050 · Finish the parked Avalonia shell
 **Refs** 08-gui · **Depends** T-039, T-048 · **Effort** L

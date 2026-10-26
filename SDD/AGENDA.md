@@ -58,7 +58,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-039 Avalonia shell | `done` except box 4 human | boxes 1/2 closed by T-050; box 4 is `blocked-human` |
 | T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
 | T-040 GUI pin editor | `done` | `110dc84`; run `40311141426` green on all six cells; pin/roots tests |
-| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; CLI 2.19/36.73 MB, GUI 47.71 MB; tag withheld until human gates |
+| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; run `40313952759` green on all six cells; CLI 2.19/36.73 MB, GUI 47.71 MB; tag withheld until human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
 | T-057 FR-23 user manifests | `done` | `b0f1871` + `346a460`; runs `40309220254`, `40311675742` green |
@@ -100,6 +100,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | 2026-10-26 | T-053 doctor budget and 30k fixture landed | `4faf9e9`; run `40306786443`; 30k/31.4 GB fake scan 1.379 s, doctor budget 4 s |
 | 2026-10-26 | T-057 user manifests landed | `b0f1871` (run `40309220254`), shadowing `346a460` (run `40311675742`) |
 | 2026-10-26 | 0.4.0-rc.1 artifacts measured | CLI FD 2,305,297 B; CLI SC 38,521,672 B; GUI SC 50,034,463 B |
+| 2026-10-26 | Release-candidate CI green | run `40313952759` on `4bb1b7e`: all six cells, egress and license |
 | 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |
 | 2026-10-26 | First real six-cell run dispatched | run `40280980743` (superseded by `40282093437`) |
 

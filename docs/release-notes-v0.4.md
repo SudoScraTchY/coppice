@@ -105,7 +105,8 @@ The GUI has no size budget; 47.71 MB is the recorded candidate. The CLI budgets 
 - `dotnet build -warnaserror -c Release`
 - 1,371 unit tests + 33 architecture tests (local, after the last code card)
 - 12 golden reports, `dotnet format --verify-no-changes`, the 100k-case escape suite
-- Six-cell GitHub Actions run per code card; `SDD/AGENDA.md` records the run ids
+- Six-cell GitHub Actions run per code card; the release candidate's run is `40313952759` on `4bb1b7e`
+- `SDD/AGENDA.md` records the other run ids
 - `scripts/publish.sh` FD/SC and `scripts/publish-gui.sh` size measurements
 
 See `SDD/AGENDA.md` for the live evidence table and `docs/adr/ADR-017-release-truth-and-size-budget.md`
