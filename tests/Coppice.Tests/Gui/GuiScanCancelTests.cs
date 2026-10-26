@@ -10,6 +10,14 @@ using Xunit.Abstractions;
 namespace Coppice.Tests.Gui;
 
 /// <summary>
+/// Latency assertions must not compete with the rest of the suite for the thread pool. The cancel test
+/// measures a 200 ms wall-clock bound; when every other test collection is running, a 19 ms local
+/// cancellation can be scheduled 240 ms late and fail for load rather than for product behaviour.
+/// </summary>
+[CollectionDefinition("Timing", DisableParallelization = true)]
+public sealed class TimingCollection;
+
+/// <summary>
 /// T-039 acceptance box 2 / T-050: a scan cancel is measured, not asserted from the shape of the code.
 /// <para>
 /// The slow phase is the scan's own enumeration, which honors the cancellation token between items.
@@ -18,6 +26,7 @@ namespace Coppice.Tests.Gui;
 /// not here.
 /// </para>
 /// </summary>
+[Collection("Timing")]
 public sealed class GuiScanCancelTests
 {
     private const OperatingSystemKind Linux = OperatingSystemKind.Linux;
