@@ -163,8 +163,9 @@ and [SDD/06-safety-model.md](./SDD/06-safety-model.md).
   version → doctor → scan → plan → apply → restore → audit verify with no .NET on `PATH` and isolated
   state (2026-10-26). A true fresh-VM install → apply transcript and the dogfood reports remain human
   gates recorded in `SDD/AGENDA.md`; this is why the release is `0.4.0-rc.1`, not a tag.
-- **Scan performance:** the real 3,152-package scan is 15.6–17.7 s after the T-058 reference-index fix
-  (was 190.6 s); NFR-04's 30k / 30 GB target still needs a test or an explicit amendment.
+- **Scan performance:** 30,000 items scan in 9.8 s and the real 3,152-package / 19.4 GB cache in
+  15.6–17.7 s after the T-058 reference-index fix (was 190.6 s); the exact combined 30k / 30 GB shape
+  and the owner's acceptance or amendment remain open.
 
 ## Documentation
 

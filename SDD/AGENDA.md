@@ -24,8 +24,9 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 - **NFR-11:** framework-dependent < 5 MB (primary), self-contained < 50 MB (optional);
   NativeAOT remains OQ-03.
 - **NFR-04:** the sparse 30k fixture is not real-volume evidence. The real 3,152-package / 19.4 GB
-  scan was 190.6 s; the T-058 reference-index fix takes it to 15.6–17.7 s. The strict 30k/30 GB target
-  is still not demonstrated; the owner must amend NFR-04 with a tested limit before the tag.
+  scan was 190.6 s; the T-058 reference-index fix takes it to 15.6–17.7 s, and a 30k-item fixture
+  scans in 9.8 s. The exact combined 30k/30 GB shape is not run; the owner must accept the evidence
+  or amend NFR-04 before the tag.
 - **GUI:** T-050 landed the redesign and its testability work; T-040 is the pin editor/provenance card.
 - **Scope:** full v0.4. v1.0 work stays planning-only.
 - **Parallelism:** at most two build-heavy lanes at once; the orchestrator alone merges to
@@ -61,10 +62,10 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-039 Avalonia shell | `done` except box 4 human | boxes 1/2 closed by T-050; box 4 is `blocked-human` |
 | T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
 | T-040 GUI pin editor | `done` | `110dc84`; run `40311141426` green on all six cells; pin/roots tests |
-| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; runs `40313952759` (six cells) and `40399283405` (strict release dry run: exact 18 archives + nupkg + sidecars, both CLI variants version-checked, screenshots inside the SC/GUI archives, no Release; `gh release create` is tag-only and unexercised); CLI 2.19/36.73 MB, GUI 47.71 MB on win-x64; tag withheld until human gates |
+| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; runs `40313952759` (six cells) and `40411290645` (post-T-058 strict release dry run: exact 18 archives + nupkg + sidecars, both CLI variants version-checked, screenshots inside the SC/GUI archives, no Release; `gh release create` is tag-only and unexercised); CLI 2.19/36.74 MB, GUI 47.72 MB on win-x64; tag withheld until T-058's owner decision and the human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
-| T-058 real-volume scan perf | `in-progress` | ReferenceIndex fix: 190.6 s → 15.6–17.7 s on the same 3,152 packages; 30k/30 GB target or owner amendment still open |
+| T-058 real-volume scan perf | `in-progress` | ReferenceIndex fix: 190.6 s → 15.6–17.7 s on 3,152 packages, 9.8 s on 30k items; combined 30k/30 GB shape or owner amendment open |
 | T-057 FR-23 user manifests | `done` | `b0f1871` + `346a460`; runs `40309220254`, `40311675742` green |
 | T-036 TUI screens | `blocked-human` | box 4 screen-reader smoke pass |
 | T-038 v0.3 release docs | `blocked-human` | box 2 fresh-VM install; 0.3.0 itself withdrawn |
@@ -84,10 +85,10 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 ### Clean-environment E2E (supporting evidence, not a fresh VM)
 
 2026-10-26: the published `coppice-0.4.0-rc.1-win-x64-self-contained.zip` (first from release dry run
-`40329677179`, then the final artifact from `40399283405`) was run on this Windows host with `PATH`
-reduced to `C:\Windows\System32;C:\Windows` (no `dotnet`), and with `LOCALAPPDATA`, `NUGET_PACKAGES`
-and the bundle-extract directory isolated to a scratch tree holding a two-version cache and one
-project:
+`40329677179`, then the post-T-058 artifact from `40411290645`) was run on this Windows host with
+`PATH` reduced to `C:\Windows\System32;C:\Windows` (no `dotnet`), and with `LOCALAPPDATA`,
+`NUGET_PACKAGES` and the bundle-extract directory isolated to a scratch tree holding a two-version
+cache and one project:
 
 - `version` → `coppice 0.4.0-rc.1`
 - `doctor --json` → all four tools absent; `nuget-packages` valid and cleanable via `NUGET_PACKAGES`
@@ -100,7 +101,7 @@ project:
 This proves the self-contained artifact needs no .NET runtime on `PATH` and that the full
 read → plan → move → restore path works on isolated state. It is **not** the T-038/T-043 fresh-VM
 gate: the host is not fresh, and the missing .NET is a scrubbed `PATH`, not an absent runtime. The
-final artifact repeated the run with plan `pln_2e4ffbf65e6d` and quarantine `493083826337143c`.
+post-T-058 artifact repeated the run with plan `pln_a7fcaccdefed` and quarantine `bd1efaf68327f914`.
 
 ## Release sign-off procedure (human)
 
@@ -163,9 +164,11 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-26 | Egress TRX archive fixed | `c97ae9c`; `upload-artifact` skips hidden paths, so the upload now sets `include-hidden-files` + `if-no-files-found: error`; run `40333340213` green and `egress-results` present (335,932 B) |
 | 2026-10-26 | Packaging evidence commit green; artifacts inspected | run `40334346355` on `4d2f77b`: six cells, egress and license; `coppice-win-x64` contains `docs/images/*.png`; `egress-results/egress.trx` contains `Egress_is_blocked_in_this_environment` |
 | 2026-10-26 | Strict release dry run | run `40399283405` on `905bdba`: six cells, package and aggregate green; exact 18 names + nupkg; fd/sc report `0.4.0-rc.1`; SC and GUI archives contain `docs/images`; the extracted GUI archive opened its window; no Release |
+| 2026-10-27 | Post-T-058 release dry run | run `40411290645` on `238dbdd`: six cells, package and aggregate green; exact 18 names + nupkg; fd/sc report `0.4.0-rc.1`; SC/GUI archives contain `docs/images`; no Release |
+| 2026-10-27 | Post-fix clean E2E | SC zip from `40411290645`, scrubbed PATH, isolated state; plan `pln_a7fcaccdefed`, quarantine `bd1efaf68327f914`, audit 2 records intact |
 | 2026-10-26 | Final rc.1 artifact clean E2E | SC zip from `40399283405`, scrubbed PATH, isolated state; plan `pln_2e4ffbf65e6d`, quarantine `493083826337143c`, audit 2 records intact |
 | 2026-10-27 | Real-volume scan measurement | rc.1 SC binary on the real NuGet cache: 3,152 items / 19.4 GB warm 190.6 s (cold 210.5 s); empty cache 5.0 s; T-058 opened |
-| 2026-10-27 | T-058 reference-index fix | `DotnetEcosystem.Resolve` builds one assets index per project set; the same 3,152-item cache is 17.7 s, then 15.6 s warm; verdicts unchanged; 1,372 unit, 33 architecture, 12 goldens, 53 escape at 100k |
+| 2026-10-27 | T-058 reference-index fix | `DotnetEcosystem.Resolve` builds one assets index per project set; the same 3,152-item cache is 17.7 s, then 15.6 s warm, and a 30k-item fixture is 9.8 s; verdicts unchanged; 1,372 unit, 33 architecture, 12 goldens, 53 escape at 100k |
 | 2026-10-27 | Dogfood report 1/5 (owner machine, automated) | scoped to the owner's machine, not an independent user: rc.1 SC binary; 46 Referenced, 3,106 Unknown, 0 Unreferenced; `plan` correctly proposes nothing (0 candidates); finding T-058 |
 | 2026-10-26 | Clean-environment rc.1 E2E (not a fresh VM) | self-contained zip, scrubbed PATH, isolated state; version→doctor→scan→plan→apply→restore→audit verify; details in the section above |
 | 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |

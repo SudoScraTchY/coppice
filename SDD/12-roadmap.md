@@ -20,10 +20,10 @@
 - **v0.4** — **release candidate `0.4.0-rc.1`**. T-040–T-043 code and machine evidence are complete:
   the GUI read→plan→apply flow with pin editor, history/completions, six-cell CI and recorded sizes.
   One engineering gap opened after the candidate: **T-058 real-volume scan performance**. The
-  reference-index fix takes the real 3,152-package cache from 190.6 s to 15.6–17.7 s, but NFR-04's
-  30k/30 GB target is still not demonstrated. The tag is withheld for the human gates (screen reader,
-  fresh VM, dogfood, second safety reviewer) and for a 30k test or an explicit NFR-04 amendment.
-  `v1.0` items are the only planning items.
+  reference-index fix takes the real 3,152-package cache from 190.6 s to 15.6–17.7 s and a 30,000-item
+  fixture to 9.8 s. The exact combined 30k/30 GB shape is not demonstrated, so the tag is withheld for
+  the human gates (screen reader, fresh VM, dogfood, second safety reviewer) and for the owner's
+  acceptance or an explicit NFR-04 amendment. `v1.0` items are the only planning items.
 - **v1.0** — planning only. No distribution, docs-site or packaging work is in this goal.
 
 ## Risks

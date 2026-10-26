@@ -51,8 +51,8 @@ the gateway lands (T-031). E-7 is a named mount-point test in the Safety suite; 
   on Windows/macOS.
 - **Perf smoke:** NFR-04's 30k-item / ~30 GB target is not in CI. T-053's fixture is sparse. A real
   3,152-item / 19.4 GB cache measured 190.6 s before T-058 and 15.6–17.7 s after the reference-index
-  fix; the strict 30k target still needs a test or an explicit NFR-04 amendment. No NFR-04 claim is
-  made until then.
+  fix; a 30k-item fixture is 9.8 s. The exact combined 30k/30 GB shape is not in CI, so NFR-04 still
+  needs the owner's acceptance or an amendment.
 - **Coverage:** no percentage gate is enforced today. The escape suite, architecture tests, real
   process kill test and goldens are the mandatory gates.
 

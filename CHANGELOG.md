@@ -97,8 +97,8 @@ GUI and requirement closure.
   with a 1.8 s bound, which still fails a probe that only ends via its timeout.
 - T-058: the .NET reference resolver builds one project-assets index per scan instead of re-reading
   every project's `obj/project.assets.json` for every package. A real 3,152-package / 19.4 GB cache
-  dropped from 190.6 s to 15.6–17.7 s with identical verdicts; a regression test pins one read per
-  project per scan.
+  dropped from 190.6 s to 15.6–17.7 s with identical verdicts; a 30,000-item fixture scans in 9.8 s.
+  A regression test pins one read per project per scan.
 - T-047: keep-newest now compares all four numeric parts of a NuGet version. Four-part versions that
   differed only in the revision compared equal, so the deterministic `ItemId` tie-break could keep an
   older version and propose the true newest. Prerelease identifiers now follow NuGet ordering (numeric

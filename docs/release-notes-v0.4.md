@@ -83,25 +83,26 @@ to publish if the tag disagrees with `<Version>` in `Directory.Build.props` or i
 no green six-cell `build.yml` run. The current candidate has no GitHub Release; the commands above are
 the source path.
 
-## Measured artifacts (win-x64, 0.4.0-rc.1)
+## Measured artifacts (win-x64, 0.4.0-rc.1, post-T-058)
 
 | Artifact | Exact bytes | Cold start |
 |---|---:|---|
 | `coppice.exe` framework-dependent | 2,305,297 | 80–99 ms |
-| `coppice.exe` self-contained | 38,521,672 | 121–427 ms (first run extracts) |
-| `coppice-gui.exe` self-contained | 50,034,463 | not measured (opens a window) |
+| `coppice.exe` self-contained | 38,522,491 | 121–427 ms (first run extracts) |
+| `coppice-gui.exe` self-contained | 50,035,520 | not measured (opens a window) |
 
-The GUI has no size budget; 47.71 MB is the recorded candidate. The CLI budgets (5 MB framework-dependent,
-50 MB self-contained) are enforced by `scripts/publish.sh`.
+The GUI has no size budget; 47.72 MB is the recorded candidate. The CLI budgets (5 MB framework-dependent,
+50 MB self-contained) are enforced by `scripts/publish.sh`. Cold start is from the pre-T-058 local build;
+the resolver fix is not on the startup path.
 
-A strict release dry run (run `40399283405` on `905bdba`) built every variant on all six RIDs and
+A strict release dry run (run `40411290645` on `238dbdd`) built every variant on all six RIDs and
 refused to create a Release off-tag. Ranges across those cells:
 
 | Variant | Bytes | Size |
 |---|---:|---:|
-| CLI framework-dependent | 2,193,723–2,286,168 | 2.09–2.18 MB |
-| CLI self-contained | 37,310,920–40,202,969 | 35.58–38.34 MB |
-| GUI self-contained | 47,274,067–52,044,908 | 45.08–49.63 MB |
+| CLI framework-dependent | 2,196,283–2,305,297 | 2.09–2.20 MB |
+| CLI self-contained | 37,311,912–40,203,961 | 35.58–38.34 MB |
+| GUI self-contained | 47,275,062–52,045,900 | 45.08–49.63 MB |
 
 ## Known limits and open human gates
 
@@ -111,10 +112,10 @@ refused to create a Release off-tag. Ranges across those cells:
 - The self-contained rc.1 artifact was exercised end to end with no .NET on `PATH` against a scratch
   cache: version → doctor → scan → plan → apply → quarantine list → restore → audit verify. That is
   supporting evidence, not the fresh-VM gate; the host was not fresh.
-- **NFR-04 is not fully demonstrated on real data.** The 30k-item number is a sparse fixture (1.38 s).
-  The first real measurement was **190.6 s** for 3,152 packages / 19.4 GB. The T-058 reference-index
-  fix takes the same cache to **15.6–17.7 s** (10.8–12.2x); the strict 30k/30 GB target is still not
-  demonstrated, so the tag waits on a 30k test or an explicit NFR-04 amendment.
+- **NFR-04 is close but not taken as met.** The first real measurement was **190.6 s** for 3,152
+  packages / 19.4 GB. The T-058 reference-index fix takes the same cache to **15.6–17.7 s** and a
+  30,000-item fixture to **9.8 s**. The exact combined 30k/30 GB shape is not run, so the tag waits
+  on the owner's acceptance or an explicit NFR-04 amendment.
 - The GUI visual layer is compiled and its view models are headless-tested; Avalonia rendering is not
   part of the automated gate.
 - `clean`, `report` and `config` verbs remain planned; the HTML exporter and completions are the
@@ -127,14 +128,14 @@ refused to create a Release off-tag. Ranges across those cells:
 - 1,371 unit tests + 33 architecture tests (local, after the last code card)
 - 12 golden reports, `dotnet format --verify-no-changes`, the 100k-case escape suite
 - Six-cell GitHub Actions run per code card; the release candidate's run is `40313952759` on `4bb1b7e`
-- Strict release dry run `40399283405` on `905bdba`: exact 18 archive names plus the `dotnet tool`
+- Strict release dry run `40411290645` on `238dbdd`: exact 18 archive names plus the `dotnet tool`
   package and checksums, both CLI variants version-checked, screenshots inside the SC and GUI
   archives, and no Release created off-tag
 - Build run `40333340213`: six cells green, and the egress canary TRX is archived as `egress-results`
   (the upload silently skipped the dot-prefixed directory before `c97ae9c`)
 - Clean-environment E2E: the rc.1 self-contained binary, `PATH` without .NET, isolated state, completed
-  the full read → plan → move → restore → audit path; repeated against the final archive from
-  `40399283405` (plan `pln_2e4ffbf65e6d`)
+  the full read → plan → move → restore → audit path; repeated against the post-T-058 archive from
+  `40411290645` (plan `pln_a7fcaccdefed`)
 - T-058: real 3,152-package scan 190.6 s → 15.6–17.7 s; 1,372 unit, 33 architecture, 12 goldens,
   53 escape tests at 100k
 - `SDD/AGENDA.md` records the other run ids
