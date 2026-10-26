@@ -9,7 +9,7 @@ A native, plugin-based toolchain and cache cleaner for polyglot developers.
 | | |
 |---|---|
 | **License** | Apache-2.0 |
-| **Status** | v0.3.0 — apply, safely (2026-10-21) |
+| **Status** | v0.4.0-dev — GUI & time (in development; 0.3.0 was never tagged — see ADR-017) |
 | **Platforms** | Windows, Linux, macOS (x64/arm64) |
 | **Runtime** | .NET 10. No container runtime, daemon, service or middleman |
 
@@ -23,7 +23,7 @@ reason for every step, and — after you confirm it — moves approved items int
 restore from. It never deletes during `apply`, and every mutation is recorded in a hash-chained audit
 ledger.
 
-The v0.3 pipeline is:
+The pipeline is:
 
 ```
 doctor → scan --projects → plan → apply → quarantine list
@@ -37,7 +37,7 @@ install or the command path.
 **Framework-dependent single file** (needs the .NET 10 runtime; ~2 MB):
 
 ```bash
-bash scripts/publish.sh win-x64        # replace with linux-x64, osx-x64 or osx-arm64
+bash scripts/publish.sh win-x64        # or linux-x64, linux-arm64, osx-x64, osx-arm64, win-arm64
 ```
 
 **Self-contained single file** (needs no .NET installed; ~38 MB):
@@ -50,7 +50,7 @@ SELF_CONTAINED=1 bash scripts/publish.sh win-x64
 
 ```bash
 dotnet pack src/Coppice.Cli/Coppice.Cli.csproj -c Release -o artifacts/packages
-dotnet tool install --global --add-source ./artifacts/packages coppice --version 0.3.0
+dotnet tool install --global --add-source ./artifacts/packages coppice --version 0.4.0-dev
 ```
 
 The publish directory contains the binary, `README.md`, `CHANGELOG.md`, `LICENSE`, `NOTICE` and
@@ -101,10 +101,12 @@ The Avalonia desktop shell runs the same services as the CLI:
 dotnet run --project src/Coppice.Gui
 ```
 
-It has Dashboard, Items, Plan review (with per-step selection), Apply progress, Quarantine, Roots and
-Problems screens. The retention picker includes **Keep newest only**, the same policy as
-`coppice plan --keep-latest 1`: the newest version of each package is kept and older unreferenced
-versions are proposed. The GUI is not part of the v0.3 release artifact yet; v0.4 packaging is T-043.
+The committed T-039 shell has Dashboard, Items, Plan review (with per-step selection), Apply progress,
+Quarantine, Roots and Problems screens. The retention picker includes **Keep newest only**, the same
+policy as `coppice plan --keep-latest 1`: the newest version of each package is kept and older
+unreferenced versions are proposed. A larger redesign is parked on `wip/gui-shell` and is finished by
+T-050 before the T-040 pin editor. The GUI is not part of a release artifact yet; v0.4 packaging is
+T-043.
 
 ## Safety model
 
@@ -125,14 +127,16 @@ versions are proposed. The GUI is not part of the v0.3 release artifact yet; v0.
 The reasoning, including the escape suite and the kill-and-resume test: [docs/safety.md](./docs/safety.md)
 and [SDD/06-safety-model.md](./SDD/06-safety-model.md).
 
-## Scope in v0.3
+## Scope in v0.4 (development)
 
-- **NuGet only.** `scan` inventories the NuGet global-packages cache and runs .NET health checks. Go,
-  Rust and Node/npm profiles exist in the codebase but are not wired into `scan` yet.
-- **No config file yet.** `config.toml` is specified and tested, but v0.3 commands do not read it. Use
+- **Ecosystems.** The .NET plugin is the only one wired into `scan` today; the Go, Rust and Node
+  profiles exist and are wired by T-048.
+- **Config.** `config.toml` is specified and its loader is tested. T-049 reads project roots, policy
+  and exclusions; T-052 consumes pins and quarantine settings. Until those cards land, use
   `--projects`, `--policy` and `--keep-latest` explicitly.
 - **No `clean`, `report` or `config` verbs.** The report exporters exist; the verbs are not wired.
-- **GUI is v0.4.**
+- **GUI.** The T-039 shell is committed. T-050 finishes the parked redesign and the 200 ms cancel
+  measurement; T-040 adds the pin editor.
 - **Not yet verified on a clean machine.** The publish path and both install variants are exercised,
   but a full install → apply pass on a fresh VM has not been completed. The manual screen-reader pass
   is also outstanding.
@@ -144,7 +148,10 @@ and [SDD/06-safety-model.md](./SDD/06-safety-model.md).
 | [docs/quickstart.md](./docs/quickstart.md) | Install, first run, non-interactive use, state locations |
 | [docs/safety.md](./docs/safety.md) | Why the default is dry-run; gateway, quarantine, audit, limits |
 | [docs/commands.md](./docs/commands.md) | Every verb, flag, confirmation rule and exit code |
-| [docs/release-notes-v0.3.md](./docs/release-notes-v0.3.md) | What shipped in v0.3.0 and what did not |
+| [docs/release-notes-v0.3.md](./docs/release-notes-v0.3.md) | The withdrawn 0.3.0 candidate and what it did not prove |
+| [SDD/AGENDA.md](./SDD/AGENDA.md) | The live work queue, card status and human gates |
+| [SDD/ORCHESTRATION.md](./SDD/ORCHESTRATION.md) | Multi-agent roles, ownership, merge protocol and gates |
+| [docs/adr/ADR-017-release-truth-and-size-budget.md](./docs/adr/ADR-017-release-truth-and-size-budget.md) | Release truth and the amended NFR-11 size budget |
 | [CHANGELOG.md](./CHANGELOG.md) | Change history |
 | [SDD/](./SDD/) | The specification: requirements, architecture, plugin contract, safety model, roadmap, task cards |
 

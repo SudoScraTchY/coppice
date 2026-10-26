@@ -150,5 +150,5 @@ Windows, Linux, macOS; x64 + arm64.
 | NFR-08 | OS-specific code isolated to adapters; no direct `System.IO` in core/plugins | Architecture tests |
 | NFR-09 | `--no-color` and piped-output plain mode; GUI keyboard + a11y labels | Manual + unit |
 | NFR-10 | Actionable errors with fix hints | Review checklist per message |
-| NFR-11 | Self-contained single-file CLI < 30 MB | Release check |
+| NFR-11 | Framework-dependent single-file CLI < 5 MB (primary); self-contained single-file < 50 MB (optional, for machines without .NET) | Release check; amended by ADR-017 |
 | NFR-12 | Versioned schemas (config, manifest, plan, snapshot) with migration policy | Schema tests |

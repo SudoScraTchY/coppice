@@ -1,5 +1,10 @@
 # Coppice v0.3.0 — apply, safely
 
+> **Withdrawn.** This document describes the 0.3.0 candidate. No tag or package was published, CI
+> never passed on it, and the clean-machine and screen-reader evidence was never produced. See
+> [ADR-017](adr/ADR-017-release-truth-and-size-budget.md) and [quickstart.md](quickstart.md) for the
+> current development build.
+
 Released 2026-10-21.
 
 v0.3 is the first release that can change your machine. It scans the NuGet global-packages cache,
@@ -100,7 +105,9 @@ not the same as a person using a screen reader.
 
 - **Other ecosystems.** Go, Rust and Node/npm profiles exist in the codebase, but `scan` currently
   inventories only the NuGet global-packages cache and .NET health.
-- **Config file.** `config.toml` is specified and its loader is tested, but v0.3 commands do not read
+- **Config file.** `config.toml` is specified and its loader is tested, but the current commands do not
+  read it. T-049 wires project roots, policy and exclusions; T-052 consumes pins and quarantine
+  settings.
   it. Pass `--projects`, `--policy` and `--keep-latest` explicitly. The TUI's pin line shows what a
   future config would use.
 - **`clean`, `report` and `config` verbs.** Report exporters exist, but the verbs are not wired.

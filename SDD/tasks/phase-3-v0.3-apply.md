@@ -202,3 +202,72 @@ Exit criteria per 12-roadmap.
 > T-047 was found while verifying T-039's five-version case against real package versions (for example
 > GoogleGson 2.13.2.2 and HarfBuzzSharp 8.3.1.3). The old comparator returned equal for 1.0.0.2 and
 > 1.0.0.10; the deterministic `ItemId` tie-break then kept 1.0.0.2 and proposed 1.0.0.10.
+
+### T-048 · Wire Go, Rust and Node into the real scan and plan path
+**Refs** FR-01, FR-06, FR-08, FR-23, 09-ecosystems · **Depends** T-015, T-022…T-025, T-030 · **Effort** L · **Safety card**
+
+> Found by the v0.3 release gate: the Go/Rust/Node plugins passed conformance and their manifests were
+> embedded, but `ScanService` constructed exactly one `NuGetPackageEnumerator`, doctor resolved only the
+> .NET table, and the plan preview knew only the .NET ordering. `coppice scan` could therefore never see a
+> Go module cache, a cargo registry or an npm cache; the plugins were inert.
+>
+> Status 2026-10-26: the implementation exists off-main in
+> `.qoder/worktrees/agent-general-purpose-09abdb8c` (24 modified + 7 new files). The boxes stay open
+> until it is rebased, reviewed, hardened by T-056 and gated.
+
+**Build**
+- Add an application-layer `EcosystemCatalog`/`EcosystemRegistry`: .NET locations come from the code
+  profile, Go/Rust/Node locations from their embedded manifests. Registration is data — one entry plus a
+  manifest and plugin — and the registry owns the location → plugin mapping. Duplicate ids are refused.
+- Resolve every registered location through the existing `ResolutionEngine`, `LocationSpec`, denylist and
+  fingerprint gates. Manifest sources feed tool/env/default rungs using the existing parsers; `{home}`
+  expansion, per-source suffixes (`CARGO_HOME` + `registry`, `GOPATH` + `bin`) and the manifest
+  `risk_ceiling` are carried through. `ScanWiring` and `ApplyWiring` read the catalog rather than the .NET
+  profile, so doctor, scan, the TUI and apply agree about locations.
+- Replace the single Core enumerator with one `EcosystemInventoryEnumerator` adapter that hands each root
+  to its owner's `IInventoryProvider.Discover`. The kernel pipeline still enforces containment, the
+  quarantine skip, de-duplication, determinism and cancellation. Items are adapted at the application
+  boundary (size, `lastWriteUtc`, a portable `referenceName`), and usage is resolved by each ecosystem's
+  own `IReferenceResolver` with the shared Unknown → not-Safe floor. Health checks run only for ecosystems
+  that implement `IHealthChecker`.
+- Register every ecosystem's `IVersionOrdering` in `PlanPreviewService`; snapshots and `scan` now report
+  the ecosystem ids that actually own roots/items.
+- Plugin corrections found by the wiring: Rust publishes a `referenceName` so Cargo.lock matching and
+  keep-latest group by crate, not directory name; Rust/Node join paths with the TARGET OS separator;
+  .NET skips NuGet's `.store` in the tools directory; the Go mod-cache fingerprint names the `cache`
+  marker instead of a depth-1 ratio that rejects every real nested module cache.
+
+**Acceptance**
+- [ ] A Go module cache with `go.sum` scans module versions, marks the selected version Referenced, and `keep-latest 1` proposes an older Unreferenced version
+- [ ] Rust and Node inventory/reference run through the orchestrator (scan tests), and a Rust path-delete applies through the gateway
+- [ ] A non-.NET scan is deterministic across runs and, with no project roots, every item is Unknown and nothing is planned
+- [ ] A fifth ecosystem can be scanned by adding a registry entry only; `ScanService` needs no per-ecosystem branch
+- [ ] The snapshot stores every scanned ecosystem and the report lists the same ids
+- [ ] The .NET golden facts (`nupkgPresent`, `nuspecPresent`, `metadataPresent`, `signaturePresent`) survive the wiring
+
+### T-049 · Read config.toml in the commands
+**Refs** FR-22, FR-19, 07-cli-tui · **Depends** T-029 · **Effort** M
+
+> Status 2026-10-26: the implementation exists as commit `5424de4` in detached worktree
+> `M:\Agentic\Projects\Coppice-t049-config`. The boxes stay open until it is cherry-picked after T-048
+> and gated.
+
+**Build**
+- `UserConfigService` loads the platform config path. A missing file is working defaults, not an error;
+  an unreadable or invalid file is refused with every diagnostic. `UserConfigPath` is shared by the
+  commands and the TUI so they cannot disagree about which file is authoritative.
+- `scan` uses `projects.roots` only when `--projects` is absent; an explicit flag always wins. `plan`
+  starts from `policy.*` and merges `exclude.paths`/`exclude.names` into the retention policy. An
+  explicit `--policy` replaces the preset but keeps the exclusions, and `--keep-latest` overrides the
+  count. `tui` starts with the config's project roots and policy.
+- Deliberately not in this card: `[pins]` and `[quarantine]` are parsed but not yet consumed. Pin
+  resolution must share one root-resolution path with the ecosystem registry (T-048), and quarantine
+  settings need the apply wiring; pretending otherwise would make `doctor` show a pin that `scan` then
+  ignores.
+
+**Acceptance**
+- [ ] Missing config = defaults; invalid config is refused with line-level diagnostics
+- [ ] `scan` project roots: explicit `--projects` > config > none
+- [ ] `plan` policy/keep_latest/exclusions: flags > config > defaults, and exclusions survive a preset flag
+- [ ] `tui` starts with the configured project roots and policy
+- [ ] The platform config path is tested for Windows, Linux and macOS

@@ -38,6 +38,10 @@ config > Profile > Resolve > Scan > Snapshot > Analyze > Plan > Report
 - Snapshots are persisted, making reports, history, and plan validation
   possible after the fact.
 
+v0.4 adds an application-layer `EcosystemRegistry`: the .NET code profile and the Go/Rust/Node
+manifests register as data, and one registry maps a location id to its owning plugin. A new
+manifest+plugin should be one registration entry, not a branch in `ScanService` (T-048/T-056).
+
 ## Process & concurrency
 
 Single process. Long scans use cancellation tokens and progress reporting.

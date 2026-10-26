@@ -3,6 +3,12 @@
 v1 scope: **.NET** (built-in code plugin), **Go, Rust, Node/npm**
 (declarative manifests). Python/pnpm/yarn are candidates (see nice-to-haves).
 
+> **Wiring status (2026-10-26).** All four profiles are specified and their plugins/manifests are in the
+> repository, but only the .NET profile is currently wired into `scan`/`plan`/`apply`. T-048 lands the
+> application-layer registry that makes Go, Rust and Node real; T-056 hardens the registration so a new
+> profile is data, not a branch. Until T-048 lands, "Go/Rust/Node support" means the plugin and
+> conformance suite, not the scan output.
+
 ## .NET (`net`) — built-in code plugin, phase v0.1
 
 ### Locations

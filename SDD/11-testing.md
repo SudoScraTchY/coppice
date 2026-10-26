@@ -35,20 +35,25 @@ fails conformance does not ship.
 | E-11 | **Tool poisoning**: fake `go`/`dotnet` on PATH returning `/` or the home dir → resolver must mark Denied/FailsFingerprint | resolution |
 | E-12 | File locked open during apply → skip, no crash, audited | apply/gateway |
 
-Phasing: E-1…E-9 + E-11 are runnable against resolution/path-safety in v0.2
-(T-028); E-10 and E-12 join when the gateway lands in v0.3 (T-031).
+Phasing: E-1…E-9 + E-11 are runnable against resolution/path-safety (T-028); E-10 and E-12 join when
+the gateway lands (T-031). E-7 was specified but had no test until T-054; E-10/E-12 live in the Apply
+tests and are included in the named escape job by T-054.
 
 ## Other suites
 
 - **Golden reports:** scan fixture → byte-identical JSON/CSV/MD (NFR-06).
 - **Crash safety:** kill -9 mid-apply → resume completes, no partial items.
 - **Quarantine round-trip:** restore is hash-identical.
-- **Network block:** full suite runs with egress blocked (NFR-02).
-- **Perf smoke:** synthetic 30k-item/30 GB tree vs NFR-04 targets.
-- **Coverage gates:** `Coppice.Core.Safety` ≥ 90% line coverage; escape suite
-  mandatory on every PR.
+- **Network block:** the full suite runs with egress blocked (NFR-02). The job runs on Linux because
+  it uses `unshare --net`; the canary asserts a real TCP connection fails, and the job fails if the
+  canary did not execute. There is no equivalent local gate on Windows/macOS.
+- **Perf smoke:** NFR-04's 30k-item / ~30 GB target is not in CI yet. T-053 owns the fixture and
+  records the actual numbers; until then, no perf claim is made.
+- **Coverage:** no percentage gate is enforced today. The escape suite, architecture tests, real
+  process kill test and goldens are the mandatory gates.
 
 ## CI matrix
 
-Windows, Linux, macOS × x64/arm64 (arm64 via emulated runners where needed).
-Release builds: self-contained single-file per OS/arch.
+Windows, Linux and macOS × x64/arm64 on GitHub-hosted runners (six real cells; a RID assertion fails
+a cell that silently falls back to x64). The egress job and license job run on Linux. Release builds:
+self-contained single file per OS/arch.

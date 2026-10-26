@@ -4,9 +4,20 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] — unreleased
+
+The development version is `0.4.0-dev`. This line folds in the work that had been stranded after the
+withdrawn 0.3.0 candidate: the CI repair, the path-safety fix it exposed, T-048/T-049, and the v0.4
+GUI and requirement closure.
 
 ### Added
+- T-018 CI: six real cells on GitHub-hosted x64/arm64 runners, a RID assertion that fails a silently
+  x64 cell, per-RID publish artifacts, and an egress job that runs the suite in `unshare --net` with a
+  canary that proves the isolation is real. The TUI render test no longer depends on
+  `GITHUB_ACTIONS`, and the cold-start timer works where BSD `date` has no `%s%N`.
+- T-055 SDD reconciliation: `SDD/AGENDA.md`, `SDD/ORCHESTRATION.md`, ADR-017 (release truth and the
+  amended NFR-11 budget), the T-048–T-056 cards, corrected roadmap/testing/CLI/quickstart claims, and
+  vendored Avalonia + csharp-expert skills with MIT notices.
 - T-039 Avalonia shell: `Coppice.Gui` is a native Avalonia 12 desktop front-end over the same application
   services as the CLI. Dashboard (project roots, scan, cancel), Items, Plan review with per-step selection,
   Apply progress, Quarantine (restore), Roots and Problems. The policy picker exposes "Keep newest only",
@@ -21,13 +32,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "Keep newest only" choice produces the same plan id and step set as `coppice plan --keep-latest 1`.
 
 ### Fixed
+- T-004: resolving a link whose relative target sits at a filesystem root now keeps the result
+  absolute. macOS `/var` → `private/var` had produced `private/var/...` without the leading slash,
+  so a child process resolved the path against its working directory and the kill test looked in
+  `.../T/private/var/...`. Windows drive-root junctions had the same shape. Regression tests cover
+  both; the real kill test is green on the six-cell matrix.
+- T-018: the macOS kill fixture now builds its temp tree from the same canonical path the child sees,
+  and the egress job fails if the canary did not execute.
 - T-047: keep-newest now compares all four numeric parts of a NuGet version. Four-part versions that
   differed only in the revision compared equal, so the deterministic `ItemId` tie-break could keep an
   older version and propose the true newest. Prerelease identifiers now follow NuGet ordering (numeric
   below alphanumeric, text case-insensitive), and build metadata containing `-` is no longer read as a
   prerelease.
 
-## [0.3.0] — apply, safely — 2026-10-21
+## [0.2.0] — manifests prove the design — 2026-10-06
+
+Phase 2 (T-020 … T-030). The manifest loader and validator, parser library proven against recorded
+tool output, `go`/`rust`/`node` profiles, the retention policy engine and presets, the plan builder and
+checksummed plan JSON, CSV/Markdown exporters, the escape suite E-1…E-9/E-11, the config loader, and
+the ADR-011 API freeze checkpoint.
+
+ADR-011 records the correction to the roadmap's original claim: Go and Node required no core changes,
+while Rust needed a domain addition (three Core files). The contract boundary itself did not change.
+The phase-2 code landed before this section was written; the missing section is restored here rather
+than pretending the release did not happen.
+
+## [0.3.0] — withdrawn (never tagged) — 2026-10-21
+
+> **Withdrawn.** This section records the 0.3.0 candidate. No tag was created, CI never passed on it,
+> and the clean-machine and screen-reader evidence was never produced. The code work below is real;
+> the release claim is not. The next release is 0.4.0 (see ADR-017).
 
 Phase 3 of the spec roadmap (T-031 … T-038, plus T-044 and T-045). This is the first release that can
 change a machine: a scan produces evidence, a plan carries a reason per step, and `apply` moves

@@ -1,7 +1,8 @@
 # Quickstart
 
-Coppice v0.3 cleans the NuGet global-packages cache without guessing. It scans, proposes a plan, asks
-for confirmation, and moves approved items into a quarantine you can restore from.
+Coppice is a cross-platform cache cleaner. The current development line is v0.4; 0.3.0 was never
+tagged (see [ADR-017](../docs/adr/ADR-017-release-truth-and-size-budget.md)). It scans, proposes a
+plan, asks for confirmation, and moves approved items into a quarantine you can restore from.
 
 Nothing in this guide requires Docker, a daemon, a service, or a helper process. Coppice is a single
 native .NET executable (or a `dotnet tool`) that works directly on your files.
@@ -22,19 +23,23 @@ bash scripts/publish.sh win-x64
 SELF_CONTAINED=1 bash scripts/publish.sh win-x64
 ```
 
-RIDs used by the publish script are `win-x64`, `linux-x64`, `osx-x64` and `osx-arm64` (any runtime
-identifier `dotnet` supports works). On Windows run `coppice.exe`; elsewhere run `./coppice`.
+RIDs used by the publish script are `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64` and
+`osx-arm64` (any runtime identifier `dotnet` supports works). On Windows run `coppice.exe`; elsewhere
+run `./coppice`.
 
 The publish directory contains `coppice`/`coppice.exe`, `README.md`, `CHANGELOG.md`, `LICENSE`,
 `NOTICE` and `docs/`. A release archive, when one is published, has the same layout: extract it and
 put the binary on your `PATH`.
 
-If you have the .NET 10 SDK but not bash, the equivalent publish command is:
+The framework-dependent equivalent is:
 
 ```powershell
 dotnet publish src/Coppice.Cli/Coppice.Cli.csproj -c Release -r win-x64 `
-  --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -o dist
+  --self-contained false -p:PublishSingleFile=true -o dist
 ```
+
+For the self-contained variant, use `--self-contained true` and add
+`-p:EnableCompressionInSingleFile=true` (about 38 MB, and it needs no .NET runtime on the target).
 
 ### dotnet tool
 
@@ -42,15 +47,12 @@ Pack it from a checkout and install the package:
 
 ```bash
 dotnet pack src/Coppice.Cli/Coppice.Cli.csproj -c Release -o artifacts/packages
-dotnet tool install --global --add-source ./artifacts/packages coppice --version 0.3.0
+dotnet tool install --global --add-source ./artifacts/packages coppice --version 0.4.0-dev
 coppice --version
 ```
 
-If the package is available from a feed you already use, install it by name:
-
-```bash
-dotnet tool install --global coppice --version 0.3.0
-```
+No public package feed carries Coppice yet; the local pack and install above is the supported path
+until a release is tagged.
 
 ## First run
 
@@ -67,11 +69,13 @@ coppice quarantine list
 
 What each step does:
 
-1. **doctor** resolves the .NET locations on this machine and reports what it found and what it could
-   not validate. It changes nothing.
-2. **scan** inventories the NuGet global-packages cache and stores a snapshot. `--projects` is what lets
+1. **doctor** resolves the registered locations on this machine and reports what it found and what it
+   could not validate. It changes nothing. (The .NET profile is wired today; T-048 adds Go, Rust and
+   Node.)
+2. **scan** inventories the registered cache locations and stores a snapshot. `--projects` is what lets
    Coppice read `obj/project.assets.json` and prove which cached versions are referenced. Without a
-   project root every item is `Unknown`, and Coppice will not call it unused.
+   project root every item is `Unknown`, and Coppice will not call it unused. (The .NET inventory is
+   wired today; T-048 adds the other ecosystems.)
 3. **plan** builds a plan from the newest snapshot and stores it. It prints the policy, the steps, the
    bytes, and the reason for each step. It changes no cache files. `--out plan.json` also writes the
    checksummed plan to a file.
@@ -118,4 +122,4 @@ permanently.
 
 - [Safety model](safety.md) — why the default is dry-run, what the gateway checks, what a restore verifies.
 - [Command reference](commands.md) — every flag, exit code and confirmation rule.
-- [v0.3 release notes](release-notes-v0.3.md) — what shipped and what is not in this release yet.
+- [v0.3 release notes](release-notes-v0.3.md) — the withdrawn 0.3.0 candidate and what it did not prove.

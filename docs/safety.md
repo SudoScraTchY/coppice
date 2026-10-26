@@ -103,12 +103,13 @@ guessing which side the item landed on.
 | 3 | Safety abort (invalid plan, ambiguous roots, a restore that would overwrite or restore altered content) |
 | 4 | Partial apply, or a cancelled apply that left a resumable journal |
 
-## Limits in v0.3
+## Current limits (v0.4 development)
 
 - `scan` inventories the NuGet global-packages cache and .NET health. Other ecosystem plugins exist but
   are not wired into the scan command yet.
-- `config.toml` is specified and its loader is tested, but v0.3 commands do not read it. Pass
-  `--projects`, `--policy` and `--keep-latest` explicitly.
+- `config.toml` is specified and its loader is tested, but the current commands do not read it. T-049
+  wires project roots, policy and exclusions; T-052 consumes pins and quarantine settings. Until those
+  cards land, pass `--projects`, `--policy` and `--keep-latest` explicitly.
 - The TUI's pin status shows the line a future config would use; config-file pins are not active yet.
 - A manual screen-reader smoke pass has not been run. The plain output and labeled blocks are tested, but
   that is not the same as a person using a screen reader.

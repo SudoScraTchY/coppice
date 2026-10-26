@@ -4,19 +4,19 @@
 
 | Command | Purpose | Mutates? |
 |---|---|---|
-| `coppice doctor` | Roots resolution + problems + config validation | no |
+| `coppice doctor` | Roots resolution + problems (config validation is T-052) | no |
 | `coppice roots` | Detailed location/candidate table | no |
 | `coppice scan [--projects <path>]... [--json]` | Snapshot the machine | no |
 | `coppice plan [--policy conservative\|default\|aggressive] [--keep-latest N] [--out plan.json]` | Build a plan from latest snapshot | no |
-| `coppice clean` | scan → plan → interactive review → apply | asks first |
+| `coppice clean` | Planned; not implemented | — |
 | `coppice apply [--plan plan.json] [--yes] [--strict] [--resume]` | Execute a plan | **yes** |
-| `coppice report [--snapshot id] [--format json\|csv\|md]` | Export from stored snapshot | no |
+| `coppice report` | Planned; not implemented (exporters exist, the verb is not wired) | — |
 | `coppice quarantine list\|restore <id>\|prune` | Manage quarantine | restore/prune |
 | `coppice audit show\|verify` | Inspect the audit log | no |
-| `coppice config path\|get\|set` | Manage config | set |
+| `coppice config path\|get\|set` | Planned; `config.toml` is read by T-049 and consumed by T-052 | — |
 
-Global flags: `-v/--verbose`, `--no-color`, `--ci`, `--config <path>`,
-`--root <location-id>=<path>` (ad-hoc pin).
+Global flags: `--no-color`, `--ci` (implemented). `-v/--verbose`, `--config <path>` and
+`--root <location-id>=<path>` are planned and are not accepted yet.
 
 Plain output automatically when stdout is piped. First run with no project
 roots configured prints an onboarding hint (reference resolution needs
@@ -30,16 +30,17 @@ automatic discovery from the current directory: scanning the wrong tree would tu
 another repository into `Unreferenced`, and the whole default policy depends on that verdict.
 
 A run with no roots is valid and safe — every item is `Unknown` and a plan proposes nothing — but it
-cannot prove a package is unused. Config-file wiring for project roots, policy, exclusions and pins is
-specified and validated by `ConfigLoader`; v0.3's commands do not read `config.toml` yet, so pass the
-values explicitly. The TUI's pin status shows the line a future config would use rather than claiming
-the pin is active.
+cannot prove a package is unused. Config-file wiring for project roots, policy, exclusions, pins and
+quarantine is specified and validated by `ConfigLoader`; **T-049** wires project roots, policy and
+exclusions into the commands, and **T-052** consumes pins and quarantine settings. Until those cards
+land, pass the values explicitly. The TUI's pin status shows the line a future config would use rather
+than claiming the pin is active.
 
 ## Install and runtime
 
 Coppice is a plain .NET binary (framework-dependent or self-contained single file) or a `dotnet tool`. It
 requires no container runtime, daemon, sidecar or middleman: `plan`, `apply`, `quarantine` and `audit`
-operate directly on the user's files and state. Docker is not an ecosystem in v0.3 and is never a
+operate directly on the user's files and state. Docker is not an ecosystem in v0.4 and is never a
 prerequisite for installing or running the tool. (CI may use a container to prove the test suite runs with
 egress blocked; that is test isolation, not part of the shipped binary.)
 

@@ -95,7 +95,7 @@ owned by `user` is report-only in v1 (ADR-012).
 
 - **Per-project overrides** (e.g. NuGet `RestorePackagesPath`): machine-level
   resolution cannot see them; the project scan will add such folders as extra
-  candidate roots (planned v0.3).
+  candidate roots (planned for v0.4).
 - **Tools without query commands** (e.g. cargo has no `cargo env`): rely on
   env/config/defaults; report lower confidence.
 - **WSL/containers:** cross-boundary paths (`/mnt/c`, `\\wsl$`) are skipped

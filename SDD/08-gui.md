@@ -30,3 +30,11 @@ validation preview).
 
 Anything the CLI can't do. If a feature needs GUI-only logic, the design is
 wrong — it belongs in core.
+
+## Current state (2026-10-26)
+
+The committed T-039 shell covers Dashboard, Items, Plan review, Apply progress, Quarantine, Roots and
+Problems, over the shared `Coppice.Application` services. A larger redesign is parked on `wip/gui-shell`
+(`5e6efa0`) and does not compile yet; **T-050** finishes it and measures the 200 ms cancellation bound
+before **T-040** adds the pin editor and per-candidate provenance. Principle 3 is therefore still open,
+not silently claimed.

@@ -2,6 +2,10 @@
 
 ## User config
 
+> **Consumption status (2026-10-26).** The loader and schema are implemented and tested. T-049 wires
+> `projects.roots`, `policy.*`, `exclude.*` into `scan`/`plan`/`tui`; T-052 consumes `[pins]` and
+> `[quarantine]`. Until those cards land, the file is parsed but `doctor`/`scan` do not use its values.
+
 Path: `%APPDATA%\coppice\config.toml` (win) · `~/.config/coppice/config.toml`
 (linux) · `~/Library/Application Support/coppice/config.toml` (mac).
 State/snapshots: `%LOCALAPPDATA%\coppice` · `~/.local/state/coppice` ·

@@ -155,16 +155,17 @@ coppice version
 coppice help
 ```
 
-`version` prints the assembly version (this release is `0.3.0`).
+`version` prints the assembly version (the development build is `0.4.0-dev`; 0.3.0 was never tagged).
 
-## Not available in v0.3
+## Not available yet
 
-- `coppice clean` (scan → plan → review → apply in one verb)
-- `coppice report` (CSV/Markdown/HTML export command; exporters exist in the codebase, the verb is not wired)
-- `coppice config` (config-file management)
+- `coppice clean` (scan → plan → review → apply in one verb) — planned
+- `coppice report` (CSV/Markdown/HTML export command; exporters exist in the codebase, the verb is not wired) — planned
+- `coppice config` (config-file management) — planned
 
-`config.toml` is specified and its loader is tested, but v0.3 commands do not read it. Use `--projects`,
-`--policy` and `--keep-latest` explicitly.
+`config.toml` is specified and its loader is tested, but the current commands do not read it. T-049 wires
+project roots, policy and exclusions, and T-052 consumes pins and quarantine settings. Until those cards
+land, use `--projects`, `--policy` and `--keep-latest` explicitly.
 
 ## State locations
 

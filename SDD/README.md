@@ -9,7 +9,8 @@ A cross-platform, plugin-based toolchain & cache cleaner for polyglot
 developers. FOSS (Apache-2.0) · no telemetry · no network calls · dry-run by
 default · every deletion carries a reason string.
 
-Status: **Baseline v1.0** — approved for implementation.
+Status: **Baseline v1.0** — approved for implementation. The live work queue and evidence are in
+[AGENDA.md](AGENDA.md); the multi-agent protocol is in [ORCHESTRATION.md](ORCHESTRATION.md).
 Identity locked: name (ADR-013), license (ADR-014).
 
 ## Reading order

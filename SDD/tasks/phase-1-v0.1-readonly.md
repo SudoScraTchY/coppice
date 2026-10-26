@@ -177,12 +177,17 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 - Self-contained single-file publish per OS/arch; release notes; dogfood checklist on ≥ 5 real machines; findings filed as new cards.
 
 **Acceptance**
-- [x] Binaries < 30 MB each (NFR-11) — **543 KB framework-dependent**, well inside budget.
+- [x] Binaries within the ADR-017 budget (5 MB framework-dependent / 50 MB self-contained) — **543 KB framework-dependent**, well inside budget.
       Cold start 73 ms against a 300 ms target. See the note below.
 - [ ] 5+ dogfood reports collected; every finding has a card
 - [x] Zero mutations possible in v0.1 (verified by egress + VFS audit of commands)
 
 > **How the size budget was met, and what it cost.**
+>
+> NFR-11 originally said self-contained < 30 MB. The measured self-contained artifact was ~38 MB, so
+> the target was impossible without dropping the runtime; ADR-017 amends it to 5 MB
+> framework-dependent (primary) and 50 MB self-contained (optional). The measurements below are kept
+> as recorded.
 >
 > Measured on win-x64, all single-file, all producing a working binary that runs `doctor`, `scan`
 > and `--json` correctly:

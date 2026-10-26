@@ -6,15 +6,14 @@
 #   bash scripts/publish.sh osx-arm64
 #   SELF_CONTAINED=1 bash scripts/publish.sh     # the 38 MB alternative, for users without .NET
 #
-# Framework-dependent is the default, and that is a measured decision rather than a default of
-# convenience. Single-file self-contained measured 38.4 MB / 108 ms cold start on win-x64 (v0.3.0);
-# trimming it saved 1.8 MB, so the payload is the .NET runtime and not coppice's code.
-# Framework-dependent single-file is 1.93 MB and starts in 65-92 ms. For a tool whose audience is
-# developers who already have .NET — and whose subject IS the .NET cache — bundling the runtime is
-# ~20x the size for a slower start.
+# Framework-dependent is the default because it is the smallest and fastest artifact. NFR-11, as
+# amended by ADR-017, budgets the framework-dependent single file at < 5 MB and the optional
+# self-contained single file at < 50 MB. Measured on win-x64: 1.93 MB framework-dependent / 65-92 ms
+# cold start, 38.4 MB self-contained / 108 ms. Trimming saved 1.8 MB, so the payload is the .NET
+# runtime, not coppice's code.
 #
-# SELF_CONTAINED=1 remains available. It is not obsolete; it is the answer for a machine with no
-# .NET, which is why F-004 exists.
+# SELF_CONTAINED=1 remains available. It is the answer for a machine with no .NET, which is why
+# F-004 exists.
 
 set -euo pipefail
 
@@ -80,46 +79,48 @@ for file in "${user_docs[@]}"; do
 done
 echo "docs: README.md, CHANGELOG.md, LICENSE, NOTICE, docs/*.md"
 
-# NFR-11 is a gate, not a note. Fail here rather than discovering it at release.
-if [[ "$self_contained" != "1" ]]; then
-  budget=$((30 * 1024 * 1024))
-  found=""
-  for file in "$out"/coppice "$out"/coppice.exe; do
-    [[ -f "$file" ]] || continue
-    size=$(wc -c < "$file")
-    found="$file"
-    if (( size > budget )); then
-      echo "::error::$(basename "$file") is $size bytes, over the 30 MB budget" >&2
-      exit 1
-    fi
-  done
-
-  # A gate that silently measures nothing is worse than no gate. If the binary is not where we
-  # expect, say so and fail, rather than reporting a publish that was never checked.
-  if [[ -z "$found" ]]; then
-    echo "::error::no binary at $out/coppice or $out/coppice.exe - NFR-11 was NOT checked" >&2
+# NFR-11 (ADR-017) is a gate, not a note. Both artifacts are measured; a missing binary is a failure.
+budget_mb=5
+if [[ "$self_contained" == "1" ]]; then
+  budget_mb=50
+fi
+budget=$((budget_mb * 1024 * 1024))
+found=""
+for file in "$out"/coppice "$out"/coppice.exe; do
+  [[ -f "$file" ]] || continue
+  size=$(wc -c < "$file")
+  found="$file"
+  if (( size > budget )); then
+    echo "::error::$(basename "$file") is $size bytes, over the ${budget_mb} MB budget" >&2
     exit 1
   fi
+done
 
-  mb=$(( $(wc -c < "$found") * 100 / 1048576 ))
-  printf 'binary: %s, %d bytes (%d.%d MB), budget 30 MB\n' \
-    "$(basename "$found")" "$(wc -c < "$found")" "$(( mb / 100 ))" "$(( mb % 100 ))"
+# A gate that silently measures nothing is worse than no gate. If the binary is not where we
+# expect, say so and fail, rather than reporting a publish that was never checked.
+if [[ -z "$found" ]]; then
+  echo "::error::no binary at $out/coppice or $out/coppice.exe - NFR-11 was NOT checked" >&2
+  exit 1
+fi
 
-  # Measure cold start, and say so plainly if we could not. `2>/dev/null` is not used here: it
-  # would hide a failure (a lost +x bit, a wrong filename) behind the fallback echo, and a publish
-  # script that cannot say what it did not measure is worse than one that measures less.
-  if [[ -f "$out/coppice.exe" ]]; then
-    measured="$out/coppice.exe"
-  elif [[ -f "$out/coppice" ]]; then
-    measured="$out/coppice"
-  else
-    echo "cold start not measured: no executable found in $out"
-    measured=""
-  fi
+mb=$(( $(wc -c < "$found") * 100 / 1048576 ))
+printf 'binary: %s, %d bytes (%d.%d MB), budget %d MB\n' \
+  "$(basename "$found")" "$(wc -c < "$found")" "$(( mb / 100 ))" "$(( mb % 100 ))" "$budget_mb"
 
-  if [[ -n "${measured:-}" ]]; then
-    bash scripts/measure-coldstart.sh "$measured" 3
-  fi
+# Measure cold start, and say so plainly if we could not. `2>/dev/null` is not used here: it
+# would hide a failure (a lost +x bit, a wrong filename) behind the fallback echo, and a publish
+# script that cannot say what it did not measure is worse than one that measures less.
+if [[ -f "$out/coppice.exe" ]]; then
+  measured="$out/coppice.exe"
+elif [[ -f "$out/coppice" ]]; then
+  measured="$out/coppice"
+else
+  echo "cold start not measured: no executable found in $out"
+  measured=""
+fi
+
+if [[ -n "${measured:-}" ]]; then
+  bash scripts/measure-coldstart.sh "$measured" 3
 fi
 
 echo "done: $out"
