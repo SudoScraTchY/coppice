@@ -9,7 +9,7 @@ A native, plugin-based toolchain and cache cleaner for polyglot developers.
 | | |
 |---|---|
 | **License** | Apache-2.0 |
-| **Status** | v0.4.0-rc.1 — release candidate (human gates open; 0.3.0 was never tagged — see ADR-017) |
+| **Status** | v0.4.0-rc.1 — release candidate (human gates and T-058 performance gap open; 0.3.0 was never tagged — see ADR-017) |
 | **Platforms** | Windows, Linux, macOS (x64/arm64) |
 | **Runtime** | .NET 10. No container runtime, daemon, service or middleman |
 

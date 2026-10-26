@@ -185,6 +185,10 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > against a 100 ms test budget, while the production total budget is 4 s. These are enumeration/CPU
 > measurements, not real-volume throughput; no reference-machine script was added. T-056's 2 s
 > per-probe bound plus this total budget keep `doctor` under 5 s.
+>
+> 2026-10-27: a real-cache dogfood run measured 3,152 items / 19.4 GB in 190.6 s warm (empty cache
+> 5.0 s). The sparse fixture does not exercise per-file size measurement. T-058 owns the real-volume
+> gap; no NFR-04 claim is made until it is fixed or explicitly amended.
 
 ### T-054 · E-7 and the escape job's real coverage
 **Refs** 11-testing, E-7, E-10, E-12 · **Depends** T-028, T-031 · **Effort** S
@@ -265,3 +269,25 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 
 > Split from T-052 on 2026-10-26: pins/quarantine and the manifest-registration surface are different
 > safety stories. This card is the opt-in trust decision OQ-08 describes.
+### T-058 · Real-volume scan performance (NFR-04)
+**Refs** NFR-04, FR-05, T-053 · **Depends** T-048, T-053 · **Effort** L
+
+**Build**
+- Reproduce on a real NuGet cache: 3,152 packages / ~19.4 GB, one project root. A warm scan measured
+  190.6 s; an empty cache measures 5.0 s, so the cost is per item.
+- Profile and fix the per-item size measurement. `PhysicalFileSystem.MeasureSize` walks every file in
+  a package through `GetEntry` (attributes + `FileInfo` + an identity string), about 60 ms per package.
+  Candidate fixes: a single-pass `FileSystemEnumerable` walk in the adapter, bounded parallel sizing,
+  or reusing sizes for unchanged package directories. Keep hard-link de-duplication (FR-05),
+  quarantine exclusion and link safety.
+- Add a real-volume perf test (not the sparse fake) and record before/after numbers in `SDD/AGENDA.md`.
+
+**Acceptance**
+- [ ] NFR-04's 30k-item / ~30 GB target is met on a real fixture under 60 s, or the owner explicitly amends NFR-04 with a tested limit
+- [ ] Hard-link de-duplication, quarantine exclusion and link safety still pass
+- [ ] The measured before/after numbers are in the agenda and release notes
+
+> Opened 2026-10-27 from a dogfood run of the rc.1 self-contained binary: 3,152 items / 19.4 GB warm
+> in 190.6 s (the first run was 210.5 s). NFR-04 (30k items / ~30 GB < 60 s warm) is not demonstrated
+> on real data; T-053's 1.38 s number is a sparse fixture that does not measure every file. The tag
+> waits on a fix or an explicit owner amendment, not on a silent caveat.

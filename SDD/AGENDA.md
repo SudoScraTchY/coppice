@@ -23,6 +23,8 @@ evidence for a feature. `blocked-human` cards never auto-tick.
   the `v0.4.0` tag waits for the human gates. See `docs/adr/ADR-017-release-truth-and-size-budget.md`.
 - **NFR-11:** framework-dependent < 5 MB (primary), self-contained < 50 MB (optional);
   NativeAOT remains OQ-03.
+- **NFR-04:** the sparse 30k fixture is not real-volume evidence. A real 3,152-package / 19.4 GB
+  warm scan took 190.6 s; T-058 must fix it or the owner must amend NFR-04 before the tag.
 - **GUI:** T-050 landed the redesign and its testability work; T-040 is the pin editor/provenance card.
 - **Scope:** full v0.4. v1.0 work stays planning-only.
 - **Parallelism:** at most two build-heavy lanes at once; the orchestrator alone merges to
@@ -38,7 +40,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | W3 | T-051 FR-01/FR-02 | T-052 FR-22/FR-23 | T-056 / T-049 | B/T/G; pin-denied and drop-in-manifest tests |
 | W4 | T-040 pin editor/provenance | T-041 history/trends | T-050 / T-048 | B/T; headless GUI; two-snapshot delta |
 | W5 | T-053 NFR-04 perf/doctor | T-042 completions + HTML | T-051 / T-015 | B/T/P; recorded perf evidence; offline HTML |
-| W6 | T-043 v0.4 release | — | all | full CI on release commit; release dry run (18 archives + package); human gates; tag |
+| W6 | T-043 v0.4 release | — | all | full CI on release commit; release dry run (18 archives + package); NFR-04 decision (T-058); human gates; tag |
 
 ## Card status (as of 2026-10-26)
 
@@ -61,6 +63,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; runs `40313952759` (six cells) and `40399283405` (strict release dry run: exact 18 archives + nupkg + sidecars, both CLI variants version-checked, screenshots inside the SC/GUI archives, no Release; `gh release create` is tag-only and unexercised); CLI 2.19/36.73 MB, GUI 47.71 MB on win-x64; tag withheld until human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
+| T-058 real-volume scan perf | `not-started` | 3,152 packages / 19.4 GB warm 190.6 s; empty cache 5.0 s; T-053's sparse fixture does not measure per-file sizes |
 | T-057 FR-23 user manifests | `done` | `b0f1871` + `346a460`; runs `40309220254`, `40311675742` green |
 | T-036 TUI screens | `blocked-human` | box 4 screen-reader smoke pass |
 | T-038 v0.3 release docs | `blocked-human` | box 2 fresh-VM install; 0.3.0 itself withdrawn |
@@ -116,7 +119,9 @@ none of them can be automated or self-certified.
 4. **Second safety reviewer.** An independent read of the gateway, containment, denylist, TOCTOU,
    quarantine and the release workflow; record reviewer name, commit and PASS/FAIL.
    T-031/32/34/35/44/48/52/56.
-5. **Tag.** Add the dated rows to the evidence log, then make the release-identity edit in one commit:
+5. **Tag.** Resolve T-058 first: fix the real-volume scan or record the owner's explicit NFR-04
+   amendment, with the measured limit and test. Then add the dated rows to the evidence log, and make
+   the release-identity edit in one commit:
    `<Version>0.4.0</Version>`, the CHANGELOG heading, the release-notes title and candidate paragraphs,
    the README status/install/caption wording, and the quickstart/commands version strings — the dated
    evidence rows keep their historical `rc.1` references. Push, wait for a green `build.yml` on that
@@ -157,6 +162,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-26 | Packaging evidence commit green; artifacts inspected | run `40334346355` on `4d2f77b`: six cells, egress and license; `coppice-win-x64` contains `docs/images/*.png`; `egress-results/egress.trx` contains `Egress_is_blocked_in_this_environment` |
 | 2026-10-26 | Strict release dry run | run `40399283405` on `905bdba`: six cells, package and aggregate green; exact 18 names + nupkg; fd/sc report `0.4.0-rc.1`; SC and GUI archives contain `docs/images`; the extracted GUI archive opened its window; no Release |
 | 2026-10-26 | Final rc.1 artifact clean E2E | SC zip from `40399283405`, scrubbed PATH, isolated state; plan `pln_2e4ffbf65e6d`, quarantine `493083826337143c`, audit 2 records intact |
+| 2026-10-27 | Real-volume scan measurement | rc.1 SC binary on the real NuGet cache: 3,152 items / 19.4 GB warm 190.6 s (cold 210.5 s); empty cache 5.0 s; T-058 opened |
 | 2026-10-26 | Clean-environment rc.1 E2E (not a fresh VM) | self-contained zip, scrubbed PATH, isolated state; version→doctor→scan→plan→apply→restore→audit verify; details in the section above |
 | 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |
 | 2026-10-26 | First real six-cell run dispatched | run `40280980743` (superseded by `40282093437`) |

@@ -111,8 +111,10 @@ refused to create a Release off-tag. Ranges across those cells:
 - The self-contained rc.1 artifact was exercised end to end with no .NET on `PATH` against a scratch
   cache: version → doctor → scan → plan → apply → quarantine list → restore → audit verify. That is
   supporting evidence, not the fresh-VM gate; the host was not fresh.
-- Real-volume throughput for the 30k-item target was not measured; the reproducible fixture measures
-  enumeration/CPU on a fake filesystem (30,000 items / 31.4 GB logical in 1.38 s).
+- **NFR-04 is not demonstrated on real data.** The 30k-item number is a sparse fixture (1.38 s) that
+  does not measure every file. A warm scan of a real 3,152-package / 19.4 GB cache took **190.6 s**
+  (empty cache 5.0 s; the first run was 210.5 s), so per-package size measurement dominates. T-058
+  tracks the fix or an explicit NFR-04 amendment; the tag waits on it.
 - The GUI visual layer is compiled and its view models are headless-tested; Avalonia rendering is not
   part of the automated gate.
 - `clean`, `report` and `config` verbs remain planned; the HTML exporter and completions are the
