@@ -125,12 +125,14 @@ create a Release off-tag. Ranges across those cells:
 - 1,371 unit tests + 33 architecture tests (local, after the last code card)
 - 12 golden reports, `dotnet format --verify-no-changes`, the 100k-case escape suite
 - Six-cell GitHub Actions run per code card; the release candidate's run is `40313952759` on `4bb1b7e`
-- Release dry run `40329677179` on `4d4cc46`: all six RIDs, 18 archives + the `dotnet tool` package,
-  no Release created off-tag
+- Strict release dry run `40399283405` on `905bdba`: exact 18 archive names plus the `dotnet tool`
+  package and checksums, both CLI variants version-checked, screenshots inside the SC and GUI
+  archives, and no Release created off-tag
 - Build run `40333340213`: six cells green, and the egress canary TRX is archived as `egress-results`
   (the upload silently skipped the dot-prefixed directory before `c97ae9c`)
 - Clean-environment E2E: the rc.1 self-contained binary, `PATH` without .NET, isolated state, completed
-  the full read → plan → move → restore → audit path
+  the full read → plan → move → restore → audit path; repeated against the final archive from
+  `40399283405` (plan `pln_2e4ffbf65e6d`)
 - `SDD/AGENDA.md` records the other run ids
 - `scripts/publish.sh` FD/SC and `scripts/publish-gui.sh` size measurements
 

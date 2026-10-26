@@ -241,6 +241,11 @@ public sealed class EcosystemDetectionTests
         Assert.Equal(TimeSpan.FromSeconds(2), request.Timeout);
 
         var stopwatch = Stopwatch.StartNew();
+
+        // The probe must still be blocked when the caller cancels. If it already ended, the test is
+        // observing the detector's own timeout rather than cancellation, and the elapsed bound below
+        // would be meaningless.
+        Assert.False(detect.IsCompleted, "the probe ended before cancellation; this run measured the timeout");
         cts.Cancel();
 
         // WaitAsync guards against a detector that drops the token entirely: without it the suite
