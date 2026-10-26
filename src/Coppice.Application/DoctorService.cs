@@ -63,6 +63,7 @@ public sealed class DoctorService
     private readonly IEnvironment _env;
     private readonly OperatingSystemKind _os;
     private readonly EcosystemRegistry _registry;
+    private readonly IReadOnlyDictionary<string, string> _pins;
 
     public DoctorService(IFileSystem fs, IProcessRunner runner, IEnvironment env)
         : this(fs, runner, env, env.OS, registry: null)
@@ -74,7 +75,7 @@ public sealed class DoctorService
     {
     }
 
-    public DoctorService(IFileSystem fs, IProcessRunner runner, IEnvironment env, OperatingSystemKind os, EcosystemRegistry? registry)
+    public DoctorService(IFileSystem fs, IProcessRunner runner, IEnvironment env, OperatingSystemKind os, EcosystemRegistry? registry, IReadOnlyDictionary<string, string>? pins = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(runner);
@@ -85,6 +86,7 @@ public sealed class DoctorService
         _env = env;
         _os = os;
         _registry = registry ?? EcosystemRegistry.CreateDefault(fs);
+        _pins = pins ?? new Dictionary<string, string>(StringComparer.Ordinal);
     }
 
     /// <summary>The machine's home directory, used only to abbreviate paths for display.</summary>
@@ -295,6 +297,13 @@ public sealed class DoctorService
                 default:
                     break;
             }
+        }
+
+        // A config pin chooses a path; it does not grant authority. It goes through the same resolver
+        // and every denylist/fingerprint gate as a tool answer, only with the Pin rung on top.
+        if (_pins.TryGetValue(location.Id, out string? configuredPin))
+        {
+            pin = ExpandDefault(configuredPin, _env);
         }
 
         // Defaults carry unexpanded placeholders (~, {home}, {user}, %VAR%). They MUST be expanded

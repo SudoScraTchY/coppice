@@ -46,6 +46,7 @@ public sealed class TuiBackend : ITuiBackend
     private readonly IClock _clock;
     private readonly IReadOnlyList<string> _projectRoots;
     private readonly EcosystemRegistry _registry;
+    private readonly IReadOnlyDictionary<string, string> _pins;
 
     public TuiBackend(
         IFileSystem fs,
@@ -54,7 +55,8 @@ public sealed class TuiBackend : ITuiBackend
         IStateStore state,
         IAppendLog log,
         IClock clock,
-        IReadOnlyList<string>? projectRoots = null)
+        IReadOnlyList<string>? projectRoots = null,
+        IReadOnlyDictionary<string, string>? pins = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(runner);
@@ -71,11 +73,12 @@ public sealed class TuiBackend : ITuiBackend
         _clock = clock;
         _projectRoots = projectRoots ?? [];
         _registry = EcosystemRegistry.CreateDefault(fs);
+        _pins = pins ?? new Dictionary<string, string>(StringComparer.Ordinal);
     }
 
     public async Task<TuiData> LoadAsync()
     {
-        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS, _registry).Inspect();
+        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS, _registry, _pins).Inspect();
         SnapshotLoadResult latest = await new SnapshotStore(_state, _clock).LoadLatestAsync().ConfigureAwait(false);
         IReadOnlyList<QuarantineEntry> quarantine = await new QuarantineIndex(_state).ListAsync().ConfigureAwait(false);
 

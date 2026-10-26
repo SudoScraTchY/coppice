@@ -111,7 +111,8 @@ public sealed class TuiCommand
             new Adapters.FileSystemStateStore(fs, env),
             new Adapters.FileAppendLog(env),
             clock,
-            projectRoots);
+            projectRoots,
+            loaded.Config!.Pins);
 
         return new TuiCommand(backend, terminal, UserConfigService.PolicyOf(loaded.Config!))
             .RunAsync(flags)

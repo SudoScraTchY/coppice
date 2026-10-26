@@ -80,7 +80,7 @@ public sealed class ConfigWiringTests
     [InlineData(OperatingSystemKind.Linux, "/home/dev/.config/coppice/config.toml")]
     [InlineData(OperatingSystemKind.MacOS, "/Users/dev/Library/Application Support/coppice/config.toml")]
     public void The_config_path_follows_the_platform(OperatingSystemKind os, string expected) =>
-        Assert.Equal(expected, UserConfigPath.For(new FakeEnvironment(os)));
+        Assert.Equal(expected, Coppice.Cli.UserConfigPath.For(new FakeEnvironment(os)));
 
     [Fact]
     public void Explicit_project_roots_win_over_the_config()

@@ -29,7 +29,13 @@ public sealed class GuiBoundaryTests
         "Environment.GetFolderPath",
         "File.",
         "Directory.",
-        "Path.",
+        // `Path.` alone also matches the application helper `UserConfigPath.For`; pin the actual
+        // System.IO members instead so the rule stays about filesystem access.
+        "Path.Combine",
+        "Path.GetFullPath",
+        "Path.GetTempPath",
+        "Path.DirectorySeparatorChar",
+        "Path.AltDirectorySeparatorChar",
         "FileStream",
         "new Process",
     ];

@@ -1,5 +1,6 @@
 using Coppice.Adapters;
 using Coppice.Application;
+using Coppice.Core.Config;
 using Coppice.Core.Quarantine;
 using Coppice.Ports;
 
@@ -63,9 +64,14 @@ public sealed class GuiServices : IDisposable
         QuarantineServices quarantine = ApplyWiring.CreateQuarantine(fs, env, state, log, clock);
         EcosystemRegistry registry = EcosystemRegistry.CreateDefault(fs);
 
+        // A GUI launch must not silently ignore a broken config; it also must not refuse to start.
+        // Pins apply only when the file loaded cleanly. The CLI verbs are stricter (exit 2).
+        ConfigLoadResult config = UserConfigService.Load(fs, UserConfigPath.For(env));
+        IReadOnlyDictionary<string, string>? pins = config.IsSuccess ? config.Config!.Pins : null;
+
         return new GuiServices(
             registry,
-            new DoctorService(fs, runner, env, env.OS, registry),
+            new DoctorService(fs, runner, env, env.OS, registry, pins),
             new ScanService(fs, runner, env, state, clock, registry),
             new SnapshotLibrary(state, clock),
             new PlanApplyService(fs, runner, env, state, log, clock, registry),

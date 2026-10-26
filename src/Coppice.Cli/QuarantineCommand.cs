@@ -17,12 +17,12 @@ public sealed record QuarantineFlags(
     bool Json,
     bool Ci)
 {
-    public static QuarantineFlags Parse(string[] args)
+    public static QuarantineFlags Parse(string[] args, TimeSpan? defaultOlderThan = null)
     {
         ArgumentNullException.ThrowIfNull(args);
 
         var positionals = new List<string>();
-        TimeSpan olderThan = TimeSpan.FromDays(30);
+        TimeSpan olderThan = defaultOlderThan ?? TimeSpan.FromDays(30);
         bool olderThanGiven = false;
         bool yes = false;
         bool dryRun = false;
@@ -192,6 +192,7 @@ public sealed class QuarantineCommand
     private readonly IAppendLog _log;
     private readonly IApplyConsole _console;
     private readonly IClock _clock;
+    private readonly TimeSpan? _defaultOlderThan;
 
     public QuarantineCommand(
         IFileSystem fs,
@@ -199,7 +200,8 @@ public sealed class QuarantineCommand
         IStateStore state,
         IAppendLog log,
         IApplyConsole console,
-        IClock? clock = null)
+        IClock? clock = null,
+        TimeSpan? defaultOlderThan = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(env);
@@ -213,6 +215,7 @@ public sealed class QuarantineCommand
         _log = log;
         _console = console;
         _clock = clock ?? new SystemClock();
+        _defaultOlderThan = defaultOlderThan;
     }
 
     public int Run(string[] args)
@@ -222,7 +225,7 @@ public sealed class QuarantineCommand
         QuarantineFlags flags;
         try
         {
-            flags = QuarantineFlags.Parse(args);
+            flags = QuarantineFlags.Parse(args, _defaultOlderThan);
         }
         catch (ArgumentException ex)
         {

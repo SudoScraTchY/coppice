@@ -128,6 +128,7 @@ public sealed class ApplyCommand
     private readonly IApplyConsole _console;
     private readonly IClock _clock;
     private readonly EcosystemRegistry _registry;
+    private readonly IReadOnlyDictionary<string, string> _pins;
 
     public ApplyCommand(
         IFileSystem fs,
@@ -137,7 +138,8 @@ public sealed class ApplyCommand
         IAppendLog log,
         IApplyConsole console,
         IClock? clock = null,
-        EcosystemRegistry? registry = null)
+        EcosystemRegistry? registry = null,
+        IReadOnlyDictionary<string, string>? pins = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(runner);
@@ -154,6 +156,7 @@ public sealed class ApplyCommand
         _console = console;
         _clock = clock ?? new SystemClock();
         _registry = registry ?? EcosystemRegistry.CreateDefault(fs);
+        _pins = pins ?? new Dictionary<string, string>(StringComparer.Ordinal);
     }
 
     public int Run(string[] args)
@@ -211,7 +214,7 @@ public sealed class ApplyCommand
 
         Snapshot snapshot = snapshotResult.Snapshot!;
 
-        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS, _registry).Inspect();
+        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS, _registry, _pins).Inspect();
         IReadOnlyList<BoundStep> bound = PlanBinder.Bind(
             plan, snapshot, ApplyWiring.BindingRoots(roots, _registry), _env.OS, flags.Strict);
 

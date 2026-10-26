@@ -86,15 +86,23 @@ public static class CoppiceApp
         }
     }
 
-    private static int RunApply(string[] args) =>
-        new ApplyCommand(
+    private static int RunApply(string[] args)
+    {
+        if (!TryLoadConfig(out CoppiceConfig config))
+        {
+            return ExitUsageError;
+        }
+
+        return new ApplyCommand(
             new PhysicalFileSystem(),
             new SystemProcessRunner(),
             new SystemEnvironment(),
             new FileSystemStateStore(new PhysicalFileSystem(), new SystemEnvironment()),
             new FileAppendLog(new SystemEnvironment()),
-            new SystemApplyConsole())
+            new SystemApplyConsole(),
+            pins: config.Pins)
             .Run(args);
+    }
 
     private static int RunPlan(string[] args)
     {
@@ -113,14 +121,26 @@ public static class CoppiceApp
         return command.Run(args);
     }
 
-    private static int RunQuarantine(string[] args) =>
-        new QuarantineCommand(
+    private static int RunQuarantine(string[] args)
+    {
+        if (!TryLoadConfig(out CoppiceConfig config))
+        {
+            return ExitUsageError;
+        }
+
+        TimeSpan? defaultOlderThan = config.Quarantine.RetentionDays > 0
+            ? TimeSpan.FromDays(config.Quarantine.RetentionDays)
+            : null;
+
+        return new QuarantineCommand(
             new PhysicalFileSystem(),
             new SystemEnvironment(),
             new FileSystemStateStore(new PhysicalFileSystem(), new SystemEnvironment()),
             new FileAppendLog(new SystemEnvironment()),
-            new SystemApplyConsole())
+            new SystemApplyConsole(),
+            defaultOlderThan: defaultOlderThan)
             .Run(args);
+    }
 
     private static int RunAudit(string[] args) =>
         new AuditCommand(
@@ -164,7 +184,12 @@ public static class CoppiceApp
 
     private static int RunDoctor(CommandFlags flags)
     {
-        var service = BuildService();
+        if (!TryLoadConfig(out CoppiceConfig config))
+        {
+            return ExitUsageError;
+        }
+
+        var service = BuildService(config);
         DoctorReport report = service.Inspect();
 
         if (flags.Json)
@@ -184,7 +209,12 @@ public static class CoppiceApp
 
     private static int RunRoots(CommandFlags flags)
     {
-        var service = BuildService();
+        if (!TryLoadConfig(out CoppiceConfig config))
+        {
+            return ExitUsageError;
+        }
+
+        var service = BuildService(config);
 
         // `roots` is the one verb that pays for sizing: the answer "how much is this candidate?" is
         // the reason the command is run. `doctor` stays inside its budget and reports no sizes.
@@ -207,7 +237,7 @@ public static class CoppiceApp
             return ExitUsageError;
         }
 
-        var service = BuildService();
+        var service = BuildService(config);
         DoctorReport report = service.Inspect();
 
         // Only scan locations that are Valid and have Clean rights. Ambiguous/Missing/Denied are not scanned.
@@ -302,8 +332,17 @@ public static class CoppiceApp
     private static string ScanReportToJson(ScanReport r) =>
         System.Text.Json.JsonSerializer.Serialize(r, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
 
-    private static DoctorService BuildService() =>
-        new(new PhysicalFileSystem(), new SystemProcessRunner(), new SystemEnvironment());
+    private static DoctorService BuildService(CoppiceConfig? config = null)
+    {
+        var env = new SystemEnvironment();
+        return new DoctorService(
+            new PhysicalFileSystem(),
+            new SystemProcessRunner(),
+            env,
+            env.OS,
+            registry: null,
+            pins: config?.Pins);
+    }
 
     private static bool TryLoadConfig(out CoppiceConfig config)
     {
