@@ -12,10 +12,10 @@ namespace Coppice.Tests.Gui;
 /// <summary>
 /// T-039 acceptance box 2 / T-050: a scan cancel is measured, not asserted from the shape of the code.
 /// <para>
-/// The slow phase is the scan's own enumeration, which already honors the cancellation token between
-/// items. The doctor runs on a separate fast fake so the measurement starts after the doctor phase;
-/// <c>DoctorService</c> has no cancellation token of its own (T-056 owns that), so a slow doctor phase
-/// is deliberately out of scope for this number.
+/// The slow phase is the scan's own enumeration, which honors the cancellation token between items.
+/// The doctor runs on a separate fast fake so this number is the scan-enumeration bound: T-056 now
+/// passes the token through <c>DoctorService</c>, but the doctor's own latency is measured there,
+/// not here.
 /// </para>
 /// </summary>
 public sealed class GuiScanCancelTests
