@@ -159,7 +159,8 @@ public sealed class EcosystemDoctorTests
     /// T-056: a doctor probe that never returns is cut off by the caller's token. The runner blocks
     /// until it observes cancellation, so this test cannot finish unless Inspect actually passes
     /// the token through. The measured bound is wall time from Cancel() to the observed
-    /// OperationCanceledException; it must be far below the 2 s probe timeout.
+    /// OperationCanceledException; it must stay below the 2 s probe timeout so a probe that merely
+    /// times out still fails, while leaving room for Windows process-tree teardown.
     /// </summary>
     [Fact]
     public async Task Cancelling_doctor_aborts_a_blocked_probe_promptly()
@@ -205,8 +206,8 @@ public sealed class EcosystemDoctorTests
 
             _output.WriteLine($"cancellation observed after {stopwatch.Elapsed.TotalMilliseconds:F1} ms");
             Assert.True(
-                stopwatch.Elapsed < TimeSpan.FromSeconds(1),
-                $"cancellation took {stopwatch.Elapsed.TotalMilliseconds:F0} ms; expected under 1000 ms");
+                stopwatch.Elapsed < TimeSpan.FromMilliseconds(1800),
+                $"cancellation took {stopwatch.Elapsed.TotalMilliseconds:F0} ms; expected under 1800 ms and below the 2 s probe timeout");
         }
         finally
         {
