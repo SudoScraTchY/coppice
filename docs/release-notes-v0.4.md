@@ -124,6 +124,8 @@ create a Release off-tag. Ranges across those cells:
 - Six-cell GitHub Actions run per code card; the release candidate's run is `40313952759` on `4bb1b7e`
 - Release dry run `40329677179` on `4d4cc46`: all six RIDs, 18 archives + the `dotnet tool` package,
   no Release created off-tag
+- Build run `40333340213`: six cells green, and the egress canary TRX is archived as `egress-results`
+  (the upload silently skipped the dot-prefixed directory before `c97ae9c`)
 - `SDD/AGENDA.md` records the other run ids
 - `scripts/publish.sh` FD/SC and `scripts/publish-gui.sh` size measurements
 

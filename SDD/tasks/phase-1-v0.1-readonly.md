@@ -168,6 +168,10 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 > Both items are implemented and proven. The first six-cell attempt (`40280980743`) exposed a real
 > macOS path bug; `30917d3` fixed it and run `40282093437` is green on every cell. The egress canary is
 > verified locally with egress open (it fails, as required) and by the green egress job.
+>
+> 2026-10-26: the egress TRX was not actually being archived — `upload-artifact` skips hidden
+> directories, and the results path is `.egress-results`. `c97ae9c` includes hidden files and fails
+> the upload when no TRX exists; run `40333340213` carries the `egress-results` artifact.
 
 ### T-019 · v0.1 release + dogfooding
 **Refs** NFR-11, 12-roadmap · **Depends** T-005…T-018 · **Effort** M

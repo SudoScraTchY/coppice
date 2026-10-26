@@ -46,7 +46,9 @@ the gateway lands (T-031). E-7 is a named mount-point test in the Safety suite; 
 - **Quarantine round-trip:** restore is hash-identical.
 - **Network block:** the full suite runs with egress blocked (NFR-02). The job runs on Linux because
   it uses `unshare --net`; the canary asserts a real TCP connection fails, and the job fails if the
-  canary did not execute. There is no equivalent local gate on Windows/macOS.
+  canary did not execute. The TRX is uploaded as the `egress-results` artifact; because the results
+  directory is dot-prefixed, the upload must include hidden files. There is no equivalent local gate
+  on Windows/macOS.
 - **Perf smoke:** NFR-04's 30k-item / ~30 GB target is not in CI yet. T-053 owns the fixture and
   records the actual numbers; until then, no perf claim is made.
 - **Coverage:** no percentage gate is enforced today. The escape suite, architecture tests, real
@@ -55,6 +57,7 @@ the gateway lands (T-031). E-7 is a named mount-point test in the Safety suite; 
 ## CI matrix
 
 Windows, Linux and macOS × x64/arm64 on GitHub-hosted runners (six real cells; a RID assertion fails
-a cell that silently falls back to x64). The egress job and license job run on Linux. Release
-artifacts are produced by T-043; the six cells currently publish the framework-dependent single file
-per RID.
+a cell that silently falls back to x64). The egress job and license job run on Linux. The build matrix
+publishes the framework-dependent single file per cell on every commit; a tag additionally runs
+`.github/workflows/release.yml`, which produces framework-dependent, self-contained and GUI archives
+for all six RIDs plus the `dotnet tool` package.

@@ -67,6 +67,14 @@ for file in "${user_docs[@]}"; do
   esac
 done
 
+# The README embeds these; a published directory whose README has broken images is not documentation.
+shopt -s nullglob
+images=(docs/images/*.png)
+if (( ${#images[@]} )); then
+  mkdir -p "$out/docs/images"
+  cp "${images[@]}" "$out/docs/images/"
+fi
+
 found=""
 for file in "$out"/coppice-gui "$out"/coppice-gui.exe; do
   [[ -f "$file" ]] || continue

@@ -58,7 +58,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-039 Avalonia shell | `done` except box 4 human | boxes 1/2 closed by T-050; box 4 is `blocked-human` |
 | T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
 | T-040 GUI pin editor | `done` | `110dc84`; run `40311141426` green on all six cells; pin/roots tests |
-| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; runs `40313952759` (six cells) and `40329677179` (release dry run: 18 archives + nupkg, no Release); CLI 2.19/36.73 MB, GUI 47.71 MB on win-x64; screenshots in `docs/images/`; tag withheld until human gates |
+| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; runs `40313952759` (six cells) and `40329677179` (release dry run: 18 archives + nupkg, no Release; `gh release create` is tag-only and unexercised); CLI 2.19/36.73 MB, GUI 47.71 MB on win-x64; screenshots in `docs/images/`; tag withheld until human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
 | T-057 FR-23 user manifests | `done` | `b0f1871` + `346a460`; runs `40309220254`, `40311675742` green |
@@ -75,7 +75,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | Fresh-VM install → doctor → scan → plan → apply, no container runtime | T-038 box 2, T-043 | VM/OS version + transcript | open |
 | 5+ dogfood reports, every finding carded | T-019 | report links / commit refs | open |
 | Second safety reviewer sign-off | T-031/32/34/35/44/48/52/56 | reviewer name + commit | open |
-| Six-cell CI + egress canary | T-018, T-054 | run URL + TRX canary line | passed 2026-10-26: run `40282093437` |
+| Six-cell CI + egress canary | T-018, T-054 | run URL + TRX canary line | passed 2026-10-26: run `40282093437`; run `40333340213` archives the canary TRX as `egress-results` |
 
 ## Release sign-off procedure (human)
 
@@ -95,10 +95,12 @@ none of them can be automated or self-certified.
 4. **Second safety reviewer.** An independent read of the gateway, containment, denylist, TOCTOU,
    quarantine and the release workflow; record reviewer name, commit and PASS/FAIL.
    T-031/32/34/35/44/48/52/56.
-5. **Tag.** Add the dated rows to the evidence log, change `<Version>` to `0.4.0` and the release-notes
-   heading to 0.4.0, push, wait for a green `build.yml` on that commit, then
-   `git tag -a v0.4.0 -m "v0.4.0" && git push origin v0.4.0`. `release.yml` refuses the tag if the
-   version disagrees or the commit has no green six-cell run.
+5. **Tag.** Add the dated rows to the evidence log, then make the release-identity edit in one commit:
+   `<Version>0.4.0</Version>`, the CHANGELOG heading, the release-notes title and candidate paragraphs,
+   the README status/install/caption wording, and the quickstart/commands version strings — the dated
+   evidence rows keep their historical `rc.1` references. Push, wait for a green `build.yml` on that
+   commit, then `git tag -a v0.4.0 -m "v0.4.0" && git push origin v0.4.0`. `release.yml` refuses the tag
+   if the version disagrees or the commit has no green six-cell run.
 
 A gate is signed by a dated row in the evidence log. "I ran it" without a transcript is not evidence.
 
@@ -129,6 +131,8 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-26 | Release workflow added; tag-to-binary path made mechanical | `4d4cc46`; `release.yml` matches tag to `<Version>` and requires a green `build.yml` run on the same commit |
 | 2026-10-26 | Release dry run green | run `40329677179` on `4d4cc46`: six cells, 18 archives + nupkg, no Release off-tag; FD 2,193,723–2,286,168 B, SC 37,310,888–40,202,928 B, GUI 47,274,034–52,044,876 B |
 | 2026-10-26 | GUI screenshots captured from the rc.1 binary | Dashboard, Evidence, History → `docs/images/`; README embeds them |
+| 2026-10-26 | Cancellation test stabilized after a 1005 ms flake | `a433ce8`; Timing collection + 1.8 s bound (probe timeout 2 s); run `40332590755` green |
+| 2026-10-26 | Egress TRX archive fixed | `c97ae9c`; `upload-artifact` skips hidden paths, so the upload now sets `include-hidden-files` + `if-no-files-found: error`; run `40333340213` green and `egress-results` present (335,932 B) |
 | 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |
 | 2026-10-26 | First real six-cell run dispatched | run `40280980743` (superseded by `40282093437`) |
 

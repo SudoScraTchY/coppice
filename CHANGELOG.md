@@ -26,9 +26,13 @@ GUI and requirement closure.
 - T-042 reach: a self-contained HTML report exporter (inline CSS, no external references) and a
   `completions <powershell|bash|zsh|fish>` verb with per-shell tests. The `report` verb itself is
   still planned.
-- T-043 release candidate: `scripts/publish-gui.sh` packages the self-contained Avalonia shell. Measured
-  on win-x64: CLI 2.19 MB framework-dependent / 36.73 MB self-contained, GUI 47.71 MB self-contained.
-  No `v0.4.0` tag is created because the human gates in `SDD/AGENDA.md` are still open.
+- T-043 release candidate: `scripts/publish-gui.sh` packages the self-contained Avalonia shell, and
+  the README carries three screenshots from the running shell. A tag now runs
+  `.github/workflows/release.yml`: it refuses a tag that disagrees with `<Version>` or names a commit
+  with no green six-cell run, then builds framework-dependent, self-contained and GUI archives for all
+  six RIDs plus the `dotnet tool` package. Measured on win-x64: CLI 2.19 MB framework-dependent /
+  36.73 MB self-contained, GUI 47.71 MB self-contained. No `v0.4.0` tag is created because the human
+  gates in `SDD/AGENDA.md` are still open.
 - T-040 resolution transparency: every Roots row shows its provenance (via plus detail), owner,
   size when measured, ambiguity, and the never-elevate guidance. The pin editor validates a
   candidate through the same denylist/fingerprint path a scan uses before writing one `[pins]` entry;
@@ -85,6 +89,12 @@ GUI and requirement closure.
   both; the real kill test is green on the six-cell matrix.
 - T-018: the macOS kill fixture now builds its temp tree from the same canonical path the child sees,
   and the egress job fails if the canary did not execute.
+- T-018/T-054: the egress job's TRX is actually archived. `upload-artifact` skips hidden directories by
+  default and the results directory is `.egress-results`, so the job had been green while uploading
+  nothing; the step now includes hidden files and fails when no TRX exists.
+- T-051: the detection cancellation test no longer races a loaded runner. It measured 1005 ms against a
+  1000 ms bound while the probe's own timeout is 2 s; it now runs in the non-parallel timing collection
+  with a 1.8 s bound, which still fails a probe that only ends via its timeout.
 - T-047: keep-newest now compares all four numeric parts of a NuGet version. Four-part versions that
   differed only in the revision compared equal, so the deterministic `ItemId` tie-break could keep an
   older version and propose the true newest. Prerelease identifiers now follow NuGet ordering (numeric

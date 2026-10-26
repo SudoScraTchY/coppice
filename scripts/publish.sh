@@ -77,7 +77,15 @@ for file in "${user_docs[@]}"; do
     *) cp "$file" "$out/" ;;
   esac
 done
-echo "docs: README.md, CHANGELOG.md, LICENSE, NOTICE, docs/*.md"
+
+# The README embeds these; a published directory whose README has broken images is not documentation.
+shopt -s nullglob
+images=(docs/images/*.png)
+if (( ${#images[@]} )); then
+  mkdir -p "$out/docs/images"
+  cp "${images[@]}" "$out/docs/images/"
+fi
+echo "docs: README.md, CHANGELOG.md, LICENSE, NOTICE, docs/*.md, docs/images/*.png"
 
 # NFR-11 (ADR-017) is a gate, not a note. Both artifacts are measured; a missing binary is a failure.
 budget_mb=5
