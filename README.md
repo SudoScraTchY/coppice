@@ -102,12 +102,11 @@ The Avalonia desktop shell runs the same services as the CLI:
 dotnet run --project src/Coppice.Gui
 ```
 
-The committed T-039 shell has Dashboard, Items, Plan review (with per-step selection), Apply progress,
-Quarantine, Roots and Problems screens. The retention picker includes **Keep newest only**, the same
-policy as `coppice plan --keep-latest 1`: the newest version of each package is kept and older
-unreferenced versions are proposed. A larger redesign is parked on `wip/gui-shell` and is finished by
-T-050 before the T-040 pin editor. The GUI is not part of a release artifact yet; v0.4 packaging is
-T-043.
+The T-050 shell is the committed GUI: Setup/Scan/Dashboard, Items, Plan review, Apply, Quarantine,
+Roots and Problems, with the retention picker's **Keep newest only** policy (the same as
+`coppice plan --keep-latest 1`). Preferences go through `IShellPreferencesStore`; the headless tests
+cover the full scan → plan → apply → restore flow and a measured scan cancel. T-040 adds the pin
+editor and per-candidate provenance; the GUI is not part of a release artifact yet (T-043).
 
 ## Safety model
 

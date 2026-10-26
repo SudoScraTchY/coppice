@@ -17,8 +17,8 @@
 - **v0.3** — code complete. The 0.3.0 release claim is withdrawn (ADR-017); T-048/T-049 are landed in
   0.4.0. The kill/resume and quarantine evidence exists in the suite; six-cell CI evidence is green
   (run `40282093437`).
-- **v0.4** — in progress. T-042 and T-056 are landed; T-050/T-051 are active, followed by T-052–T-055,
-  T-040, T-041 and T-043. The GUI redesign is parked on `wip/gui-shell`; T-050 finishes it before T-040.
+- **v0.4** — in progress. T-042, T-050 and T-056 are landed; T-051 is merged with its six-cell run
+  pending. T-041 (history) and T-052 (pins/manifests) are active, followed by T-053, T-040 and T-043.
 - **v1.0** — planning only. No distribution, docs-site or packaging work is in this goal.
 
 ## Risks

@@ -22,6 +22,13 @@ GUI and requirement closure.
 - T-042 reach: a self-contained HTML report exporter (inline CSS, no external references) and a
   `completions <powershell|bash|zsh|fish>` verb with per-shell tests. The `report` verb itself is
   still planned.
+- T-050 GUI shell completion: the redesigned Avalonia shell is the committed GUI, with an injectable
+  composition root, a preferences port (the file implementation lives in Adapters), a headless
+  scan → plan → apply → restore test and a measured 19.3 ms scan cancel against a 200 ms bound.
+- T-051 detection and roots: every ecosystem declares how it is detected (tool command and/or marker),
+  and `doctor`/`scan` report present/absent with the source. `roots` prints every candidate — denied,
+  not-found, fingerprint-failed, inactive and ambiguous — with role, validity, via, owner, paths and
+  size; only Ok active roots are cleanable.
 - T-056 catalog hardening: the last `"dotnet"` special case is gone, doctor probes are cancellable
   and bounded at 2 s each, and architecture tests pin Application's dependency graph and the single
   ecosystem-registration factory.

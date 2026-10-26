@@ -33,8 +33,8 @@ wrong — it belongs in core.
 
 ## Current state (2026-10-26)
 
-The committed T-039 shell covers Dashboard, Items, Plan review, Apply progress, Quarantine, Roots and
-Problems, over the shared `Coppice.Application` services. A larger redesign is parked on `wip/gui-shell`
-(`5e6efa0`) and does not compile yet; **T-050** finishes it and measures the 200 ms cancellation bound
-before **T-040** adds the pin editor and per-candidate provenance. Principle 3 is therefore still open,
-not silently claimed.
+T-050 landed the redesign (`8ef6c1e`): the committed shell has Setup/Scan/Dashboard, Items, Plan
+review, Apply, Quarantine, Roots and Problems; preferences use `IShellPreferencesStore`; the view
+model is driven headlessly through scan → plan → apply → restore, and a scan cancel is measured at
+19.3 ms against 200 ms. **T-040** adds the pin editor and per-candidate provenance; **T-043** packages
+the GUI. Principle 3 is still the open part, not silently claimed.

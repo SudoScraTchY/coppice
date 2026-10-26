@@ -28,7 +28,8 @@ coppice doctor [--json]
 ```
 
 Resolves the registered cache locations on this machine (NuGet, Go, Rust and Node) and reports what was
-found, how it was found, and whether it validated. It reads only; it writes nothing.
+found, how it was found, whether it validated, and whether each declared ecosystem is present (with the
+detection source). It reads only; it writes nothing.
 
 Exit 3 if a location is ambiguous — two live sources disagree and Coppice will not guess which one to
 clean. A missing or denied location is a report, not a failure.
@@ -39,8 +40,10 @@ clean. A missing or denied location is a report, not a failure.
 coppice roots [--json]
 ```
 
-The detailed location table behind `doctor`: candidates, `via`, role, validity, confidence. Use it when
-you need to know *why* a path was chosen.
+The detailed location table behind `doctor`: every candidate the resolver considered, including denied,
+not-found, fingerprint-failed, inactive and ambiguous rows. Each row shows `via`, role, validity, owner,
+declared and real paths, and size; ambiguous rows are flagged and are never cleanable. Sizing walks
+existing directories only and runs only for this verb.
 
 ## scan
 
@@ -49,7 +52,8 @@ coppice scan [--projects <path>]... [--json]
 ```
 
 Inventories the registered ecosystems (NuGet, Go, Rust and Node), classifies each cached version using
-project evidence, runs the available health checks, and stores a snapshot under Coppice's state root.
+project evidence, runs the available health checks, reports each ecosystem's detection source, and
+stores a snapshot under Coppice's state root.
 
 - `--projects` is repeatable. Each path is a project tree; Coppice reads `obj/project.assets.json` there.
   Without any project root, every item is `Unknown` and a plan will propose nothing.

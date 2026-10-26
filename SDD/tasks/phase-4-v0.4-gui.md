@@ -15,15 +15,14 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 
 **Acceptance**
 - [x] Full read → plan → apply flow works end-to-end in the GUI
-- [ ] UI never blocks on scans; cancel works within 200 ms
+- [x] UI never blocks on scans; cancel works within 200 ms
 - [x] Same plans produced via CLI and GUI from one snapshot (equality test)
 
-> T-039: the shell is implemented and exercised headlessly against a synthetic five-version cache:
-> scan → keep-newest-only plan → apply → quarantine → restore. Four older versions moved; the newest
-> stayed; restore put one back byte-identically through the audit path. The equality test compares the
-> GUI policy's plan with the CLI `--keep-latest 1` plan and asserts the same plan id and step set.
-> Box 2 stays open because the 200 ms cancellation bound was not measured. The pin editor and settings
-> screen are T-040 work.
+> T-039: T-050 closed box 1 with `GuiFlowEndToEndTests` (the real ScanCommand → ApplyCommand →
+> RestoreSelectedCommand flow over fake ports) and box 2 with `GuiScanCancelTests` (19.3 ms from
+> cancel to `IsBusy == false`, bound 200 ms; the doctor phase is T-056's measured path). The
+> equality test compares the GUI policy's plan with the CLI `--keep-latest 1` plan. Box 4 (screen
+> reader) remains `blocked-human`; the pin editor and settings screen are T-040 work.
 
 ### T-040 · GUI pin editor + resolution transparency
 **Refs** 08-gui principles 3–4 · **Depends** T-039 · **Effort** M
@@ -79,11 +78,16 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - Copy and the roots table are ecosystem-neutral after T-048; no ".NET caches" wording.
 
 **Acceptance**
-- [ ] The branch compiles and the GUI dependency architecture test passes
-- [ ] Headless read→plan→apply→restore test passes (closes T-039 box 1 with an automated test)
-- [ ] A scan cancel is measured at < 200 ms in a test (closes T-039 box 2)
-- [ ] No raw `System.IO` in `Coppice.Gui`; preferences use the port
-- [ ] GUI copy and roots table are ecosystem-neutral
+- [x] The branch compiles and the GUI dependency architecture test passes
+- [x] Headless read→plan→apply→restore test passes (closes T-039 box 1 with an automated test)
+- [x] A scan cancel is measured at < 200 ms in a test (closes T-039 box 2)
+- [x] No raw `System.IO` in `Coppice.Gui`; preferences use the port
+- [x] GUI copy and roots table are ecosystem-neutral
+
+> T-050 landed as `8ef6c1e`; run `40295759411` is green on all six cells. `GuiFlowEndToEndTests`
+> drives the real view-model commands over fake ports; `GuiScanCancelTests` measured 19.3 ms against
+> the 200 ms bound; `GuiBoundaryTests` scans the GUI sources for `System.IO`/`Process` and pins the
+> preferences port. The GUI is not part of a release artifact yet; T-043 packages it.
 
 ### T-051 · FR-01/FR-02: ecosystem detection and every root candidate
 **Refs** FR-01, FR-02 · **Depends** T-048, T-056 · **Effort** M
@@ -94,10 +98,16 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - Reuse the T-049 config service for `doctor`'s config validation (FR-19).
 
 **Acceptance**
-- [ ] `scan` lists each ecosystem present/absent with a detection source
-- [ ] `roots` prints every candidate with via, role, validity, size and owner
-- [ ] An ambiguous root is flagged and cannot become a plan step
-- [ ] Fixtures cover an absent ecosystem and a denied home-directory root
+- [x] `scan` lists each ecosystem present/absent with a detection source
+- [x] `roots` prints every candidate with via, role, validity, size and owner
+- [x] An ambiguous root is flagged and cannot become a plan step
+- [x] Fixtures cover an absent ecosystem and a denied home-directory root
+
+> T-051 landed as `75ac702`; run `40296987047` is green on all six cells. `EcosystemDetectionTests`
+> covers present/absent/erroring/marker probes; `RootCandidateTests` covers ambiguous, denied,
+> inactive and missing candidates and the one-cleanable assertion; `ScanWiring` keeps the Ok+active
+> floor so no rejected candidate can become a plan step. Doctor probes add up to four 2 s bounds;
+> T-053 owns the overall doctor budget.
 
 ### T-052 · FR-22/FR-23: pins, quarantine config and user manifests
 **Refs** FR-22, FR-23, S-1 · **Depends** T-049, T-056 · **Effort** L · **Safety card**
@@ -179,5 +189,6 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - [x] The architecture test pins Application's references
 
 > T-056 landed as `336354b`; run `40290685781` is green on all six cells. 1,317 tests and 31
-> architecture tests pass; the blocked-probe cancellation is observed at 1.1 ms with each probe
-> bounded at 2 s. The overall `doctor < 5 s` budget remains T-053.
+> architecture tests pass; the blocked-probe cancellation is observed at 1.1 ms locally and 1.3 s on
+> Windows arm64, with the test bound at 1.8 s — still below the 2 s probe timeout. The overall
+> `doctor < 5 s` budget remains T-053.
