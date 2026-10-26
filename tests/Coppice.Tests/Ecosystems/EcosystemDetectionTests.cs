@@ -18,6 +18,7 @@ namespace Coppice.Tests.Ecosystems;
 /// scan exercises them.
 /// </para>
 /// </summary>
+[Collection("Timing")]
 public sealed class EcosystemDetectionTests
 {
     private const OperatingSystemKind Linux = OperatingSystemKind.Linux;
@@ -245,9 +246,13 @@ public sealed class EcosystemDetectionTests
         stopwatch.Stop();
 
         _output.WriteLine($"detection cancellation observed after {stopwatch.Elapsed.TotalMilliseconds:F1} ms");
+
+        // The 2 s probe timeout is the other way this task can end, so the bound must stay below it.
+        // A loaded runner has put this measurement at ~1 s, hence the Timing collection and the 1.8 s
+        // bound: still short of the timeout, no longer short of the scheduler.
         Assert.True(
-            stopwatch.Elapsed < TimeSpan.FromSeconds(1),
-            $"cancellation took {stopwatch.Elapsed.TotalMilliseconds:F0} ms; expected under 1000 ms");
+            stopwatch.Elapsed < TimeSpan.FromSeconds(1.8),
+            $"cancellation took {stopwatch.Elapsed.TotalMilliseconds:F0} ms; expected under 1800 ms");
     }
 
     private static string RepoRoot()
