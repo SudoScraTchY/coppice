@@ -68,6 +68,12 @@ for file in "${user_docs[@]}"; do
 done
 
 # The README embeds these; a published directory whose README has broken images is not documentation.
+for image in docs/images/gui-dashboard.png docs/images/gui-items.png docs/images/gui-history.png; do
+  if [[ ! -f "$image" ]]; then
+    echo "::error::$image is missing; refusing to publish a README with broken screenshots" >&2
+    exit 1
+  fi
+done
 shopt -s nullglob
 images=(docs/images/*.png)
 if (( ${#images[@]} )); then

@@ -7,8 +7,8 @@ name: release
 # (tests, escape suite, format, goldens, publish, egress canary, license) already succeeded on the
 # SAME commit with event=push on main — the 0.3.0 lesson was that a release claim without evidence is
 # worse than no release. What this workflow adds is the part `build.yml` does not do: the self-contained
-# CLI and the GUI on all six RIDs, a version check of the actual binaries, a measured size table, and
-# the release assets themselves.
+# CLI and the GUI on all six RIDs, a version check of both CLI variants, a measured size table, and the
+# release assets themselves.
 #
 # The tag must equal <Version> in Directory.Build.props. `v0.4.0` cannot publish a 0.4.0-rc.1 binary.
 #
@@ -184,24 +184,27 @@ jobs:
           set -euo pipefail
           OUTPUT_ROOT=dist/gui bash scripts/publish-gui.sh "${{ matrix.rid }}"
 
-      # The artifact is only as honest as the version it reports. This runs the binary the user will
-      # download, on the architecture it was built for, and compares its own output to the props file.
-      - name: Verify the published binary reports the release version
+      # The artifact is only as honest as the version it reports. Both CLI variants are run on the
+      # architecture they were built for. The GUI has no version verb; its archive is covered by the
+      # exact-name check and the manual launch evidence in the agenda.
+      - name: Verify each CLI variant reports the release version
         shell: bash
         run: |
           set -euo pipefail
-          bin="dist/fd/${{ matrix.rid }}/coppice"
-          [[ -f "$bin" ]] || bin="$bin.exe"
-          if [[ ! -f "$bin" ]]; then
-            echo "::error::no published binary for ${{ matrix.rid }}"
-            exit 1
-          fi
-          actual="$("$bin" version)"
-          if [[ "$actual" != "coppice $VERSION" ]]; then
-            echo "::error::binary reports '$actual', expected 'coppice $VERSION'"
-            exit 1
-          fi
-          echo "$actual"
+          for variant in fd sc; do
+            bin="dist/$variant/${{ matrix.rid }}/coppice"
+            [[ -f "$bin" ]] || bin="$bin.exe"
+            if [[ ! -f "$bin" ]]; then
+              echo "::error::no $variant binary for ${{ matrix.rid }}"
+              exit 1
+            fi
+            actual="$("$bin" version)"
+            if [[ "$actual" != "coppice $VERSION" ]]; then
+              echo "::error::$variant binary reports '$actual', expected 'coppice $VERSION'"
+              exit 1
+            fi
+            echo "$variant: $actual"
+          done
 
       - name: Measure every variant
         shell: bash
@@ -286,6 +289,8 @@ jobs:
     permissions:
       contents: write
       actions: read
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
     steps:
       - uses: actions/checkout@v7
 
@@ -295,18 +300,37 @@ jobs:
           path: assets
           merge-multiple: true
 
-      # A release missing one RID is not a release. Fail loudly rather than publishing a bundle whose
-      # gap is discovered by a user on that platform.
+      # A release missing one RID is not a release. The exact names are checked, not just the count:
+      # a duplicated artifact from one cell and a missing one from another would still sum to 18.
       - name: Require every variant for every RID
         shell: bash
         run: |
           set -euo pipefail
           shopt -s nullglob
+          expected=()
+          for rid in linux-x64 linux-arm64 osx-x64 osx-arm64 win-x64 win-arm64; do
+            if [[ "$rid" == win-* ]]; then ext=zip; else ext=tar.gz; fi
+            expected+=(
+              "coppice-$VERSION-$rid.$ext"
+              "coppice-$VERSION-$rid-self-contained.$ext"
+              "coppice-gui-$VERSION-$rid.$ext"
+            )
+          done
+          expected+=("coppice.$VERSION.nupkg")
+          missing=0
+          for name in "${expected[@]}"; do
+            if [[ ! -f "assets/$name" ]]; then
+              echo "::error::missing $name"
+              missing=1
+            fi
+          done
+          if (( missing )); then
+            ls -l assets
+            exit 1
+          fi
           archives=(assets/*.zip assets/*.tar.gz)
-          expected=18   # six RIDs x (framework-dependent, self-contained, GUI)
-          if (( ${#archives[@]} != expected )); then
-            printf '%s\n' "${archives[@]}"
-            echo "::error::expected $expected archives, found ${#archives[@]}"
+          if (( ${#archives[@]} != 18 )); then
+            echo "::error::expected 18 archives, found ${#archives[@]}"
             exit 1
           fi
           packages=(assets/*.nupkg)
@@ -344,7 +368,10 @@ jobs:
 
       # Only a tag gets a Release. A dry-run dispatch keeps the bundle as a workflow artifact so the
       # tag path can be exercised without claiming a release that the human gates have not signed.
+      # The release is created as a draft and published only after every asset upload succeeded, so an
+      # interrupted upload cannot leave a public release with half its platforms.
       - name: Create the GitHub Release
+        id: create
         if: startsWith(github.ref, 'refs/tags/') && (github.event_name == 'push' || inputs.publish_release == true)
         shell: bash
         env:
@@ -356,17 +383,23 @@ jobs:
             prerelease+=(--prerelease)
           fi
           gh release create "$GITHUB_REF_NAME" \
+            --draft \
             --title "Coppice ${GITHUB_REF_NAME#v}" \
             --notes-file docs/release-notes-v0.4.md \
             --verify-tag \
             "${prerelease[@]}" \
             assets/*
+          gh release edit "$GITHUB_REF_NAME" --draft=false
 
       - name: Say what happened
+        if: always()
         shell: bash
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "release $GITHUB_REF_NAME published (or requested)" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "${{ steps.create.outcome }}" == "success" ]]; then
+            echo "release $GITHUB_REF_NAME published" >> "$GITHUB_STEP_SUMMARY"
+          elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "release creation for $GITHUB_REF_NAME was skipped or failed; inspect the release-bundle artifact" \
+              >> "$GITHUB_STEP_SUMMARY"
           else
             echo "dry run on $GITHUB_REF: no Release created; download the release-bundle artifact" \
               >> "$GITHUB_STEP_SUMMARY"

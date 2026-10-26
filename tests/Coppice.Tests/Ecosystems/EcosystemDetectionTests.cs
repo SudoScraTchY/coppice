@@ -242,7 +242,11 @@ public sealed class EcosystemDetectionTests
 
         var stopwatch = Stopwatch.StartNew();
         cts.Cancel();
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => detect);
+
+        // WaitAsync guards against a detector that drops the token entirely: without it the suite
+        // would hang until the job timeout instead of failing this test.
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => detect.WaitAsync(TimeSpan.FromSeconds(5)));
         stopwatch.Stop();
 
         _output.WriteLine($"detection cancellation observed after {stopwatch.Elapsed.TotalMilliseconds:F1} ms");

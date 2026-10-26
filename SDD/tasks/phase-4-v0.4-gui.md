@@ -77,7 +77,7 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - Release notes, GUI screenshots in README, tag + binaries.
 - Tag-to-release packaging in `.github/workflows/release.yml`: six-RID framework-dependent,
   self-contained and GUI archives plus the `dotnet tool` package, `SHA256SUMS.txt` and `SIZES.txt`.
-  It checks each binary's own `version` output and refuses a tag that disagrees with `<Version>` or
+  It checks both CLI variants' own `version` output and refuses a tag that disagrees with `<Version>` or
   names a commit with no green `build.yml` run. `workflow_dispatch` is the dry run: same matrix,
   same bundle, no Release off-tag.
 
