@@ -8,7 +8,7 @@
 | phase-1-v0.1-readonly.md | v0.1 | T-005 … T-019 | read-only trust: .NET + doctor + conformance |
 | phase-2-v0.2-manifests.md | v0.2 | T-020 … T-030 | manifests, policy/plans, escape suite, API freeze |
 | phase-3-v0.3-apply.md | v0.3 | T-031 … T-038, T-044 … T-049 | gateway, quarantine, audit, apply, TUI, CI mode, config, ecosystem wiring |
-| phase-4-v0.4-gui.md | v0.4 | T-039 … T-043, T-050 … T-056 | Avalonia GUI, history, completions, requirement closure, catalog hardening, v0.4 release |
+| phase-4-v0.4-gui.md | v0.4 | T-039 … T-043, T-050 … T-057 | Avalonia GUI, history, completions, requirement closure, catalog hardening, user manifests, v0.4 release |
 
 The live order, status and evidence are in [`../AGENDA.md`](../AGENDA.md). A card that is not in
 the agenda is not being worked on, even if its boxes are open.

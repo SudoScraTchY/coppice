@@ -41,12 +41,15 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - Snapshot diffs; "growth since last scan" per ecosystem; text summary in CLI, chart in GUI.
 
 **Acceptance**
-- [ ] Two snapshots → correct delta (fixture test)
-- [ ] Trend view renders N snapshots without degradation
+- [x] Two snapshots → correct delta (fixture test)
+- [x] Trend view renders N snapshots without degradation
 
-> T-041 landed as `3ff49c8`; CI run `40299387847` is the remaining evidence. `SnapshotDiffTests` covers
+> T-041 landed as `3ff49c8`; run `40300565804` is green on all six cells. `SnapshotDiffTests` covers
 > the two-snapshot fixture, moved items and the baseline case; `HistoryTrendTests` renders 12
-> snapshots with bounded bars; `HistoryCommandTests` pins the deterministic JSON and text output.
+> snapshots with bounded bars; `HistoryCommandTests` pins the deterministic JSON and text output. The
+> first CI run (`40299387847`) failed only because the GUI cancel test shared the thread pool with
+> 1,300 other tests; that test now runs in its own non-parallel timing collection with the 200 ms
+> bound unchanged.
 
 ### T-042 · Shell completions + HTML report
 **Refs** nice-to-haves #5, #18 · **Depends** T-015 · **Effort** S/M
@@ -113,20 +116,21 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > floor so no rejected candidate can become a plan step. Doctor probes add up to four 2 s bounds;
 > T-053 owns the overall doctor budget.
 
-### T-052 · FR-22/FR-23: pins, quarantine config and user manifests
-**Refs** FR-22, FR-23, S-1 · **Depends** T-049, T-056 · **Effort** L · **Safety card**
+### T-052 · FR-22: config pins and quarantine retention
+**Refs** FR-22, S-1 · **Depends** T-049, T-056 · **Effort** M · **Safety card**
 
 **Build**
 - Feed `[pins]` into `ResolutionEngine` as the Pin rung; denylist and fingerprint still gate. A config pin can override a location but cannot make an unsafe path cleanable.
 - Consume `[quarantine]` retention defaults in prune/apply; manual-only remains the default (OQ-05 leaning), with no automatic deletion.
-- Wire `ManifestLoader.LoadAll(userDir)` so a user manifest is discovered, validated and opt-in without recompilation; invalid manifests are refused with diagnostics.
 - Update `07`/`10`, help and the TUI/roots pin display.
 
 **Acceptance**
 - [ ] A config pin overrides a location; a denylisted or fingerprint-failing pin is refused with a visible reason
 - [ ] Quarantine retention config changes the default; manual-only remains the default
-- [ ] A user manifest dropped in the user dir is used without recompiling; invalid manifests are refused with diagnostics
 - [ ] `doctor` reports config validation and the active pins
+
+> Scope split 2026-10-26: the original T-052 also covered FR-23 user manifests. That half is now
+> T-057 so the pins/quarantine path can land without claiming an unimplemented registry surface.
 
 ### T-053 · NFR-04 performance evidence and the doctor budget
 **Refs** NFR-04, NFR-05 · **Depends** T-051, T-056 · **Effort** M
@@ -196,3 +200,23 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > architecture tests pass; the blocked-probe cancellation is observed at 1.1 ms locally and 1.3 s on
 > Windows arm64, with the test bound at 1.8 s — still below the 2 s probe timeout. The overall
 > `doctor < 5 s` budget remains T-053.
+
+### T-057 · FR-23: opt-in user manifests
+**Refs** FR-23, OQ-08 · **Depends** T-048, T-049 · **Effort** M
+
+**Build**
+- Add `[ecosystems] trust_user_manifests = false` (opt-in) and an optional directory to `config.toml`;
+  `ConfigLoader` validates both.
+- When enabled, load/validate `ManifestLoader.LoadAll(userDir)` and register valid manifests through
+  `EcosystemRegistry` without recompilation. Invalid manifests are refused with their diagnostics;
+  built-in shadowing is documented and tested.
+- No new package, no network.
+
+**Acceptance**
+- [ ] An enabled drop-in manifest is used by `doctor`/`scan` without rebuilding
+- [ ] The default (disabled) ignores it
+- [ ] An invalid manifest is refused with line-level diagnostics
+- [ ] Shadowing behavior is asserted, not guessed
+
+> Split from T-052 on 2026-10-26: pins/quarantine and the manifest-registration surface are different
+> safety stories. This card is the opt-in trust decision OQ-08 describes.

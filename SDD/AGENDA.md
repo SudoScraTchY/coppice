@@ -58,9 +58,10 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-055 SDD truth + skills | `done` | `4afab29`, `d14dd80`, `a2d1d76`; run `40283969985` green on all six cells |
 | T-056 catalog hardening | `done` | `336354b`; run `40290685781` green on all six cells; 1,317 tests, 31 architecture |
 | T-039 Avalonia shell | `done` except box 4 human | boxes 1/2 closed by T-050; box 4 is `blocked-human` |
-| T-041 history/trends | `in-progress` | `3ff49c8`; CI run `40299387847` pending |
+| T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
 | T-040 GUI pin editor | `not-started` | after T-050/T-052 |
 | T-043 v0.4 release | `not-started` | after all cards and the human-evidence bundle |
+| T-057 FR-23 user manifests | `not-started` | split from T-052; after T-048/T-049 |
 | T-036 TUI screens | `blocked-human` | box 4 screen-reader smoke pass |
 | T-038 v0.3 release docs | `blocked-human` | box 2 fresh-VM install; 0.3.0 itself withdrawn |
 | T-019 v0.1 release + dogfood | `blocked-human` | 5+ dogfood reports |
@@ -95,7 +96,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | 2026-10-26 | T-056 catalog hardening landed | `336354b`; run `40290685781` green; cancellation observed at 1.1 ms, probes bounded at 2 s |
 | 2026-10-26 | T-050 GUI shell completed | `8ef6c1e`; run `40295759411` green; E2E + boundary tests, 19.3 ms cancel |
 | 2026-10-26 | T-051 detection and roots landed | `75ac702`; run `40296987047` green on all six cells |
-| 2026-10-26 | T-041 history/trends landed | `3ff49c8`; CI run `40299387847` pending |
+| 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |
 | 2026-10-26 | First real six-cell run dispatched | run `40280980743` (superseded by `40282093437`) |
 
 ## Updating this file
