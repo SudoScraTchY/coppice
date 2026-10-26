@@ -159,9 +159,10 @@ and [SDD/06-safety-model.md](./SDD/06-safety-model.md).
   exporter, exist; the verbs are not wired. `completions` and `history` are implemented.
 - **GUI.** The T-050 shell and T-040 pin editor are the release-candidate GUI. The manual
   screen-reader pass is still open.
-- **Not yet verified on a clean machine.** The publish path and both install variants are exercised,
-  but the fresh-VM install → apply pass and the dogfood reports are human gates recorded in
-  `SDD/AGENDA.md`. This is why the release is `0.4.0-rc.1`, not a tag.
+- **Clean-machine evidence is partial.** The self-contained rc.1 artifact completes
+  version → doctor → scan → plan → apply → restore → audit verify with no .NET on `PATH` and isolated
+  state (2026-10-26). A true fresh-VM install → apply transcript and the dogfood reports remain human
+  gates recorded in `SDD/AGENDA.md`; this is why the release is `0.4.0-rc.1`, not a tag.
 
 ## Documentation
 

@@ -108,6 +108,9 @@ create a Release off-tag. Ranges across those cells:
 - **Not tagged.** `v0.4.0` requires the screen-reader smoke pass, a fresh-VM install → doctor → scan →
   plan → apply transcript, five dogfood reports, and a second safety reviewer. Those are tracked in
   `SDD/AGENDA.md`; this candidate is the code and machine evidence only.
+- The self-contained rc.1 artifact was exercised end to end with no .NET on `PATH` against a scratch
+  cache: version → doctor → scan → plan → apply → quarantine list → restore → audit verify. That is
+  supporting evidence, not the fresh-VM gate; the host was not fresh.
 - Real-volume throughput for the 30k-item target was not measured; the reproducible fixture measures
   enumeration/CPU on a fake filesystem (30,000 items / 31.4 GB logical in 1.38 s).
 - The GUI visual layer is compiled and its view models are headless-tested; Avalonia rendering is not
@@ -126,6 +129,8 @@ create a Release off-tag. Ranges across those cells:
   no Release created off-tag
 - Build run `40333340213`: six cells green, and the egress canary TRX is archived as `egress-results`
   (the upload silently skipped the dot-prefixed directory before `c97ae9c`)
+- Clean-environment E2E: the rc.1 self-contained binary, `PATH` without .NET, isolated state, completed
+  the full read → plan → move → restore → audit path
 - `SDD/AGENDA.md` records the other run ids
 - `scripts/publish.sh` FD/SC and `scripts/publish-gui.sh` size measurements
 

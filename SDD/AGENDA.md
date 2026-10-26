@@ -77,6 +77,25 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | Second safety reviewer sign-off | T-031/32/34/35/44/48/52/56 | reviewer name + commit | open |
 | Six-cell CI + egress canary | T-018, T-054 | run URL + TRX canary line | passed 2026-10-26: run `40282093437`; run `40333340213` archives the canary TRX as `egress-results` |
 
+### Clean-environment E2E (supporting evidence, not a fresh VM)
+
+2026-10-26: the published `coppice-0.4.0-rc.1-win-x64-self-contained.zip` from release dry run
+`40329677179` was run on this Windows host with `PATH` reduced to `C:\Windows\System32;C:\Windows`
+(no `dotnet`), and with `LOCALAPPDATA`, `NUGET_PACKAGES` and the bundle-extract directory isolated to a
+scratch tree holding a two-version cache and one project:
+
+- `version` → `coppice 0.4.0-rc.1`
+- `doctor --json` → all four tools absent; `nuget-packages` valid and cleanable via `NUGET_PACKAGES`
+- `scan --projects` → `newtonsoft.json` 5.0.0 Referenced, 1.0.0 Unreferenced ("no project references it")
+- `plan --keep-latest 1` → plan `pln_9fdd115b21aa`, one step, 13 bytes, with the keep/usage reason
+- `apply --plan … --yes` → Completed, one item quarantined, `contentHash 07ee01ced48611d8`
+- `quarantine restore` → restored to the original path; list count 0
+- `audit verify` → 2 records over 2 lines; chain intact and log agrees with the quarantine index
+
+This proves the self-contained artifact needs no .NET runtime on `PATH` and that the full
+read → plan → move → restore path works on isolated state. It is **not** the T-038/T-043 fresh-VM
+gate: the host is not fresh, and the missing .NET is a scrubbed `PATH`, not an absent runtime.
+
 ## Release sign-off procedure (human)
 
 The machine work is complete at `0.4.0-rc.1`. These steps are the only remaining path to `v0.4.0`;
@@ -134,6 +153,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-26 | Cancellation test stabilized after a 1005 ms flake | `a433ce8`; Timing collection + 1.8 s bound (probe timeout 2 s); run `40332590755` green |
 | 2026-10-26 | Egress TRX archive fixed | `c97ae9c`; `upload-artifact` skips hidden paths, so the upload now sets `include-hidden-files` + `if-no-files-found: error`; run `40333340213` green and `egress-results` present (335,932 B) |
 | 2026-10-26 | Final candidate evidence commit green; artifacts inspected | run `40334346355` on `4d2f77b`: six cells, egress and license; `coppice-win-x64` contains `docs/images/*.png`; `egress-results/egress.trx` contains `Egress_is_blocked_in_this_environment` |
+| 2026-10-26 | Clean-environment rc.1 E2E (not a fresh VM) | self-contained zip, scrubbed PATH, isolated state; version→doctor→scan→plan→apply→restore→audit verify; details in the section above |
 | 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |
 | 2026-10-26 | First real six-cell run dispatched | run `40280980743` (superseded by `40282093437`) |
 

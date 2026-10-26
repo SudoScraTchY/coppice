@@ -102,10 +102,11 @@ Exit criteria per 12-roadmap.
 
 > T-038: `scripts/publish.sh` copies `README.md`, `CHANGELOG.md`, `LICENSE`, `NOTICE` and the four
 > `docs/*.md` guides into the publish output and refuses to publish if one is missing; verified for
-> win-x64, together with the packed `coppice` tool. The published binary was exercised end-to-end
-> (doctor → scan → plan → apply → quarantine list → restore → audit verify) against a synthetic cache
-> on the authoring machine, with no container runtime. Box 2 stays open: a fresh-VM install pass has
-> not been run. The T-036 screen-reader pass also remains open.
+> win-x64, together with the packed `coppice` tool. The published self-contained rc.1 artifact was
+> exercised end-to-end (version → doctor → scan → plan → apply → quarantine list → restore → audit
+> verify) against a synthetic cache with `PATH` scrubbed of .NET and isolated state (2026-10-26; see
+> `SDD/AGENDA.md`). Box 2 stays open: a fresh-VM install pass has not been run. The T-036
+> screen-reader pass also remains open.
 
 ### T-044 · `plan` and `quarantine` verbs
 **Refs** FR-11, FR-14, FR-21, 07-cli-tui · **Depends** T-026, T-032, T-034, T-037 · **Effort** M · **Safety card**

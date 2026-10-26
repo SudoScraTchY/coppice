@@ -93,7 +93,9 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > unexercised until sign-off; everything up to it ran. Measured bytes: FD 2,193,723–2,286,168;
 > SC 37,310,888–40,202,928; GUI 47,274,034–52,044,876. The rc.1 shell was launched from the published
 > binary and the Dashboard, Evidence and History screens were captured to `docs/images/`; both boxes
-> are ticked in the evidence commit that adds them.
+> are ticked in the evidence commit that adds them. A scrubbed-PATH E2E of the published self-contained
+> binary completed the full pipeline (see `SDD/AGENDA.md`); the fresh-VM gate and the other human gates
+> remain open.
 
 > T-043 prepared `0.4.0-rc.1`, not a tag. Run `40313952759` is green on all six cells. The CLI is
 > 2.19 MB framework-dependent / 36.73 MB self-contained; the GUI is 47.71 MB self-contained. The
