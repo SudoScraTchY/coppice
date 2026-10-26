@@ -161,7 +161,7 @@ public sealed class IFileSystemPaths(IFileSystem fs, OperatingSystemKind os)
             // Resolve relative targets against the link's parent directory.
             string resolvedTarget = PathCanonicalizer.IsRooted(rawTarget, _os)
                 ? PathCanonicalizer.Canonicalize(rawTarget, _os).Path
-                : PathCanonicalizer.Combine(CurrentDirectory(current), rawTarget, _os);
+                : PathCanonicalizer.Combine(CurrentDirectory(current, _os), rawTarget, _os);
 
             // A cycle: back where we started, or onto a path already walked. Either way there is no
             // directory here to reason about.
@@ -217,10 +217,30 @@ public sealed class IFileSystemPaths(IFileSystem fs, OperatingSystemKind os)
         return segments.Any(s => s == "." || s == "..");
     }
 
-    private static string CurrentDirectory(string path)
+    private static string CurrentDirectory(string path, OperatingSystemKind os)
     {
         var idx = path.LastIndexOfAny(['\\', '/']);
-        return idx >= 0 ? path[..idx] : string.Empty;
+        if (idx < 0)
+        {
+            return string.Empty;
+        }
+
+        // A link at the filesystem root ("/var" -> "private/var") has no ordinary parent segment.
+        // Returning an empty string made the target relative, so every resolved path under it lost
+        // its leading slash; on macOS that turned /var/... into private/var/..., and the child then
+        // resolved that against its cwd. A drive root ("C:\link") needs the separator for the same
+        // reason: "C:" alone is drive-relative.
+        if (idx == 0)
+        {
+            return path[..1];
+        }
+
+        if (idx == 2 && path.Length >= 3 && path[1] == ':')
+        {
+            return path[..2] + PathCanonicalizer.SeparatorFor(os);
+        }
+
+        return path[..idx];
     }
 
 }

@@ -556,3 +556,35 @@ public sealed class PropertyBasedTests
 
     private static string BuildPath(Random random) => "/" + string.Join('/', BuildSegments(random, 6));
 }
+
+/// <summary>
+/// A link whose target is relative must resolve against the link's parent, including when the link
+/// itself sits at a filesystem root. Losing that anchor makes the resolved path relative and every
+/// containment check that follows compares two different kinds of path.
+/// </summary>
+public sealed class ResolveRealPathTests
+{
+    [Fact]
+    public void A_symlink_at_the_filesystem_root_keeps_the_resolved_path_rooted()
+    {
+        var fs = new FakeFileSystem(OperatingSystemKind.MacOS)
+            .AddDirectory("/private/var/folders/tmp")
+            .AddSymlink("/var", "private/var");
+
+        var paths = new IFileSystemPaths(fs, OperatingSystemKind.MacOS);
+
+        Assert.Equal("/private/var/folders/tmp", paths.ResolveRealPath("/var/folders/tmp"));
+    }
+
+    [Fact]
+    public void A_junction_at_a_drive_root_keeps_the_resolved_path_rooted()
+    {
+        var fs = new FakeFileSystem(OperatingSystemKind.Windows)
+            .AddDirectory(@"C:\real\cache")
+            .AddJunction(@"C:\link", "real");
+
+        var paths = new IFileSystemPaths(fs, OperatingSystemKind.Windows);
+
+        Assert.Equal(@"C:\real\cache", paths.ResolveRealPath(@"C:\link\cache"));
+    }
+}
