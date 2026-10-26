@@ -54,7 +54,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-052 FR-22/FR-23 | `not-started` | card in phase 4 |
 | T-053 NFR-04 perf | `not-started` | card in phase 4 |
 | T-054 E-7 + escape filter | `not-started` | card in phase 4 |
-| T-055 SDD truth + skills | `in-progress` | this commit; CI evidence pending |
+| T-055 SDD truth + skills | `done` | `4afab29` (docs), `d14dd80` (skills); CI evidence pending the push run |
 | T-056 catalog hardening | `not-started` | card in phase 4 |
 | T-039 Avalonia shell | `done` except box 2 + human a11y | box 2 needs the T-050 cancellation measurement; box 4 is `blocked-human` |
 | T-040–T-043 | `not-started` | phase 4 |
@@ -83,7 +83,8 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | 2026-10-26 | Root-link anchoring fixed | `30917d3`; `/var` and drive-root relative targets stay absolute |
 | 2026-10-26 | Six-cell CI green | run `40282093437` on `30917d3`: all six cells, egress, license |
 | 2026-10-26 | Publish budgets verified | framework-dependent 1.96 MB (budget 5 MB), self-contained 36.64 MB (budget 50 MB) |
-| 2026-10-26 | Skills vendored | `.qoder/skills/avalonia`, `.qoder/skills/csharp-expert`, `THIRD_PARTY_NOTICES.md` |
+| 2026-10-26 | Skills vendored | `.qoder/skills/avalonia`, `.qoder/skills/csharp-expert`, `THIRD_PARTY_NOTICES.md`; commits `d14dd80` |
+| 2026-10-26 | SDD truth pass committed | `4afab29`; ADR-017, agenda, orchestration, T-048–T-056 cards, corrected docs, 0.4.0-dev, publish budgets |
 | 2026-10-26 | First real six-cell run dispatched | run `40280980743` (superseded by `40282093437`) |
 
 ## Updating this file

@@ -1,8 +1,12 @@
 # Project skills
 
-These are development-time instructions for agents working in this repository. They are
-Markdown only: no runtime dependency, no package reference, and no network call is added to
-Coppice itself.
+These are development-time instructions and optional helper assets for agents working in this
+repository. They are not compiled into, executed by, or required by Coppice. No runtime dependency,
+package reference, or network call is added to the product.
+
+The Avalonia tree includes optional `avalonia-pro-max/preview-server` scripts (Python and AXAML
+templates) used only when an agent chooses to render a design preview. They are not part of the
+solution, the build, or the CI gate; do not add them to `Coppice.slnx`.
 
 | Skill | Source | Pinned commit | License | Local modification |
 |---|---|---|---|---|
