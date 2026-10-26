@@ -60,8 +60,23 @@ public sealed record RootRow(
     string Role,
     string Validity,
     bool Cleanable,
-    string Problem)
+    string Problem,
+    string Provenance,
+    string Owner,
+    string Size,
+    bool Ambiguous,
+    bool NeedsElevation)
 {
+    /// <summary>A provenance string is never empty; the via is the minimum a user is owed.</summary>
+    public string Note => string.Join(
+        " · ",
+        new[]
+        {
+            Problem,
+            Ambiguous ? "Ambiguous — not cleanable." : string.Empty,
+            NeedsElevation ? "Report-only — Coppice never elevates." : string.Empty,
+        }.Where(part => part.Length > 0));
+
     public override string ToString() => $"{LocationId} — {Validity} — {Path}";
 }
 

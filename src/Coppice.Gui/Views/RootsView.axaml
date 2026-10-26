@@ -4,7 +4,7 @@
              xmlns:vm="using:Coppice.Gui.ViewModels"
              x:Class="Coppice.Gui.Views.RootsView"
              x:DataType="vm:MainWindowViewModel">
-  <Grid RowDefinitions="Auto,Auto,*" Margin="{StaticResource PagePadding}">
+  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="{StaticResource PagePadding}">
 
     <StackPanel Spacing="10">
       <TextBlock Classes="eyebrow" Text="REFERENCE · LOCATIONS" />
@@ -32,24 +32,27 @@
     <Panel Grid.Row="2">
       <Border Classes="card" Padding="12" IsVisible="{Binding HasRoots}">
         <Grid RowDefinitions="Auto,*">
-          <Grid ColumnDefinitions="160,2*,90,90,110,*" Margin="10,0,10,6">
+          <Grid ColumnDefinitions="140,2*,140,80,100,90,70,*" Margin="10,0,10,6">
             <TextBlock Classes="metricLabel" Text="LOCATION" />
             <TextBlock Grid.Column="1" Classes="metricLabel" Text="PATH" />
-            <TextBlock Grid.Column="2" Classes="metricLabel" Text="VIA" />
+            <TextBlock Grid.Column="2" Classes="metricLabel" Text="PROVENANCE" />
             <TextBlock Grid.Column="3" Classes="metricLabel" Text="ROLE" />
             <TextBlock Grid.Column="4" Classes="metricLabel" Text="VALIDITY" />
-            <TextBlock Grid.Column="5" Classes="metricLabel" Text="NOTE" />
+            <TextBlock Grid.Column="5" Classes="metricLabel" Text="OWNER" />
+            <TextBlock Grid.Column="6" Classes="metricLabel" Text="SIZE" />
+            <TextBlock Grid.Column="7" Classes="metricLabel" Text="NOTE" />
           </Grid>
           <ListBox Grid.Row="1" Classes="rows" ItemsSource="{Binding Roots}"
                    AutomationProperties.Name="Resolved locations">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:RootRow">
-                <Grid ColumnDefinitions="160,2*,90,90,110,*">
+                <Grid ColumnDefinitions="140,2*,140,80,100,90,70,*">
                   <TextBlock Text="{Binding LocationId}" FontWeight="SemiBold"
                              TextTrimming="CharacterEllipsis" />
                   <TextBlock Grid.Column="1" Text="{Binding Path}" Classes="path"
                              VerticalAlignment="Center" ToolTip.Tip="{Binding Path}" />
-                  <TextBlock Grid.Column="2" Text="{Binding Via}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding Provenance}" VerticalAlignment="Center"
+                             TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Provenance}" />
                   <TextBlock Grid.Column="3" Text="{Binding Role}" VerticalAlignment="Center" />
                   <Border Grid.Column="4" Classes="pill" VerticalAlignment="Center"
                           HorizontalAlignment="Left"
@@ -57,9 +60,12 @@
                           Classes.danger="{Binding !Cleanable}">
                     <TextBlock Classes="pillText" Text="{Binding Validity}" />
                   </Border>
-                  <TextBlock Grid.Column="5" Text="{Binding Problem}" Classes="muted"
+                  <TextBlock Grid.Column="5" Text="{Binding Owner}" VerticalAlignment="Center"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="6" Text="{Binding Size}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="7" Text="{Binding Note}" Classes="muted"
                              VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="2"
-                             TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Problem}" />
+                             TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Note}" />
                 </Grid>
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -82,6 +88,25 @@
         </StackPanel>
       </Border>
     </Panel>
+
+    <Border Grid.Row="3" Classes="card" Margin="0,12,0,0" Padding="14">
+      <StackPanel Spacing="8">
+        <TextBlock Classes="metricLabel" Text="PIN A LOCATION" />
+        <Grid ColumnDefinitions="170,*,Auto,Auto" ColumnSpacing="8">
+          <TextBox Text="{Binding PinLocationId}" PlaceholderText="location id"
+                   AutomationProperties.Name="Pin location id" />
+          <TextBox Grid.Column="1" Text="{Binding PinPath}" PlaceholderText="/absolute/path"
+                   AutomationProperties.Name="Pin path" />
+          <Button Grid.Column="2" Classes="secondary" Content="Validate"
+                  Command="{Binding PreviewPinCommand}"
+                  AutomationProperties.Name="Validate pin" />
+          <Button Grid.Column="3" Classes="primary" Content="Save pin"
+                  Command="{Binding SavePinCommand}"
+                  AutomationProperties.Name="Save pin" />
+        </Grid>
+        <TextBlock Text="{Binding PinStatus}" Classes="muted" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
 
   </Grid>
 </UserControl>

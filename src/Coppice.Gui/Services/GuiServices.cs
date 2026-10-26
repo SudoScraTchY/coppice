@@ -23,7 +23,8 @@ public sealed class GuiServices : IDisposable
         ScanService scan,
         SnapshotLibrary snapshots,
         IPlanApplyService apply,
-        QuarantineLibrary quarantine)
+        QuarantineLibrary quarantine,
+        PinEditorService? pinEditor = null)
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(doctor);
@@ -38,6 +39,7 @@ public sealed class GuiServices : IDisposable
         Snapshots = snapshots;
         Apply = apply;
         Quarantine = quarantine;
+        PinEditor = pinEditor;
     }
 
     public EcosystemRegistry Registry { get; }
@@ -51,6 +53,9 @@ public sealed class GuiServices : IDisposable
     public IPlanApplyService Apply { get; }
 
     public QuarantineLibrary Quarantine { get; }
+
+    /// <summary>Null in a headless test that does not exercise pin editing.</summary>
+    public PinEditorService? PinEditor { get; }
 
     public static GuiServices Create()
     {
@@ -69,6 +74,12 @@ public sealed class GuiServices : IDisposable
         CoppiceConfig effective = config.IsSuccess ? config.Config! : CoppiceConfig.Defaults;
         EcosystemRegistry registry = EcosystemRegistry.CreateForConfig(fs, env, effective);
         IReadOnlyDictionary<string, string>? pins = config.IsSuccess ? effective.Pins : null;
+        var pinEditor = new PinEditorService(
+            fs,
+            runner,
+            env,
+            new PhysicalConfigWriter(),
+            UserConfigPath.For(env));
 
         return new GuiServices(
             registry,
@@ -76,7 +87,8 @@ public sealed class GuiServices : IDisposable
             new ScanService(fs, runner, env, state, clock, registry),
             new SnapshotLibrary(state, clock),
             new PlanApplyService(fs, runner, env, state, log, clock, registry),
-            new QuarantineLibrary(fs, quarantine.Index, quarantine.Restore));
+            new QuarantineLibrary(fs, quarantine.Index, quarantine.Restore),
+            pinEditor);
     }
 
     /// <summary>

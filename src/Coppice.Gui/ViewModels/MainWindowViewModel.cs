@@ -77,6 +77,60 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public IReadOnlyList<PolicyOption> Policies { get; }
 
     [ObservableProperty]
+    private string _pinLocationId = "nuget-packages";
+
+    [ObservableProperty]
+    private string _pinPath = string.Empty;
+
+    [ObservableProperty]
+    private string _pinStatus = "Choose a location id and an absolute path, then Validate before saving.";
+
+    [RelayCommand]
+    private void PreviewPin()
+    {
+        if (_services.PinEditor is null)
+        {
+            PinStatus = "The pin editor is not available in this build.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(PinLocationId) || string.IsNullOrWhiteSpace(PinPath))
+        {
+            PinStatus = "A location id and a path are required.";
+            return;
+        }
+
+        PinPreview preview = _services.PinEditor.Preview(PinLocationId.Trim(), PinPath.Trim());
+        PinStatus = $"{preview.Validity} — {preview.Reason} ({preview.Provenance})";
+    }
+
+    [RelayCommand]
+    private async Task SavePinAsync()
+    {
+        if (_services.PinEditor is null)
+        {
+            PinStatus = "The pin editor is not available in this build.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(PinLocationId) || string.IsNullOrWhiteSpace(PinPath))
+        {
+            PinStatus = "A location id and a path are required.";
+            return;
+        }
+
+        PinSaveResult result = _services.PinEditor.Save(PinLocationId.Trim(), PinPath.Trim());
+        PinStatus = result.Saved
+            ? result.Message
+            : $"{result.Message} — {result.Preview.Reason}";
+
+        if (result.Saved)
+        {
+            await LoadRootsAsync(showSpinner: true, CancellationToken.None);
+        }
+    }
+
+    [ObservableProperty]
     private PageKey _currentPage = PageKey.Setup;
 
     [ObservableProperty]
@@ -884,11 +938,30 @@ public sealed partial class MainWindowViewModel : ObservableObject
                 root.Root.Role.ToString(),
                 root.Root.Validity.ToString(),
                 root.Root.IsCleanable,
-                root.Problem ?? string.Empty)),
+                root.Problem ?? string.Empty,
+                string.IsNullOrWhiteSpace(root.Root.ViaDetail)
+                    ? root.Root.Via.ToString()
+                    : $"{root.Root.Via} · {root.Root.ViaDetail}",
+                root.Owner ?? root.Root.Owner ?? string.Empty,
+                SizeLabel(root.Size),
+                root.Ambiguous,
+                root.Root.Validity == RootValidity.NeedsElevation)),
         ];
 
         Roots = rows;
         RootsCount = rows.Count;
+    }
+
+    private static string SizeLabel(ulong? size)
+    {
+        if (size is not ulong bytes)
+        {
+            return string.Empty;
+        }
+
+        return bytes >= 1024UL * 1024 * 1024
+            ? $"{bytes / (1024.0 * 1024 * 1024):F1} GB"
+            : $"{bytes / (1024.0 * 1024):F1} MB";
     }
 
     private void LoadProblems(ScanReport scan)
