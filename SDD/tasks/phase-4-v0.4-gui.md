@@ -44,6 +44,10 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - [ ] Two snapshots → correct delta (fixture test)
 - [ ] Trend view renders N snapshots without degradation
 
+> T-041 landed as `3ff49c8`; CI run `40299387847` is the remaining evidence. `SnapshotDiffTests` covers
+> the two-snapshot fixture, moved items and the baseline case; `HistoryTrendTests` renders 12
+> snapshots with bounded bars; `HistoryCommandTests` pins the deterministic JSON and text output.
+
 ### T-042 · Shell completions + HTML report
 **Refs** nice-to-haves #5, #18 · **Depends** T-015 · **Effort** S/M
 

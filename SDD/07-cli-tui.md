@@ -14,6 +14,7 @@
 | `coppice quarantine list\|restore <id>\|prune` | Manage quarantine | restore/prune |
 | `coppice audit show\|verify` | Inspect the audit log | no |
 | `coppice completions <powershell\|bash\|zsh\|fish>` | Print a self-contained completion script | no |
+| `coppice history [--limit N] [--json]` | Compare recent snapshots and show per-ecosystem growth | no |
 | `coppice config path\|get\|set` | Planned; `config.toml` is read by T-049 and T-052 adds pins/quarantine | — |
 
 Global flags: `--no-color`, `--ci` (implemented). `-v/--verbose`, `--config <path>` and

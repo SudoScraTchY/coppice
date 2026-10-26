@@ -22,6 +22,10 @@ GUI and requirement closure.
 - T-042 reach: a self-contained HTML report exporter (inline CSS, no external references) and a
   `completions <powershell|bash|zsh|fish>` verb with per-shell tests. The `report` verb itself is
   still planned.
+- T-041 history and trends: stored snapshots can now be compared. `history [--limit N] [--json]`
+  prints each scan's totals and per-ecosystem delta, and the GUI has a History page with a bounded
+  bar chart and the same per-ecosystem growth rows. A first scan is a baseline, not a machine that
+  grew from zero.
 - T-050 GUI shell completion: the redesigned Avalonia shell is the committed GUI, with an injectable
   composition root, a preferences port (the file implementation lives in Adapters), a headless
   scan → plan → apply → restore test and a measured 19.3 ms scan cancel against a 200 ms bound.

@@ -152,6 +152,16 @@ stdin is redirected, or under `--once`/`--ci`, it renders the Dashboard once as 
 `--projects` is used by the TUI's `s` rescan, so the rescan keeps the same usage evidence as the CLI. If
 you launch the TUI without it, it can still review the snapshot from your last `scan`.
 
+## history
+
+```
+coppice history [--limit N] [--json]
+```
+
+Reads the newest N stored snapshots (oldest first) and prints each scan's totals plus the delta from
+the previous one, per ecosystem. The first scan in the window is a baseline; it has no previous
+snapshot and its delta is zero. `--json` is deterministic; `--ci` implies it. Read-only.
+
 ## completions
 
 ```

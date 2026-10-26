@@ -86,6 +86,7 @@ requires both `--plan` and `--yes`; consent is not a flag you can accidentally i
 | `coppice quarantine list\|restore\|prune` | Inspect, undo, or permanently discard quarantined items. |
 | `coppice audit show\|verify` | Read and verify the hash-chained mutation ledger. |
 | `coppice completions <shell>` | Print a PowerShell/bash/zsh/fish completion script. Read-only. |
+| `coppice history [--limit N]` | Compare recent snapshots and show per-ecosystem growth. Read-only. |
 | `coppice tui` | Seven-screen terminal UI sharing the same plan, gateway and journal. |
 
 Full flags, confirmation rules, state locations and exit codes:

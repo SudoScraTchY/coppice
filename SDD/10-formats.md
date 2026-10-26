@@ -100,6 +100,9 @@ manifests load from `<config>/ecosystems/*.toml` (warn on shadowing built-ins).
 
 ## Report formats
 
+`history` reads the stored snapshots and emits a text or JSON timeline: each scan's totals and the
+per-ecosystem delta from the previous one. It adds no new on-disk format.
+
 Console (rich, see 07), JSON (schema-versioned, sorted keys for determinism),
 CSV (flat item table + totals header), Markdown (shareable summary). HTML is
 a nice-to-have.
