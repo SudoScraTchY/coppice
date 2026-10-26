@@ -44,6 +44,7 @@ public sealed class PlanApplyService : IPlanApplyService
     private readonly IStateStore _state;
     private readonly IAppendLog _log;
     private readonly IClock _clock;
+    private readonly EcosystemRegistry _registry;
 
     public PlanApplyService(
         IFileSystem fs,
@@ -51,7 +52,8 @@ public sealed class PlanApplyService : IPlanApplyService
         IEnvironment env,
         IStateStore state,
         IAppendLog log,
-        IClock clock)
+        IClock clock,
+        EcosystemRegistry? registry = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(runner);
@@ -66,6 +68,7 @@ public sealed class PlanApplyService : IPlanApplyService
         _state = state;
         _log = log;
         _clock = clock;
+        _registry = registry ?? EcosystemRegistry.CreateDefault(fs);
     }
 
     public async Task<PlanApplyOutcome> ApplyAsync(
@@ -94,9 +97,9 @@ public sealed class PlanApplyService : IPlanApplyService
 
         Snapshot snapshot = loaded.Snapshot!;
 
-        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS).Inspect();
+        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS, _registry).Inspect();
         IReadOnlyList<BoundStep> bound = PlanBinder.Bind(
-            plan, snapshot, ApplyWiring.BindingRoots(roots), _env.OS, strict);
+            plan, snapshot, ApplyWiring.BindingRoots(roots, _registry), _env.OS, strict);
 
         ApplyServices services = ApplyWiring.Create(_fs, _runner, _env, _state, _log, _clock);
         ApplySummary summary = await services.Runner

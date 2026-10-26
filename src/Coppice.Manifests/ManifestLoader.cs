@@ -90,7 +90,17 @@ public sealed class ManifestLoader
     /// Loads the built-in manifests compiled into this assembly. These are the profiles coppice ships; a
     /// user manifest with the same id shadows one (OQ-08, opt-in enable).
     /// </summary>
-    public IReadOnlyList<ManifestLoadResult> LoadBuiltIn()
+    public IReadOnlyList<ManifestLoadResult> LoadBuiltIn() => LoadBuiltInResources();
+
+    /// <summary>
+    /// The same built-ins, without needing a filesystem port.
+    /// <para>
+    /// Embedded resources are not a filesystem, and the application's location catalog needs the
+    /// shipped profiles before any scan starts. Keeping the instance overload delegates here means the
+    /// two paths can never disagree about which profiles ship.
+    /// </para>
+    /// </summary>
+    public static IReadOnlyList<ManifestLoadResult> LoadBuiltInResources()
     {
         var results = new List<ManifestLoadResult>();
         Assembly assembly = typeof(ManifestLoader).Assembly;

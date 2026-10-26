@@ -127,6 +127,7 @@ public sealed class ApplyCommand
     private readonly IAppendLog _log;
     private readonly IApplyConsole _console;
     private readonly IClock _clock;
+    private readonly EcosystemRegistry _registry;
 
     public ApplyCommand(
         IFileSystem fs,
@@ -135,7 +136,8 @@ public sealed class ApplyCommand
         IStateStore state,
         IAppendLog log,
         IApplyConsole console,
-        IClock? clock = null)
+        IClock? clock = null,
+        EcosystemRegistry? registry = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(runner);
@@ -151,6 +153,7 @@ public sealed class ApplyCommand
         _log = log;
         _console = console;
         _clock = clock ?? new SystemClock();
+        _registry = registry ?? EcosystemRegistry.CreateDefault(fs);
     }
 
     public int Run(string[] args)
@@ -208,8 +211,9 @@ public sealed class ApplyCommand
 
         Snapshot snapshot = snapshotResult.Snapshot!;
 
-        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS).Inspect();
-        IReadOnlyList<BoundStep> bound = PlanBinder.Bind(plan, snapshot, ApplyWiring.BindingRoots(roots), _env.OS, flags.Strict);
+        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS, _registry).Inspect();
+        IReadOnlyList<BoundStep> bound = PlanBinder.Bind(
+            plan, snapshot, ApplyWiring.BindingRoots(roots, _registry), _env.OS, flags.Strict);
 
         bool canAsk = _console.IsInteractive && !flags.Ci;
         if (canAsk && !flags.Yes && !Confirm(plan, snapshot, bound))

@@ -103,25 +103,12 @@ public sealed class NuGetPackageEnumerator : IEntryEnumerator
     /// <summary>Integrity signals for one package version, recorded as facts for the health check.</summary>
     private Facts BuildFacts(string packageId, FileEntry versionDirectory)
     {
-        string version = versionDirectory.Name;
-        string nupkgName = $"{packageId}.{version}.nupkg";
-
-        // NuGet writes the archive flat in the version directory, alongside .nuspec and the
-        // extracted lib/ref folders.
-        string nupkgPath = Combine(versionDirectory.Path, nupkgName);
-        bool nupkgPresent = _fs.FileExists(nupkgPath);
-
-        bool metadataPresent = _fs.FileExists(Combine(versionDirectory.Path, $"{nupkgName}.metadata"));
-        bool signaturePresent = _fs.FileExists(Combine(versionDirectory.Path, $"{nupkgName}.signature.p7s"));
-        bool nuspecPresent = _fs.DirectoryExists(Combine(versionDirectory.Path, packageId));
+        Dictionary<string, string> integrity = IntegrityFacts(_fs, _separator, packageId, versionDirectory);
 
         return Facts.From(
         [
             new("packageId", packageId),
-            new("nupkgPresent", nupkgPresent ? "true" : "false"),
-            new("metadataPresent", metadataPresent ? "true" : "false"),
-            new("signaturePresent", signaturePresent ? "true" : "false"),
-            new("nuspecPresent", nuspecPresent ? "true" : "false"),
+            .. integrity.Select(fact => new KeyValuePair<string, string>(fact.Key, fact.Value)),
 
             // The mtime the drift check compares against. Recorded in round-trip form so a plan written on
             // one machine binds the same instant on another; an item without it cannot be drift-checked, and
@@ -131,15 +118,47 @@ public sealed class NuGetPackageEnumerator : IEntryEnumerator
     }
 
     /// <summary>
-    /// Joins using the TARGET OS's separator, taken from the constructor rather than the running
-    /// host: the plugin walks trees on the machine being scanned, and on a case-sensitive target a
-    /// backslash is a filename character, not a separator.
+    /// The four presence facts the health check relies on. Shared with the ecosystem plugin (T-048) so
+    /// that the orchestrator path and the standalone enumerator report the same integrity signals.
     /// </summary>
-    private string Combine(string root, string relative)
+    internal static Dictionary<string, string> IntegrityFacts(
+        IFileSystem fs,
+        char separator,
+        string packageId,
+        FileEntry versionDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(fs);
+        ArgumentNullException.ThrowIfNull(versionDirectory);
+
+        string version = versionDirectory.Name;
+        string nupkgName = $"{packageId}.{version}.nupkg";
+
+        // NuGet writes the archive flat in the version directory, alongside .nuspec and the
+        // extracted lib/ref folders.
+        bool nupkgPresent = fs.FileExists(Combine(versionDirectory.Path, nupkgName, separator));
+        bool metadataPresent = fs.FileExists(Combine(versionDirectory.Path, $"{nupkgName}.metadata", separator));
+        bool signaturePresent = fs.FileExists(Combine(versionDirectory.Path, $"{nupkgName}.signature.p7s", separator));
+        bool nuspecPresent = fs.DirectoryExists(Combine(versionDirectory.Path, packageId, separator));
+
+        return new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["nupkgPresent"] = nupkgPresent ? "true" : "false",
+            ["metadataPresent"] = metadataPresent ? "true" : "false",
+            ["signaturePresent"] = signaturePresent ? "true" : "false",
+            ["nuspecPresent"] = nuspecPresent ? "true" : "false",
+        };
+    }
+
+    /// <summary>
+    /// Joins using the TARGET OS's separator, not the running host: the plugin walks trees on the
+    /// machine being scanned, and on a case-sensitive target a backslash is a filename character,
+    /// not a separator.
+    /// </summary>
+    private static string Combine(string root, string relative, char separator)
     {
         string trimmed = root.TrimEnd('/', '\\');
-        string tail = relative.Replace('\\', _separator).Replace('/', _separator);
-        return trimmed + _separator + tail.TrimStart(_separator);
+        string tail = relative.Replace('\\', separator).Replace('/', separator);
+        return trimmed + separator + tail.TrimStart(separator);
     }
 
     private IEnumerable<FileEntry> Ordered(string path) =>

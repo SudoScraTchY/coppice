@@ -45,6 +45,7 @@ public sealed class TuiBackend : ITuiBackend
     private readonly IAppendLog _log;
     private readonly IClock _clock;
     private readonly IReadOnlyList<string> _projectRoots;
+    private readonly EcosystemRegistry _registry;
 
     public TuiBackend(
         IFileSystem fs,
@@ -69,11 +70,12 @@ public sealed class TuiBackend : ITuiBackend
         _log = log;
         _clock = clock;
         _projectRoots = projectRoots ?? [];
+        _registry = EcosystemRegistry.CreateDefault(fs);
     }
 
     public async Task<TuiData> LoadAsync()
     {
-        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS).Inspect();
+        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS, _registry).Inspect();
         SnapshotLoadResult latest = await new SnapshotStore(_state, _clock).LoadLatestAsync().ConfigureAwait(false);
         IReadOnlyList<QuarantineEntry> quarantine = await new QuarantineIndex(_state).ListAsync().ConfigureAwait(false);
 
@@ -91,9 +93,9 @@ public sealed class TuiBackend : ITuiBackend
     public async Task<TuiData> ScanAsync()
     {
         // Resolve first so the scan reads exactly the roots `coppice scan` would, then use the same service.
-        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS).Inspect();
-        var scan = new ScanService(_fs, _runner, _env, _state, _clock);
-        await scan.RunAsync(ScanWiring.FromDoctor(roots), _projectRoots).ConfigureAwait(false);
+        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS, _registry).Inspect();
+        var scan = new ScanService(_fs, _runner, _env, _state, _clock, _registry);
+        await scan.RunAsync(ScanWiring.FromDoctor(roots, _registry), _projectRoots).ConfigureAwait(false);
 
         return await LoadAsync().ConfigureAwait(false);
     }
@@ -111,11 +113,11 @@ public sealed class TuiBackend : ITuiBackend
             return new ApplyPreparation(null, [], $"The plan's snapshot could not be loaded: {snapshot.Message}");
         }
 
-        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS).Inspect();
+        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS, _registry).Inspect();
         IReadOnlyList<BoundStep> bound = PlanBinder.Bind(
             plan,
             snapshot.Snapshot!,
-            ApplyWiring.BindingRoots(roots),
+            ApplyWiring.BindingRoots(roots, _registry),
             _env.OS,
             strict: false);
 

@@ -11,18 +11,22 @@ namespace Coppice.Gui.Services;
 public sealed class GuiServices : IDisposable
 {
     private GuiServices(
+        EcosystemRegistry registry,
         DoctorService doctor,
         ScanService scan,
         SnapshotLibrary snapshots,
         IPlanApplyService apply,
         QuarantineLibrary quarantine)
     {
+        Registry = registry;
         Doctor = doctor;
         Scan = scan;
         Snapshots = snapshots;
         Apply = apply;
         Quarantine = quarantine;
     }
+
+    public EcosystemRegistry Registry { get; }
 
     public DoctorService Doctor { get; }
 
@@ -44,12 +48,14 @@ public sealed class GuiServices : IDisposable
         var clock = new SystemClock();
 
         QuarantineServices quarantine = ApplyWiring.CreateQuarantine(fs, env, state, log, clock);
+        EcosystemRegistry registry = EcosystemRegistry.CreateDefault(fs);
 
         return new GuiServices(
-            new DoctorService(fs, runner, env),
-            new ScanService(fs, runner, env, state, clock),
+            registry,
+            new DoctorService(fs, runner, env, env.OS, registry),
+            new ScanService(fs, runner, env, state, clock, registry),
             new SnapshotLibrary(state, clock),
-            new PlanApplyService(fs, runner, env, state, log, clock),
+            new PlanApplyService(fs, runner, env, state, log, clock, registry),
             new QuarantineLibrary(fs, quarantine.Index, quarantine.Restore));
     }
 

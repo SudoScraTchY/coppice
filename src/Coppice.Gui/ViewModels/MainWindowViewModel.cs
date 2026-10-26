@@ -155,7 +155,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
                 {
                     DoctorReport report = _services.Doctor.Inspect();
                     ScanReport result = await _services.Scan
-                        .RunAsync(ScanWiring.FromDoctor(report), projects, cancellationToken)
+                        .RunAsync(ScanWiring.FromDoctor(report, _services.Registry), projects, cancellationToken)
                         .ConfigureAwait(false);
                     return (report, result);
                 },
@@ -405,7 +405,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        PlanPreview preview = PlanPreviewService.Preview(_snapshot, CurrentPolicy);
+        PlanPreview preview = PlanPreviewService.Preview(_snapshot, CurrentPolicy, _services.Registry);
 
         Dictionary<string, Item> itemsById = _snapshot.Items.ToDictionary(item => item.ItemId, StringComparer.Ordinal);
 

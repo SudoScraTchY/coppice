@@ -2,7 +2,6 @@ using Coppice.Core.Domain;
 using Coppice.Core.Plans;
 using Coppice.Core.Retention;
 using Coppice.Core.Snapshots;
-using Coppice.Plugins.Net;
 using Coppice.Ports;
 
 namespace Coppice.Application;
@@ -30,20 +29,35 @@ public sealed record PlanPreview(
 /// <para>
 /// There is deliberately no local rule here. A screen or command that applied its own threshold would be a
 /// second policy implementation, and the reason a user reads in the plan would no longer be the rule that
-/// admitted the item. The only thing this class chooses is the ecosystem ordering: the .NET plugin's own.
+/// admitted the item. The only thing this class chooses is the ecosystem orderings: every registered
+/// ecosystem's own <see cref="IVersionOrdering"/>, so keep-latest is correct for Go, Rust and Node too.
 /// </para>
 /// </summary>
 public static class PlanPreviewService
 {
-    public static PlanPreview Preview(Snapshot snapshot, Policy policy)
+    public static PlanPreview Preview(Snapshot snapshot, Policy policy) =>
+        Preview(snapshot, policy, EcosystemCatalog.VersionOrderings);
+
+    /// <summary>
+    /// The registry-backed form. Composition roots that hold a registry pass it here, so a fifth
+    /// ecosystem's ordering is visible to the preview without the preview naming any ecosystem.
+    /// </summary>
+    public static PlanPreview Preview(Snapshot snapshot, Policy policy, EcosystemRegistry registry)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+        return Preview(snapshot, policy, registry.VersionOrderings);
+    }
+
+    public static PlanPreview Preview(
+        Snapshot snapshot,
+        Policy policy,
+        IReadOnlyDictionary<string, IVersionOrdering> orderings)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(policy);
+        ArgumentNullException.ThrowIfNull(orderings);
 
-        var engine = new RetentionEngine(new Dictionary<string, IVersionOrdering>(StringComparer.OrdinalIgnoreCase)
-        {
-            [NetProfile.EcosystemId] = new DotnetEcosystem().Versions,
-        });
+        var engine = new RetentionEngine(orderings);
 
         var decisions = new Dictionary<string, RetentionDecision>(StringComparer.Ordinal);
         var steps = new List<PlanStep>();

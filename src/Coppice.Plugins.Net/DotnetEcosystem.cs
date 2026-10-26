@@ -109,6 +109,8 @@ public sealed class DotnetEcosystem : IEcosystem, IInventoryProvider, IReference
 
     private static IEnumerable<Ports.PortableItem> Packages(Ports.ScanContext ctx, Ports.ScanRoot root)
     {
+        char separator = ctx.Environment.OS == OperatingSystemKind.Windows ? '\\' : '/';
+
         foreach (FileEntry package in Directories(ctx, root.ResolvedPath))
         {
             foreach (FileEntry version in Directories(ctx, package.Path))
@@ -120,6 +122,22 @@ public sealed class DotnetEcosystem : IEcosystem, IInventoryProvider, IReference
                     continue;
                 }
 
+                // The integrity signals the health check reads are produced by the SAME helper the
+                // Core enumerator uses. The wiring once dropped them, which made every package look
+                // intact and left the "partial/corrupt package" check unable to fire; sharing the
+                // helper means the two enumeration paths cannot drift apart again.
+                Dictionary<string, string> integrity = NuGetPackageEnumerator.IntegrityFacts(
+                    ctx.FileSystem,
+                    separator,
+                    package.Name,
+                    version);
+
+                var facts = new List<(string Key, string Value)>(integrity.Count + 1)
+                {
+                    ("packageId", package.Name),
+                };
+                facts.AddRange(integrity.Select(fact => (fact.Key, fact.Value)));
+
                 yield return Item(
                     ctx,
                     root,
@@ -127,7 +145,7 @@ public sealed class DotnetEcosystem : IEcosystem, IInventoryProvider, IReference
                     package.Name,
                     version.Name,
                     version.Path,
-                    ("packageId", package.Name));
+                    [.. facts]);
             }
         }
     }
@@ -140,6 +158,13 @@ public sealed class DotnetEcosystem : IEcosystem, IInventoryProvider, IReference
     {
         foreach (FileEntry entry in Directories(ctx, root.ResolvedPath))
         {
+            // NuGet's own `.store` lives inside the tools directory, and dot-prefixed entries are
+            // bookkeeping rather than installed tools.
+            if (entry.Name.StartsWith('.'))
+            {
+                continue;
+            }
+
             yield return Item(ctx, root, kind, entry.Name, entry.Name, entry.Path, (nameFact, entry.Name));
         }
     }

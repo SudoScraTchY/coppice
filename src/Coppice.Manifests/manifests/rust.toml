@@ -27,7 +27,7 @@ resolve = "first"
 # No `tool` source, because there is no command that can answer. This ordering is the whole story:
 # CARGO_HOME when set, and the convention otherwise.
 sources = [
-  { via = "env", var = "CARGO_HOME" },
+  { via = "env", var = "CARGO_HOME", path = "registry" },
   { via = "default", path = "{home}/.cargo/registry" },
 ]
 
@@ -49,7 +49,7 @@ kind = "download-cache"
 layout = ""
 resolve = "first"
 sources = [
-  { via = "env", var = "CARGO_HOME" },
+  { via = "env", var = "CARGO_HOME", path = "registry/cache" },
   { via = "default", path = "{home}/.cargo/registry/cache" },
 ]
 confidence_penalty = 0.5
@@ -63,7 +63,7 @@ kind = "package-cache"
 layout = "{name}-{version}"
 resolve = "first"
 sources = [
-  { via = "env", var = "CARGO_HOME" },
+  { via = "env", var = "CARGO_HOME", path = "registry/src" },
   { via = "default", path = "{home}/.cargo/registry/src" },
 ]
 confidence_penalty = 0.5
@@ -78,7 +78,7 @@ kind = "package-cache"
 layout = ""
 resolve = "first"
 sources = [
-  { via = "env", var = "CARGO_HOME" },
+  { via = "env", var = "CARGO_HOME", path = "git" },
   { via = "default", path = "{home}/.cargo/git" },
 ]
 confidence_penalty = 0.5
@@ -96,7 +96,7 @@ resolve = "all"
 # The one Rust location that CAN be queried: `rustup toolchain list` prints the installed toolchains and
 # its root. So this one is full-confidence, and it is the contrast that makes the others legible.
 sources = [
-  { via = "env", var = "RUSTUP_HOME" },
+  { via = "env", var = "RUSTUP_HOME", path = "toolchains" },
   { via = "tool", run = "rustup toolchain list", parse = "line" },
   { via = "default", path = "{home}/.rustup/toolchains" },
 ]

@@ -199,6 +199,30 @@ public sealed class GoldenReportTests
 
     [Theory]
     [MemberData(nameof(OperatingSystems))]
+    public async Task Every_dotnet_package_item_keeps_its_integrity_facts(OperatingSystemKind os)
+    {
+        // T-048 regression: replacing the single NuGet enumerator with the ecosystem pipeline once
+        // dropped these facts, which silently disabled the "partial/corrupt package" health check.
+        // A .NET package item without any of them is a regression, whatever the golden file says.
+        ScanReport report = await ScanAsync(os);
+        Item[] packages = [.. report.Items.Where(i => i.Ecosystem == "dotnet" && i.Kind == "package")];
+
+        Assert.NotEmpty(packages);
+        string[] required = ["nupkgPresent", "nuspecPresent", "metadataPresent", "signaturePresent"];
+
+        Assert.All(packages, item =>
+        {
+            foreach (string fact in required)
+            {
+                Assert.True(
+                    item.Facts.ContainsKey(fact),
+                    $"{item.Name} {item.Version} lost the '{fact}' fact.");
+            }
+        });
+    }
+
+    [Theory]
+    [MemberData(nameof(OperatingSystems))]
     public async Task Two_runs_of_the_same_fixture_produce_identical_bytes(OperatingSystemKind os)
     {
         // The in-memory half of NFR-06, kept separate from the file comparison: one proves stability
@@ -218,10 +242,14 @@ public sealed class GoldenReportTests
     {
         ScanReport report = await ScanAsync(os);
 
-        // Sorted by name then version, so two packages that differ only in version cannot swap places
-        // between runs. Ordinal, never culture-aware: a Turkish locale must not reorder 'I' and 'i'.
+        // The pipeline's total order: ecosystem, kind, name, version, location, path. Asserting the
+        // same key here rather than name/version only is what keeps the test honest once a scan
+        // covers more than one ecosystem (T-048): a "tool" item and a "package" item with the same
+        // name are not interchangeable.
         var expected = report.Items
-            .OrderBy(i => i.Name, StringComparer.Ordinal)
+            .OrderBy(i => i.Ecosystem, StringComparer.Ordinal)
+            .ThenBy(i => i.Kind, StringComparer.Ordinal)
+            .ThenBy(i => i.Name, StringComparer.Ordinal)
             .ThenBy(i => i.Version, StringComparer.Ordinal)
             .Select(i => $"{i.Name}/{i.Version}")
             .ToList();

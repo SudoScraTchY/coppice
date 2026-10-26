@@ -29,6 +29,7 @@ public sealed record LocationRecord(
     IReadOnlyList<ManifestSource> Sources,
     ManifestFingerprint Fingerprint,
     string? RemoveCommand,
+    string? RiskCeiling,
     double ConfidencePenalty,
     bool InstallerOwned)
 {
@@ -47,10 +48,11 @@ public sealed record LocationRecord(
         && Sources.SequenceEqual(other.Sources)
         && Fingerprint.Equals(other.Fingerprint)
         && RemoveCommand == other.RemoveCommand
+        && RiskCeiling == other.RiskCeiling
         && ConfidencePenalty.Equals(other.ConfidencePenalty)
         && InstallerOwned == other.InstallerOwned;
 
-    public override int GetHashCode() => HashCode.Combine(Id, Kind, Resolve, Layout, RemoveCommand, ConfidencePenalty, InstallerOwned);
+    public override int GetHashCode() => HashCode.Combine(Id, Kind, Resolve, Layout, RemoveCommand, RiskCeiling, ConfidencePenalty, InstallerOwned);
 }
 
 /// <summary>Outcome of validating one manifest.</summary>

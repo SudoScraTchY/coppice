@@ -9,8 +9,8 @@ USAGE              COUNT
 ------------------------------------------------------------
 Referenced             0
 Unreferenced           0
-Unknown               11
-Total                 11
+Unknown               16
+Total                 16
 
 ECOSYSTEM         KIND                    NAME                                  VERSION           USAGE         RISK  
 ------------------------------------------------------------------------------------------------------------------------
@@ -25,8 +25,13 @@ dotnet            package                 owtjya.tzvvqz                         
 dotnet            package                 pvzvgg.lnbddmm                        11.3.12-preview.4  Unknown       Review
 dotnet            package                 rywnjtzxd.iemjs                       11.7.4            Unknown       Review
 dotnet            package                 vfuhiejgkc.ycbmzgwofi                 6.9.1             Unknown       Review
+dotnet            tool                    dotnet-drbaosp                        dotnet-drbaosp    Unknown       Review
+dotnet            tool                    dotnet-kgav                           dotnet-kgav       Unknown       Review
+dotnet            tool                    dotnet-ltuhsw                         dotnet-ltuhsw     Unknown       Review
+dotnet            tool                    dotnet-oqfw                           dotnet-oqfw       Unknown       Review
+dotnet            tool                    dotnet-orphaned                       dotnet-orphaned   Unknown       Review
 
-11 item(s) in 1 ecosystem(s).
+16 item(s) in 1 ecosystem(s).
 
 hint: No projects were found. Reference resolution needs project roots: pass --projects <path>. Until then every package is Unknown and nothing is Safe.
 

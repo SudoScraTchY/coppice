@@ -97,7 +97,8 @@ public static class CoppiceApp
         new PlanCommand(
             new FileSystemStateStore(new PhysicalFileSystem(), new SystemEnvironment()),
             new SystemPlanFileWriter(),
-            new SystemApplyConsole())
+            new SystemApplyConsole(),
+            registry: EcosystemRegistry.CreateDefault(new PhysicalFileSystem()))
             .Run(args);
 
     private static int RunQuarantine(string[] args) =>
@@ -190,11 +191,17 @@ public static class CoppiceApp
 
         // Only scan locations that are Valid and have Clean rights. Ambiguous/Missing/Denied are not scanned.
         // The mapping lives in ScanWiring so the TUI scans exactly the same set.
-        var roots = ScanWiring.FromDoctor(report);
+        var roots = ScanWiring.FromDoctor(report, service.Registry);
 
         // Reference resolution needs project roots: without them every item is Unknown and a plan can
         // propose nothing. They are explicit (repeated --projects), never inferred from the cwd.
-        var scanService = new ScanService(service.Fs, new SystemProcessRunner(), service.Env, service.State);
+        var scanService = new ScanService(
+            service.Fs,
+            new SystemProcessRunner(),
+            service.Env,
+            service.State,
+            clock: null,
+            registry: service.Registry);
         ScanReport scanReport = scanService.RunAsync(roots, flags.ProjectRoots).GetAwaiter().GetResult();
 
         if (flags.Json)

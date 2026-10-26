@@ -145,8 +145,14 @@ public sealed class PlanCommand
     private readonly IPlanFileWriter _writer;
     private readonly IApplyConsole _console;
     private readonly IClock _clock;
+    private readonly EcosystemRegistry? _registry;
 
-    public PlanCommand(IStateStore state, IPlanFileWriter writer, IApplyConsole console, IClock? clock = null)
+    public PlanCommand(
+        IStateStore state,
+        IPlanFileWriter writer,
+        IApplyConsole console,
+        IClock? clock = null,
+        EcosystemRegistry? registry = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(writer);
@@ -156,6 +162,7 @@ public sealed class PlanCommand
         _writer = writer;
         _console = console;
         _clock = clock ?? new SystemClock();
+        _registry = registry;
     }
 
     public int Run(string[] args)
@@ -201,7 +208,9 @@ public sealed class PlanCommand
 
         Snapshot snapshot = loaded.Snapshot!;
         Policy policy = PolicyFor(flags);
-        PlanPreview preview = PlanPreviewService.Preview(snapshot, policy);
+        PlanPreview preview = _registry is null
+            ? PlanPreviewService.Preview(snapshot, policy)
+            : PlanPreviewService.Preview(snapshot, policy, _registry);
 
         if (preview.Plan is null)
         {

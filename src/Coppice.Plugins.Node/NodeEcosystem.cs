@@ -103,7 +103,7 @@ public sealed class NodeEcosystem : IEcosystem, IInventoryProvider, IReferenceRe
     /// </summary>
     private static PortableItem[] WholeCache(ScanContext ctx, ScanRoot root, string ecosystemId)
     {
-        string store = System.IO.Path.Combine(root.ResolvedPath, ContentAddressedStore);
+        string store = Join(ctx, root.ResolvedPath, ContentAddressedStore);
 
         if (!ctx.FileSystem.DirectoryExists(store))
         {
@@ -146,7 +146,7 @@ public sealed class NodeEcosystem : IEcosystem, IInventoryProvider, IReferenceRe
                 continue;
             }
 
-            string manifest = System.IO.Path.Combine(entry.Path, "package.json");
+            string manifest = Join(ctx, entry.Path, "package.json");
             if (!ctx.FileSystem.FileExists(manifest))
             {
                 continue;
@@ -404,6 +404,16 @@ public sealed class NodeEcosystem : IEcosystem, IInventoryProvider, IReferenceRe
                 yield return entry;
             }
         }
+    }
+
+    /// <summary>
+    /// Joins with the TARGET OS's separator, not the host's: a Windows host scanning a Linux fixture
+    /// must not put a backslash into an item path that containment will then compare with '/'.
+    /// </summary>
+    private static string Join(ScanContext ctx, string root, string relative)
+    {
+        char separator = ctx.Environment.OS == OperatingSystemKind.Windows ? '\\' : '/';
+        return root.TrimEnd('/', '\\') + separator + relative;
     }
 
     private static string ItemId(string locationId, string kind, string name, string version)

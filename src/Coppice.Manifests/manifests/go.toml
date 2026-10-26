@@ -29,9 +29,11 @@ sources = [
   { via = "default", path = "{home}/go/pkg/mod" },
 ]
 
-# A mod cache whose depth-1 entries are not module@version directories is not a mod cache. Without
-# this a wrong pin would make coppice propose deleting someone's whole GOPATH.
-fingerprint = { layout_ratio = 0.8, entry_patterns = ["*@v*"] }
+# A mod cache is identified by the `cache/download` directory Go always creates beside the modules.
+# A depth-1 ratio cannot express the real layout: module directories nest at
+# <host>/<org>/<name>@<version>, so `*@v*` matches almost nothing on a real machine and would
+# (correctly, from its own point of view) refuse to clean every populated cache.
+fingerprint = { required_markers = ["cache"] }
 
 # Prefer the native route. `go clean -modcache` is correct in a way a path delete is not: it knows the
 # read-only attributes, and it leaves a valid empty module cache rather than a missing one.
@@ -58,7 +60,7 @@ kind = "tool-cache"
 layout = ""
 resolve = "first"
 sources = [
-  { via = "tool", run = "go env GOPATH", parse = "label-value" },
+  { via = "tool", run = "go env GOPATH", parse = "label-value", path = "bin" },
   { via = "default", path = "{home}/go/bin" },
 ]
 

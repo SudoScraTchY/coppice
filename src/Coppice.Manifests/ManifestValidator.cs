@@ -319,6 +319,7 @@ public static class ManifestValidator
             sources,
             new ManifestFingerprint { LayoutRatio = layoutRatio, EntryPatterns = entryPatterns, RequiredMarkers = requiredMarkers },
             removeCommand,
+            ceiling,
             penalty,
             installerOwned));
     }

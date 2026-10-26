@@ -1,6 +1,4 @@
 using Coppice.Core.Domain;
-using Coppice.Plugins.Net;
-using Net = Coppice.Plugins.Net;
 
 namespace Coppice.Application;
 
@@ -10,22 +8,31 @@ namespace Coppice.Application;
 /// </summary>
 public static class ScanWiring
 {
-    public static IReadOnlyList<Ports.ScanRoot> FromDoctor(DoctorReport report)
+    public static IReadOnlyList<Ports.ScanRoot> FromDoctor(DoctorReport report, EcosystemRegistry registry)
     {
         ArgumentNullException.ThrowIfNull(report);
+        ArgumentNullException.ThrowIfNull(registry);
 
         return
         [
             .. report.Roots
                 .Where(r => r.Root.Validity == RootValidity.Ok && r.Root.Role != RootRole.Inactive)
-                .Select(r => new Ports.ScanRoot(
-                    r.LocationId,
-                    r.Root.RealPath,
-                    NetProfile.Find(r.LocationId)?.Kind.ToString() ?? "unknown",
-                    ToPortRole(r.Root.Role),
-                    FingerprintSpecFor(r.LocationId),
-                    NetProfile.Find(r.LocationId)?.Owner.ToString() ?? "unknown",
-                    ToPortRisk(NetProfile.Find(r.LocationId)?.Tier ?? Risk.Review))),
+                .Select(r =>
+                {
+                    // Every location the registry knows carries its own kind, owner, tier and
+                    // fingerprint. A location that is not registered is still reported by doctor,
+                    // but it is deliberately scanned by nobody: unknown metadata must not be guessed.
+                    EcosystemLocation? location = registry.FindLocation(r.LocationId)?.Location;
+
+                    return new Ports.ScanRoot(
+                        r.LocationId,
+                        r.Root.RealPath,
+                        location?.Kind ?? "unknown",
+                        ToPortRole(r.Root.Role),
+                        location?.Fingerprint ?? new Ports.FingerprintSpec(),
+                        location?.Owner ?? "unknown",
+                        ToPortRisk(location?.Tier ?? Risk.Review));
+                }),
         ];
     }
 
@@ -49,21 +56,4 @@ public static class ScanWiring
         Risk.Manual => Ports.Risk.Manual,
         _ => Ports.Risk.Manual,
     };
-
-    /// <summary>
-    /// The fingerprint a location id declares in the 09 table, in the portable shape plugins see.
-    /// Unknown ids get an empty spec, which means "no layout gate" — never a reject.
-    /// </summary>
-    public static Ports.FingerprintSpec FingerprintSpecFor(string locationId)
-    {
-        Net.FingerprintSpec? fingerprint = NetProfile.Find(locationId)?.Fingerprint;
-        return fingerprint is null
-            ? new Ports.FingerprintSpec()
-            : new Ports.FingerprintSpec
-            {
-                RequiredPaths = fingerprint.RequiredPaths,
-                EntryPatterns = fingerprint.EntryPatterns,
-                LayoutRatio = fingerprint.LayoutRatio,
-            };
-    }
 }

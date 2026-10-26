@@ -1,9 +1,10 @@
 using System.Text.Json;
+
 using Coppice.Adapters;
 using Coppice.Core.Domain;
 using Coppice.Core.Resolution;
-using Coppice.Core.Scanning;
-using Coppice.Plugins.Net;
+using Coppice.Manifests;
+using Coppice.Parsing;
 using Coppice.Ports;
 
 namespace Coppice.Application;
@@ -19,11 +20,14 @@ public sealed record DoctorReport(
     IReadOnlyList<string> Ecosystems);
 
 /// <summary>
-/// Builds the doctor/roots view from the real machine (T-014).
+/// Builds the doctor/roots view from the real machine (T-014), across every registered ecosystem
+/// (T-048).
 /// <para>
 /// Read-only by construction: this touches the filesystem only through <see cref="IFileSystem"/>
 /// enumeration and the resolver, and runs tool queries only through <see cref="IProcessRunner"/>
-/// with a neutral working directory (LR-6). It has no code path that can delete anything.
+/// with a neutral working directory (LR-6). It has no code path that can delete anything. Locations
+/// come from <see cref="EcosystemRegistry"/>, so a manifest-backed profile is resolved through the
+/// same engine, fingerprint gate and provenance reporting as the code-backed .NET one.
 /// </para>
 /// </summary>
 public sealed class DoctorService
@@ -32,20 +36,19 @@ public sealed class DoctorService
     private readonly IProcessRunner _runner;
     private readonly IEnvironment _env;
     private readonly OperatingSystemKind _os;
+    private readonly EcosystemRegistry _registry;
 
     public DoctorService(IFileSystem fs, IProcessRunner runner, IEnvironment env)
+        : this(fs, runner, env, env.OS, registry: null)
     {
-        ArgumentNullException.ThrowIfNull(fs);
-        ArgumentNullException.ThrowIfNull(runner);
-        ArgumentNullException.ThrowIfNull(env);
-
-        _fs = fs;
-        _runner = runner;
-        _env = env;
-        _os = env.OS;
     }
 
     public DoctorService(IFileSystem fs, IProcessRunner runner, IEnvironment env, OperatingSystemKind os)
+        : this(fs, runner, env, os, registry: null)
+    {
+    }
+
+    public DoctorService(IFileSystem fs, IProcessRunner runner, IEnvironment env, OperatingSystemKind os, EcosystemRegistry? registry)
     {
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(runner);
@@ -55,10 +58,14 @@ public sealed class DoctorService
         _runner = runner;
         _env = env;
         _os = os;
+        _registry = registry ?? EcosystemRegistry.CreateDefault(fs);
     }
 
     /// <summary>The machine's home directory, used only to abbreviate paths for display.</summary>
     public string? HomeDirectory => _env.HomeDirectory;
+
+    /// <summary>Exposed so the commands can hand the SAME registry to scan and apply wiring.</summary>
+    public EcosystemRegistry Registry => _registry;
 
     /// <summary>Exposed so ScanService can use the same filesystem and environment.</summary>
     public IFileSystem Fs => _fs;
@@ -70,8 +77,8 @@ public sealed class DoctorService
     public IStateStore State => new FileSystemStateStore(_fs, _env);
 
     /// <summary>
-    /// Resolves every .NET location the profile declares and reports what was found. This is the
-    /// whole of v0.1's read-only surface; it never mutates.
+    /// Resolves every location every registered ecosystem declares for this OS and reports what was
+    /// found. This is the read-only surface `doctor`, `roots` and `scan` share; it never mutates.
     /// </summary>
     public DoctorReport Inspect()
     {
@@ -81,7 +88,7 @@ public sealed class DoctorService
         var roots = new List<RootReport>();
         var issues = new List<string>();
 
-        foreach (NetLocation location in NetProfile.ForOperatingSystem(_os))
+        foreach (EcosystemLocation location in _registry.Locations.Where(l => l.AppliesTo(_os)))
         {
             LocationSpec spec = BuildSpec(location);
             ResolutionOutcome outcome = engine.Resolve(spec, validator.AsPredicate(FingerprintFor(location)));
@@ -107,42 +114,75 @@ public sealed class DoctorService
             return byLocation != 0 ? byLocation : string.CompareOrdinal(a.Root.RealPath, b.Root.RealPath);
         });
 
-        return new DoctorReport(_os, roots, issues, [NetProfile.EcosystemId]);
+        // An ecosystem is "present" when at least one of its locations actually resolved to a path.
+        // A default that does not exist is reported as a root, but it is not evidence of an install.
+        string[] ecosystems =
+        [
+            .. roots
+                .Where(r => r.Root.Validity != RootValidity.NotFound)
+                .Select(r => _registry.FindLocation(r.LocationId)?.Location.EcosystemId)
+                .OfType<string>()
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Order(StringComparer.Ordinal),
+        ];
+
+        return new DoctorReport(_os, roots, issues, ecosystems);
     }
 
     /// <summary>
-    /// Builds a location's source chain: pin, then tool, then env, then the per-OS default. The
-    /// order is the profile's, and the engine's precedence table enforces it.
+    /// Builds a location's source chain: pin, then tool, then env, then the per-OS default. The order
+    /// is the engine's, and the engine's precedence table enforces it. Manifest and code profiles
+    /// both arrive here as the same descriptor.
     /// </summary>
-    internal LocationSpec BuildSpec(NetLocation location)
+    internal LocationSpec BuildSpec(EcosystemLocation location)
     {
+        ArgumentNullException.ThrowIfNull(location);
+
         var sources = new Dictionary<ResolvedVia, SourceResult>();
+        string? pin = null;
 
-        string? toolPath = RunToolQuery(location);
-        if (toolPath is not null)
+        foreach (LocationSource source in location.Sources)
         {
-            sources[ResolvedVia.Tool] = SourceResult.Of(toolPath, ResolvedVia.Tool, location.ToolQuery);
-        }
-
-        foreach (string variable in location.EnvVariables)
-        {
-            string? value = _env.GetVariable(variable);
-            if (!string.IsNullOrWhiteSpace(value))
+            switch (source.Via)
             {
-                sources[ResolvedVia.Env] = SourceResult.Of(value, ResolvedVia.Env, variable);
-                break;
+                case ResolvedVia.Pin:
+                    pin = ExpandDefault(source.PathTemplate, _env);
+                    break;
+
+                case ResolvedVia.Tool:
+                    if (RunToolQuery(source) is { } toolPath)
+                    {
+                        sources[ResolvedVia.Tool] = SourceResult.Of(toolPath, ResolvedVia.Tool, source.Run);
+                    }
+
+                    break;
+
+                case ResolvedVia.Env:
+                    if (!string.IsNullOrWhiteSpace(source.Variable)
+                        && _env.GetVariable(source.Variable) is { Length: > 0 } value)
+                    {
+                        sources[ResolvedVia.Env] = SourceResult.Of(
+                            AppendRelative(value, source.PathTemplate, _os),
+                            ResolvedVia.Env,
+                            source.Variable);
+                    }
+
+                    break;
+
+                // Config, registry and OS-file rungs are reserved for the config workstream; a
+                // descriptor that declares one is reported as "no candidate" rather than guessed at.
+                default:
+                    break;
             }
         }
 
-        // Config and registry sources arrive in v0.2 with the manifest loader; the chain order is
-        // already fixed in LocationSpec.PrecedenceOrder, so adding them is additive.
-        // Defaults carry unexpanded placeholders (~, {user}, %VAR%). They MUST be expanded before
-        // the resolver sees them: an unexpanded "%LOCALAPPDATA%\NuGet\v3-cache" is not a path, and
-        // reporting it as a not-found root tells the user their cache is missing when it is not.
+        // Defaults carry unexpanded placeholders (~, {home}, {user}, %VAR%). They MUST be expanded
+        // before the resolver sees them: an unexpanded "%LOCALAPPDATA%\NuGet\v3-cache" is not a path,
+        // and reporting it as a not-found root tells the user their cache is missing when it is not.
         var defaults = new Dictionary<OperatingSystemKind, string>();
-        foreach ((OperatingSystemKind os, string raw) in location.OsDefaults)
+        foreach ((OperatingSystemKind os, string raw) in location.DefaultPaths)
         {
-            string? expanded = NetDefaults.Expand(raw, _env);
+            string? expanded = ExpandDefault(raw, _env);
             if (!string.IsNullOrEmpty(expanded))
             {
                 defaults[os] = expanded;
@@ -152,11 +192,59 @@ public sealed class DoctorService
         return new LocationSpec
         {
             Id = location.Id,
-            Mode = location.ResolveAll ? ResolveMode.All : ResolveMode.First,
+            Mode = location.Mode,
             OS = _os,
+            Pin = pin,
             Sources = sources,
             OsDefaults = defaults,
+            ConfidencePenalty = location.ConfidencePenalty,
         };
+    }
+
+    /// <summary>
+    /// Expands a manifest path. <c>{home}</c> is the manifest vocabulary; the rest (<c>~</c>,
+    /// <c>{user}</c>, <c>%VAR%</c>, <c>$VAR</c>) is the profile vocabulary the .NET table already uses.
+    /// </summary>
+    internal static string? ExpandDefault(string? raw, IEnvironment environment)
+    {
+        ArgumentNullException.ThrowIfNull(environment);
+
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        string text = raw;
+
+        if (text.Contains("{home}", StringComparison.Ordinal))
+        {
+            if (string.IsNullOrEmpty(environment.HomeDirectory))
+            {
+                return null;
+            }
+
+            text = text.Replace("{home}", environment.HomeDirectory, StringComparison.Ordinal);
+        }
+
+        return Plugins.Net.NetDefaults.Expand(text, environment);
+    }
+
+    /// <summary>
+    /// Appends a relative suffix to a source value, using the TARGET OS's separator. Rust's
+    /// <c>CARGO_HOME</c> names the cargo home, not the registry, so a manifest that declares
+    /// <c>path = "registry"</c> means "the registry under that home".
+    /// </summary>
+    internal static string AppendRelative(string root, string? relative, OperatingSystemKind os)
+    {
+        if (string.IsNullOrWhiteSpace(relative))
+        {
+            return root;
+        }
+
+        char separator = os == OperatingSystemKind.Windows ? '\\' : '/';
+        string tail = relative.Replace('\\', separator).Replace('/', separator).Trim(separator);
+
+        return root.TrimEnd('/', '\\') + separator + tail;
     }
 
     /// <summary>
@@ -164,14 +252,14 @@ public sealed class DoctorService
     /// exit, a timeout, or output we cannot parse — because a tool that cannot answer must not stop
     /// the scan; the next source in the chain gets its turn (E-11).
     /// </summary>
-    private string? RunToolQuery(NetLocation location)
+    private string? RunToolQuery(LocationSource source)
     {
-        if (string.IsNullOrWhiteSpace(location.ToolQuery))
+        if (string.IsNullOrWhiteSpace(source.Run))
         {
             return null;
         }
 
-        string[] parts = location.ToolQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        string[] parts = source.Run.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0)
         {
             return null;
@@ -194,7 +282,20 @@ public sealed class DoctorService
                 return null;
             }
 
-            return ExtractPath(location, result.StandardOutput);
+            string? value = ParseToolOutput(result.StandardOutput, source);
+            if (value is null)
+            {
+                return null;
+            }
+
+            if (source.PathIsSdkInstall)
+            {
+                // Every SDK lives under <root>/sdk/<version>; the root is the parent.
+                int lastSeparator = value.LastIndexOfAny(['/', '\\']);
+                value = lastSeparator > 0 ? value[..lastSeparator] : value;
+            }
+
+            return AppendRelative(value, source.PathTemplate, _os);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
@@ -203,43 +304,41 @@ public sealed class DoctorService
     }
 
     /// <summary>
-    /// Pulls the answer out of the tool's output. `nuget locals` prints several labels and we want
-    /// the one for this location; `--list-sdks` prints bracketed paths and we want the root they
-    /// share, because a location is a ROOT, not one SDK's folder.
+    /// Reads one value out of a tool's output with the manifest's declared parser.
+    /// <para>
+    /// `label-value` falls back to bare lines because `go env GOMODCACHE` prints the value with no
+    /// label in real Go, while the recorded/fixture form does include one. Both are the same answer;
+    /// treating the bare form as unparseable would silently discard the authoritative source.
+    /// </para>
     /// </summary>
-    private static string? ExtractPath(NetLocation location, string output)
+    private static string? ParseToolOutput(string output, LocationSource source)
     {
-        IReadOnlyList<LabeledPath> labeled = DotnetOutputParser.ParseLabelValuePaths(output);
-        if (labeled.Count > 0)
+        ParseResult parsed = source.Parse switch
         {
-            // `nuget-packages` maps to the `global-packages` label; the id and the label differ.
-            string label = location.Id switch
-            {
-                "nuget-packages" => "global-packages",
-                _ => location.Id,
-            };
+            ManifestParserKind.Line => OutputParsers.ParseLines(output),
+            ManifestParserKind.SdkBracketPaths => OutputParsers.ParseBracketPaths(output),
+            ManifestParserKind.JsonPath when source.Label is { Length: > 0 } => OutputParsers.ParseJsonPath(output, source.Label),
+            ManifestParserKind.LabelValue when source.Label is { Length: > 0 } => OutputParsers.ParseLabelValueFor(output, source.Label),
+            ManifestParserKind.LabelValue => OutputParsers.ParseLabelValue(output),
+            _ => ParseResult.Empty,
+        };
 
-            LabeledPath? match = labeled.FirstOrDefault(p => string.Equals(p.Label, label, StringComparison.OrdinalIgnoreCase));
-            return match?.Path;
+        if (parsed.AbsoluteValues.Count == 0 && source.Parse == ManifestParserKind.LabelValue)
+        {
+            // Bare value form, e.g. `go env GOMODCACHE` -> `/home/u/go/pkg/mod`.
+            parsed = OutputParsers.ParseLines(output);
         }
 
-        IReadOnlyList<SdkInfo> sdks = DotnetOutputParser.ParseSdks(output);
-        if (sdks.Count > 0)
-        {
-            // Every SDK lives under <root>/sdk/<version>; the root is the grandparent.
-            string sdkFolder = sdks[0].InstallPath;
-            int lastSeparator = sdkFolder.LastIndexOfAny(['/', '\\']);
-            return lastSeparator > 0 ? sdkFolder[..lastSeparator] : sdkFolder;
-        }
-
-        return null;
+        return parsed.AbsoluteValues.FirstOrDefault();
     }
 
-    internal static Fingerprint FingerprintFor(NetLocation location)
+    internal static Fingerprint FingerprintFor(EcosystemLocation location)
     {
         // A location whose profile declares no layout check gets none. Passing a 0 ratio with no
         // patterns would make every entry "not matching" and reject a perfectly good cache.
-        if (location.Fingerprint.IsEmpty)
+        if (location.Fingerprint.RequiredPaths.Count == 0
+            && location.Fingerprint.LayoutRatio <= 0
+            && location.Fingerprint.EntryPatterns.Count == 0)
         {
             return new Fingerprint { LocationId = location.Id, MinimumMatchRatio = 0 };
         }

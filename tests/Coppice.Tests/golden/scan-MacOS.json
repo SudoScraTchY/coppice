@@ -13,13 +13,14 @@
       "Risk": 1,
       "Facts": {
         "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "nuget-packages",
         "metadataPresent": "true",
         "nupkgPresent": "true",
         "nuspecPresent": "true",
         "packageId": "bqysmrxt.cvyd",
         "signaturePresent": "true",
         "usage": "Unknown",
-        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+        "usageReason": "no projects were discovered, so no package can be proven unused"
       },
       "ItemId": "c09ea69b20519194"
     },
@@ -34,13 +35,14 @@
       "Risk": 1,
       "Facts": {
         "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "nuget-packages",
         "metadataPresent": "true",
         "nupkgPresent": "true",
         "nuspecPresent": "true",
         "packageId": "ciqjxdcuk.ispu",
         "signaturePresent": "true",
         "usage": "Unknown",
-        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+        "usageReason": "no projects were discovered, so no package can be proven unused"
       },
       "ItemId": "ec3c6cedf4fee7a9"
     },
@@ -55,13 +57,14 @@
       "Risk": 1,
       "Facts": {
         "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "nuget-packages",
         "metadataPresent": "true",
         "nupkgPresent": "true",
         "nuspecPresent": "true",
         "packageId": "fcims.ninibvgw",
         "signaturePresent": "true",
         "usage": "Unknown",
-        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+        "usageReason": "no projects were discovered, so no package can be proven unused"
       },
       "ItemId": "e3d30012578b881d"
     },
@@ -76,13 +79,14 @@
       "Risk": 1,
       "Facts": {
         "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "nuget-packages",
         "metadataPresent": "true",
         "nupkgPresent": "true",
         "nuspecPresent": "true",
         "packageId": "fxrosju.gwcimw",
         "signaturePresent": "true",
         "usage": "Unknown",
-        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+        "usageReason": "no projects were discovered, so no package can be proven unused"
       },
       "ItemId": "e5c915ee04ff74be"
     },
@@ -97,13 +101,14 @@
       "Risk": 1,
       "Facts": {
         "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "nuget-packages",
         "metadataPresent": "true",
         "nupkgPresent": "true",
         "nuspecPresent": "true",
         "packageId": "gtl.dirykr",
         "signaturePresent": "true",
         "usage": "Unknown",
-        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+        "usageReason": "no projects were discovered, so no package can be proven unused"
       },
       "ItemId": "d67fda7c5d936fd1"
     },
@@ -118,13 +123,14 @@
       "Risk": 1,
       "Facts": {
         "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "nuget-packages",
         "metadataPresent": "true",
         "nupkgPresent": "true",
         "nuspecPresent": "true",
         "packageId": "hoqcqrniyh.azacqup",
         "signaturePresent": "true",
         "usage": "Unknown",
-        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+        "usageReason": "no projects were discovered, so no package can be proven unused"
       },
       "ItemId": "3d0daa8ab7346a4e"
     },
@@ -139,13 +145,14 @@
       "Risk": 1,
       "Facts": {
         "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "nuget-packages",
         "metadataPresent": "true",
         "nupkgPresent": "true",
         "nuspecPresent": "true",
         "packageId": "jktbqsgt.psaknu",
         "signaturePresent": "true",
         "usage": "Unknown",
-        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+        "usageReason": "no projects were discovered, so no package can be proven unused"
       },
       "ItemId": "e573873be2a47532"
     },
@@ -160,13 +167,14 @@
       "Risk": 1,
       "Facts": {
         "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "nuget-packages",
         "metadataPresent": "true",
         "nupkgPresent": "true",
         "nuspecPresent": "true",
         "packageId": "owtjya.tzvvqz",
         "signaturePresent": "true",
         "usage": "Unknown",
-        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+        "usageReason": "no projects were discovered, so no package can be proven unused"
       },
       "ItemId": "298ecd12b065625f"
     },
@@ -181,13 +189,14 @@
       "Risk": 1,
       "Facts": {
         "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "nuget-packages",
         "metadataPresent": "true",
         "nupkgPresent": "true",
         "nuspecPresent": "true",
         "packageId": "pvzvgg.lnbddmm",
         "signaturePresent": "true",
         "usage": "Unknown",
-        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+        "usageReason": "no projects were discovered, so no package can be proven unused"
       },
       "ItemId": "51d3f10b733e96c0"
     },
@@ -202,13 +211,14 @@
       "Risk": 1,
       "Facts": {
         "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "nuget-packages",
         "metadataPresent": "true",
         "nupkgPresent": "true",
         "nuspecPresent": "true",
         "packageId": "rywnjtzxd.iemjs",
         "signaturePresent": "true",
         "usage": "Unknown",
-        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+        "usageReason": "no projects were discovered, so no package can be proven unused"
       },
       "ItemId": "c41c373f363e3ce0"
     },
@@ -223,15 +233,106 @@
       "Risk": 1,
       "Facts": {
         "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "nuget-packages",
         "metadataPresent": "true",
         "nupkgPresent": "true",
         "nuspecPresent": "true",
         "packageId": "vfuhiejgkc.ycbmzgwofi",
         "signaturePresent": "true",
         "usage": "Unknown",
-        "usageReason": "no projects were scanned, so no project can be said not to reference this"
+        "usageReason": "no projects were discovered, so no package can be proven unused"
       },
       "ItemId": "b00a3b071bdeb4ed"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "tool",
+      "Name": "dotnet-drbaosp",
+      "Version": "dotnet-drbaosp",
+      "LocationId": "dotnet-tools",
+      "Path": "/Users/dev/.dotnet/tools/dotnet-drbaosp",
+      "Size": 338888,
+      "Risk": 1,
+      "Facts": {
+        "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "dotnet-tools",
+        "toolName": "dotnet-drbaosp",
+        "usage": "Unknown",
+        "usageReason": "no projects were discovered, so no package can be proven unused"
+      },
+      "ItemId": "deb4d214290e3119"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "tool",
+      "Name": "dotnet-kgav",
+      "Version": "dotnet-kgav",
+      "LocationId": "dotnet-tools",
+      "Path": "/Users/dev/.dotnet/tools/dotnet-kgav",
+      "Size": 330407,
+      "Risk": 1,
+      "Facts": {
+        "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "dotnet-tools",
+        "toolName": "dotnet-kgav",
+        "usage": "Unknown",
+        "usageReason": "no projects were discovered, so no package can be proven unused"
+      },
+      "ItemId": "186679632b1d610d"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "tool",
+      "Name": "dotnet-ltuhsw",
+      "Version": "dotnet-ltuhsw",
+      "LocationId": "dotnet-tools",
+      "Path": "/Users/dev/.dotnet/tools/dotnet-ltuhsw",
+      "Size": 80298,
+      "Risk": 1,
+      "Facts": {
+        "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "dotnet-tools",
+        "toolName": "dotnet-ltuhsw",
+        "usage": "Unknown",
+        "usageReason": "no projects were discovered, so no package can be proven unused"
+      },
+      "ItemId": "2048e1f0142f88a8"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "tool",
+      "Name": "dotnet-oqfw",
+      "Version": "dotnet-oqfw",
+      "LocationId": "dotnet-tools",
+      "Path": "/Users/dev/.dotnet/tools/dotnet-oqfw",
+      "Size": 433025,
+      "Risk": 1,
+      "Facts": {
+        "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "dotnet-tools",
+        "toolName": "dotnet-oqfw",
+        "usage": "Unknown",
+        "usageReason": "no projects were discovered, so no package can be proven unused"
+      },
+      "ItemId": "a65dea4245e23edf"
+    },
+    {
+      "Ecosystem": "dotnet",
+      "Kind": "tool",
+      "Name": "dotnet-orphaned",
+      "Version": "dotnet-orphaned",
+      "LocationId": "dotnet-tools",
+      "Path": "/Users/dev/.dotnet/tools/dotnet-orphaned",
+      "Size": 4096,
+      "Risk": 1,
+      "Facts": {
+        "lastWriteUtc": "1970-01-01T00:00:00.0000000\u002B00:00",
+        "locationId": "dotnet-tools",
+        "toolName": "dotnet-orphaned",
+        "usage": "Unknown",
+        "usageReason": "no projects were discovered, so no package can be proven unused"
+      },
+      "ItemId": "4ef5ee256b6057e2"
     }
   ],
   "Issues": [],
@@ -354,8 +455,8 @@
   "Usage": {
     "Referenced": 0,
     "Unreferenced": 0,
-    "Unknown": 11,
-    "Total": 11
+    "Unknown": 16,
+    "Total": 16
   },
   "Ecosystems": [
     "dotnet"

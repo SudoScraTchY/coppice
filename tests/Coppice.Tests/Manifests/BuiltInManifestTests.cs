@@ -56,9 +56,12 @@ public class BuiltInManifestTests
         // The default is present but LAST, so it is consulted only when no live source answered.
         Assert.Equal(Coppice.Core.Domain.ResolvedVia.Default, modCache.Sources[^1].Via);
 
-        // Delete rights require a fingerprint, so the mod cache must declare one.
-        Assert.True(modCache.Fingerprint.LayoutRatio > 0);
-        Assert.NotEmpty(modCache.Fingerprint.EntryPatterns);
+        // Delete rights require a fingerprint, so the mod cache must declare one. It is a required
+        // marker rather than a depth-1 ratio: real module directories nest at
+        // <host>/<org>/<name>@<version>, so a ratio over depth-1 entries would reject every
+        // populated cache. `cache/download` is what Go always creates beside the modules.
+        Assert.Empty(modCache.Fingerprint.EntryPatterns);
+        Assert.Contains("cache", modCache.Fingerprint.RequiredMarkers);
 
         // The native route is preferred over a path delete (09: read-only files).
         Assert.Equal("go clean -modcache", modCache.RemoveCommand);

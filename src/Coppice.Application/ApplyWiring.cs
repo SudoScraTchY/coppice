@@ -2,7 +2,6 @@ using Coppice.Core.Apply;
 using Coppice.Core.Audit;
 using Coppice.Core.Gateway;
 using Coppice.Core.Quarantine;
-using Coppice.Plugins.Net;
 using Coppice.Ports;
 using GatewayEngine = Coppice.Core.Gateway.Gateway;
 
@@ -33,14 +32,10 @@ public sealed record QuarantineServices(
 public static class ApplyWiring
 {
     /// <summary>
-    /// The entry shapes a location's cache may have, for the gateway's allowlist. Only the NuGet
-    /// global-packages cache declares one: it is the only location whose contents are re-downloadable, which
-    /// is what makes it the only tier a default policy may act on. A location with no pattern here binds no
-    /// path delete at all.
+    /// The entry shapes a location's cache may have, for the gateway's allowlist. The catalog declares
+    /// these next to the location they describe (T-048), so a manifest-backed ecosystem's path deletes
+    /// are validated by exactly the same gate as NuGet's.
     /// </summary>
-    private static readonly IReadOnlyDictionary<string, string> Allowlists =
-        new Dictionary<string, string>(StringComparer.Ordinal) { ["nuget-packages"] = "*/*" };
-
     public static ApplyServices Create(
         IFileSystem fs,
         IProcessRunner runner,
@@ -87,22 +82,23 @@ public static class ApplyWiring
         return new QuarantineServices(index, audit, restore);
     }
 
-    public static IReadOnlyList<BindingRoot> BindingRoots(DoctorReport report)
+    public static IReadOnlyList<BindingRoot> BindingRoots(DoctorReport report, EcosystemRegistry registry)
     {
         ArgumentNullException.ThrowIfNull(report);
+        ArgumentNullException.ThrowIfNull(registry);
 
         var roots = new List<BindingRoot>();
 
         foreach (RootReport root in report.Roots)
         {
-            NetLocation? location = NetProfile.Find(root.LocationId);
+            EcosystemLocation? location = registry.FindLocation(root.LocationId)?.Location;
 
             roots.Add(new BindingRoot(
                 root.LocationId,
                 root.Root.RealPath,
                 root.Root.IsCleanable,
-                location?.Owner == InstallOwner.Msi,
-                Allowlists.GetValueOrDefault(root.LocationId)));
+                location?.InstallerOwned ?? false,
+                location?.AllowlistPattern));
         }
 
         return roots;

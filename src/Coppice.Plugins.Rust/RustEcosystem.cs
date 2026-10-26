@@ -105,7 +105,8 @@ public sealed class RustEcosystem : IEcosystem, IInventoryProvider, IReferenceRe
                 // `name` is the bare crate name, which is what Cargo.lock matches on; the directory name
                 // is what the report shows, because that is what the user sees on disk and it keeps two
                 // versions of one crate distinguishable in a listing.
-                $"extracted crate source (crate {name})");
+                $"extracted crate source (crate {name})",
+                referenceName: name);
         }
     }
 
@@ -122,7 +123,7 @@ public sealed class RustEcosystem : IEcosystem, IInventoryProvider, IReferenceRe
             }
 
             // A toolchain directory with no `bin` is a partial download, not an install.
-            if (!ctx.FileSystem.DirectoryExists(Path.Combine(entry.Path, "bin")))
+            if (!ctx.FileSystem.DirectoryExists(Join(ctx, entry.Path, "bin")))
             {
                 continue;
             }
@@ -138,7 +139,8 @@ public sealed class RustEcosystem : IEcosystem, IInventoryProvider, IReferenceRe
         string name,
         string version,
         FileEntry directory,
-        string description) =>
+        string description,
+        string? referenceName = null) =>
         new(
             ItemId(locationId, kind, name, version),
             ecosystemId,
@@ -152,6 +154,10 @@ public sealed class RustEcosystem : IEcosystem, IInventoryProvider, IReferenceRe
             {
                 // Required by C-2: without the location id an item's root cannot be proven.
                 ["locationId"] = locationId,
+                // The directory is `name-version`, but Cargo.lock names the crate without the version.
+                // The application boundary uses this fact for BOTH reference resolution and the
+                // core item's name, so keep-latest groups all versions of one crate together.
+                ["referenceName"] = referenceName ?? name,
                 ["description"] = description,
             });
 
@@ -432,6 +438,17 @@ public sealed class RustEcosystem : IEcosystem, IInventoryProvider, IReferenceRe
                 yield return entry;
             }
         }
+    }
+
+    /// <summary>
+    /// Joins with the TARGET OS's separator, not the host's. A Linux cache scanned on a Windows host
+    /// must produce `/root/entry`, because a backslash is a filename character there — and because the
+    /// resulting item path is checked for containment against the same root.
+    /// </summary>
+    private static string Join(ScanContext ctx, string root, string relative)
+    {
+        char separator = ctx.Environment.OS == OperatingSystemKind.Windows ? '\\' : '/';
+        return root.TrimEnd('/', '\\') + separator + relative;
     }
 
     private static string ItemId(string locationId, string kind, string name, string version)

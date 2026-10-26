@@ -1,20 +1,16 @@
 using Coppice.Adapters;
 using Coppice.Core.Domain;
 using Coppice.Core.Projects;
-using Coppice.Core.Resolution;
 using Coppice.Core.Scanning;
 using Coppice.Core.Snapshots;
-using Coppice.Plugins.Net;
 using Coppice.Ports;
 using CoreDomain = Coppice.Core.Domain;
 using CoreProject = Coppice.Core.Projects.Project;
 using CoreProjectSet = Coppice.Core.Projects.ProjectSet;
-using CoreReferenceVerdict = Coppice.Plugins.Net.ReferenceVerdict;
 using CoreScanRoot = Coppice.Core.Scanning.ScanRoot;
 using PortProject = Coppice.Ports.Project;
 using PortProjectSet = Coppice.Ports.ProjectSet;
 using PortReferenceVerdict = Coppice.Ports.ReferenceVerdict;
-using PortScanRoot = Coppice.Ports.ScanRoot;
 
 namespace Coppice.Application;
 
@@ -31,11 +27,11 @@ public sealed record ScanReport(
     string[] OnboardingHints);
 
 /// <summary>
-/// Runs a full read-only scan and stores it (T-015).
+/// Runs a full read-only scan and stores it (T-015), across every registered ecosystem (T-048).
 /// <para>
-/// The pipeline is: resolve roots → discover projects → read references → enumerate inventory →
-/// snapshot. Every stage is read-only; the only write is the snapshot, which goes to the state
-/// store, never to a scanned location.
+/// The pipeline is: discover projects → enumerate inventory through each root's owning plugin →
+/// resolve references with that plugin's resolver → snapshot. Every stage is read-only; the only
+/// write is the snapshot, which goes to the state store, never to a scanned location.
 /// </para>
 /// </summary>
 public sealed class ScanService
@@ -45,8 +41,24 @@ public sealed class ScanService
     private readonly IEnvironment _env;
     private readonly IStateStore _state;
     private readonly IClock _clock;
+    private readonly EcosystemRegistry _registry;
 
     public ScanService(IFileSystem fs, IProcessRunner runner, IEnvironment env, IStateStore state, IClock? clock = null)
+        : this(fs, runner, env, state, clock, registry: null)
+    {
+    }
+
+    /// <summary>
+    /// The registry is injectable so a new ecosystem can be exercised end to end without editing this
+    /// class. Production wiring passes null and gets the shipped catalog.
+    /// </summary>
+    public ScanService(
+        IFileSystem fs,
+        IProcessRunner runner,
+        IEnvironment env,
+        IStateStore state,
+        IClock? clock,
+        EcosystemRegistry? registry)
     {
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(runner);
@@ -58,6 +70,7 @@ public sealed class ScanService
         _env = env;
         _state = state;
         _clock = clock ?? new DefaultClock();
+        _registry = registry ?? EcosystemRegistry.CreateDefault(fs);
     }
 
     /// <summary>
@@ -65,11 +78,11 @@ public sealed class ScanService
     /// <c>--projects</c> flag; without them, reference resolution cannot prove anything and everything
     /// stays Unknown.
     /// </summary>
-    public Task<ScanReport> RunAsync(IReadOnlyList<PortScanRoot> roots, IReadOnlyList<string> projectRoots) =>
+    public Task<ScanReport> RunAsync(IReadOnlyList<Ports.ScanRoot> roots, IReadOnlyList<string> projectRoots) =>
         RunAsync(roots, projectRoots, CancellationToken.None);
 
     public async Task<ScanReport> RunAsync(
-        IReadOnlyList<PortScanRoot> roots,
+        IReadOnlyList<Ports.ScanRoot> roots,
         IReadOnlyList<string> projectRoots,
         CancellationToken cancellationToken)
     {
@@ -78,98 +91,95 @@ public sealed class ScanService
 
         OperatingSystemKind os = _env.OS;
 
-        var projects = new ProjectDiscoveryService(_fs).Discover(projectRoots);
+        CoreProjectSet projects = new ProjectDiscoveryService(_fs).Discover(projectRoots);
+        PortProjectSet portProjects = ToPortProjects(projects);
 
-        // We need the resolved roots from the doctor to run health checks.
-        // Build them the same way the doctor does.
-        var doctor = new DoctorService(_fs, _runner, _env, os);
-        var engine = new ResolutionEngine(_fs, os, _env.HomeDirectory);
-        var validator = new FingerprintValidator(_fs, os);
-
-        var resolvedRoots = new List<ResolutionOutcome>();
-        foreach (NetLocation location in NetProfile.ForOperatingSystem(os))
-        {
-            LocationSpec spec = doctor.BuildSpec(location);
-            ResolutionOutcome outcome = engine.Resolve(spec, validator.AsPredicate(DoctorService.FingerprintFor(location)));
-            resolvedRoots.Add(outcome);
-        }
-
+        // One enumerator, driven by the registry: every root is handed to the plugin that owns its
+        // location id. The kernel still applies containment, the quarantine skip, de-duplication and
+        // ordering exactly as it did for the single .NET enumerator.
         var pipeline = new ScanPipeline(
             _fs,
             os,
-            [new NuGetPackageEnumerator(_fs, os)],
+            [new EcosystemInventoryEnumerator(_fs, _runner, _env, _registry, portProjects, _clock)],
             _env.HomeDirectory);
 
-        // Convert PortScanRoot to CoreScanRoot for the pipeline
         var coreRoots = roots.Select(r => new CoreScanRoot(r.LocationId, r.ResolvedPath)).ToList();
 
         ScanResult result = await pipeline.RunAsync(coreRoots, progress: null, cancellationToken).ConfigureAwait(false);
 
         // Classify usage now, while the projects are in hand. Resolving later — after the snapshot —
         // would leave stored items with a usage verdict that no longer matches the evidence.
-        var resolver = new ReferenceResolver();
-        var reader = new NetReferenceReader(_fs);
-        char separator = os == OperatingSystemKind.Windows ? '\\' : '/';
-
-        foreach (CoreProject project in projects.Projects)
-        {
-            resolver.AddProject(project.RootPath, reader.ReadReferences(project.RootPath, separator));
-        }
-
         var annotated = new List<Item>(result.Items.Count);
         foreach (Item item in result.Items)
         {
-            CoreReferenceVerdict verdict = resolver.Resolve(item.Name, item.Version);
+            PortReferenceVerdict verdict = ResolveUsage(item, portProjects);
             annotated.Add(item with
             {
                 Facts = item.Facts.With(
                 [
                     new KeyValuePair<string, string>("usage", verdict.Usage.ToString()),
-                new KeyValuePair<string, string>("usageReason", Sanitize(verdict.Reason)),
-            ]),
+                    new KeyValuePair<string, string>("usageReason", Sanitize(verdict.Reason)),
+                ]),
                 // The Unknown -> Safe floor, applied here so every stored item carries a tier that
-                // already respects it.
-                Risk = ReferenceResolver.ApplyUsageFloor(verdict, item.Risk),
+                // already respects it for EVERY ecosystem, not only .NET.
+                Risk = UsageFloor.Apply(verdict.Usage, item.Risk),
             });
         }
 
         Item[] ordered = [.. Deterministic.OrderItems(annotated)];
+
+        IReadOnlyList<string> ecosystems = CollectEcosystems(roots, ordered);
 
         Snapshot snapshot = Snapshot.Create(
             Snapshot.FormatId(_clock.UtcNow),
             _clock.UtcNow,
             ordered,
             result.Issues,
-            [.. result.Items.Select(i => i.Ecosystem).Where(e => e.Length > 0).Distinct().DefaultIfEmpty(NetProfile.EcosystemId)]);
+            ecosystems);
 
         await new SnapshotStore(_state, _clock)
             .SaveAsync(snapshot, cancellationToken)
             .ConfigureAwait(false);
 
         // Health checks run through the PLUGIN's capability, not a CLI-local copy (T-016). The kernel
-        // asks a question; the ecosystem answers it. A CLI-side implementation would mean a second
-        // ecosystem plugin could never bring its own health checks, which is the thing 04 exists to
-        // prevent. The portable Problems are mapped into the Core shape the report renders.
-        var plugin = new DotnetEcosystem(_fs);
+        // asks a question; the ecosystem answers it. Only ecosystems that implement the capability are
+        // asked, and each problem keeps the id of the ecosystem that reported it.
         var pluginContext = new Ports.ScanContext(
             roots,
-            ToPortProjects(projects),
+            portProjects,
             _fs,
             _runner,
             _env,
             _clock,
             cancellationToken);
 
-        IReadOnlyList<Ports.Problem> reported = plugin is Ports.IHealthChecker health
-            ? await health.CheckAsync(pluginContext).ConfigureAwait(false)
-            : [];
+        var problems = new List<CoreDomain.Problem>();
+        foreach (EcosystemPlugin ecosystem in _registry.Ecosystems)
+        {
+            if (ecosystem.Instance is not IHealthChecker health)
+            {
+                continue;
+            }
 
-        IReadOnlyList<CoreDomain.Problem> problems =
-        [
-            .. reported.Select(ToCoreProblem)
-        ];
+            IReadOnlyList<Ports.Problem> reported =
+                await health.CheckAsync(pluginContext).ConfigureAwait(false);
 
-        string[] hints = BuildOnboardingHints(projects, resolver, ordered);
+            problems.AddRange(reported.Select(p => ToCoreProblem(p, ecosystem.Id)));
+        }
+
+        problems.Sort(static (a, b) =>
+        {
+            int bySeverity = b.Severity.CompareTo(a.Severity);
+            if (bySeverity != 0)
+            {
+                return bySeverity;
+            }
+
+            int byCode = string.CompareOrdinal(a.Code, b.Code);
+            return byCode != 0 ? byCode : string.CompareOrdinal(a.Path ?? string.Empty, b.Path ?? string.Empty);
+        });
+
+        string[] hints = BuildOnboardingHints(projects, ordered);
 
         return new ScanReport(
             snapshot.SnapshotId,
@@ -178,25 +188,62 @@ public sealed class ScanService
             result.Issues,
             problems,
             UsageBreakdown.FromItems(ordered),
-            [NetProfile.EcosystemId],
+            ecosystems,
             projects.Projects.Count,
             hints);
     }
+
+    /// <summary>
+    /// The owning plugin answers the usage question. A registered ecosystem with no resolver, or an
+    /// item whose ecosystem is not registered, is Unknown — never Unreferenced.
+    /// </summary>
+    private PortReferenceVerdict ResolveUsage(Item item, PortProjectSet projects)
+    {
+        EcosystemPlugin? ecosystem = _registry.FindEcosystem(item.Ecosystem);
+
+        if (ecosystem?.Instance is not IReferenceResolver resolver)
+        {
+            return new PortReferenceVerdict
+            {
+                Usage = Ports.Usage.Unknown,
+                Reason = $"no reference resolver is registered for ecosystem '{item.Ecosystem}'",
+            };
+        }
+
+        return resolver.Resolve(item.Name, item.Version, projects);
+    }
+
+    /// <summary>
+    /// Ecosystems the snapshot covers: those that own a scanned root, plus any ecosystem an item
+    /// declares. Sorted ordinally so the stored list is deterministic for the same fixture.
+    /// </summary>
+    private IReadOnlyList<string> CollectEcosystems(
+        IReadOnlyList<Ports.ScanRoot> roots,
+        IReadOnlyList<Item> items) =>
+    [
+        .. roots
+            .Select(r => _registry.FindLocation(r.LocationId)?.Location.EcosystemId)
+            .Concat(items.Select(i => i.Ecosystem))
+            .OfType<string>()
+            .Where(id => id.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.Ordinal),
+    ];
 
     /// <summary>
     /// Projects in the portable shape the plugin boundary speaks. Core and Ports declare the same
     /// record twice — deliberately, so a plugin cannot reach kernel behaviour through a discovery
     /// result — and this is the single translation between them.
     /// </summary>
-    private static Ports.ProjectSet ToPortProjects(CoreProjectSet projects) => new(
-        [.. projects.Projects.Select(p => new Ports.Project(p.RootPath, p.MarkerIds, p.Ecosystems) { MarkerFiles = p.MarkerFiles })],
+    private static PortProjectSet ToPortProjects(CoreProjectSet projects) => new(
+        [.. projects.Projects.Select(p => new PortProject(p.RootPath, p.MarkerIds, p.Ecosystems) { MarkerFiles = p.MarkerFiles })],
         projects.Ecosystems,
         [.. projects.Issues.Select(i => new Ports.PortableScanIssue(i.Code, i.Summary, i.Path))]);
 
     /// <summary>Maps one portable problem into the Core shape the report and snapshot render.</summary>
-    private static CoreDomain.Problem ToCoreProblem(Ports.Problem problem) => new()
+    private static CoreDomain.Problem ToCoreProblem(Ports.Problem problem, string ecosystemId) => new()
     {
-        Ecosystem = NetProfile.EcosystemId,
+        Ecosystem = ecosystemId,
         Code = problem.Code,
         Severity = problem.Severity switch
         {
@@ -217,7 +264,7 @@ public sealed class ScanService
     /// every item is Unknown and nothing can be considered Safe. Without this the tool looks broken
     /// on a fresh machine.
     /// </summary>
-    private static string[] BuildOnboardingHints(CoreProjectSet projects, ReferenceResolver resolver, IReadOnlyList<Item> items)
+    private static string[] BuildOnboardingHints(CoreProjectSet projects, IReadOnlyList<Item> items)
     {
         var hints = new List<string>();
 
@@ -226,19 +273,18 @@ public sealed class ScanService
             hints.Add(
                 "No projects were found. Reference resolution needs project roots: pass --projects <path>. "
                 + "Until then every package is Unknown and nothing is Safe.");
-        }
-        else if (resolver.ReadableProjectCount == 0)
-        {
-            hints.Add(
-                $"Found {projects.Projects.Count} project(s), but none has an obj/project.assets.json. "
-                + "Run 'dotnet restore' so coppice can tell what is actually in use.");
+            return [.. hints];
         }
 
-        if (items.Count > 0 && hints.Count == 0 && resolver.UnreadableProjectCount > 0)
+        if (items.Count > 0 && items.All(i => ItemUsage.Of(i) == Usage.Unknown))
         {
-            hints.Add(
-                $"{resolver.UnreadableProjectCount} project(s) could not be read. Packages they use are "
-                + "reported as Unknown, not as unused.");
+            bool hasDotnet = items.Any(i => string.Equals(i.Ecosystem, "dotnet", StringComparison.Ordinal));
+
+            hints.Add(hasDotnet
+                ? $"Found {projects.Projects.Count} project(s), but none has an obj/project.assets.json. "
+                    + "Run 'dotnet restore' so coppice can tell what is actually in use."
+                : $"Found {projects.Projects.Count} project(s), but no lock or assets file could be read. "
+                    + "Run your package manager's restore so coppice can tell what is actually in use.");
         }
 
         return [.. hints];
