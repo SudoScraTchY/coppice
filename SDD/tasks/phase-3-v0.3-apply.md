@@ -238,12 +238,16 @@ Exit criteria per 12-roadmap.
   marker instead of a depth-1 ratio that rejects every real nested module cache.
 
 **Acceptance**
-- [ ] A Go module cache with `go.sum` scans module versions, marks the selected version Referenced, and `keep-latest 1` proposes an older Unreferenced version
-- [ ] Rust and Node inventory/reference run through the orchestrator (scan tests), and a Rust path-delete applies through the gateway
-- [ ] A non-.NET scan is deterministic across runs and, with no project roots, every item is Unknown and nothing is planned
-- [ ] A fifth ecosystem can be scanned by adding a registry entry only; `ScanService` needs no per-ecosystem branch
-- [ ] The snapshot stores every scanned ecosystem and the report lists the same ids
-- [ ] The .NET golden facts (`nupkgPresent`, `nuspecPresent`, `metadataPresent`, `signaturePresent`) survive the wiring
+- [x] A Go module cache with `go.sum` scans module versions, marks the selected version Referenced, and `keep-latest 1` proposes an older Unreferenced version
+- [x] Rust and Node inventory/reference run through the orchestrator (scan tests), and a Rust path-delete applies through the gateway
+- [x] A non-.NET scan is deterministic across runs and, with no project roots, every item is Unknown and nothing is planned
+- [x] A fifth ecosystem can be scanned by adding a registry entry only; `ScanService` needs no per-ecosystem branch
+- [x] The snapshot stores every scanned ecosystem and the report lists the same ids
+- [x] The .NET golden facts (`nupkgPresent`, `nuspecPresent`, `metadataPresent`, `signaturePresent`) survive the wiring
+
+> T-048 landed as `5db9c3f`; run `40287715101` is green on all six cells. The facts, explicit
+> allowlists and production registry are in `EcosystemScanTests`/`EcosystemDoctorTests`. T-056 owns
+> the remaining `"dotnet"` onboarding branch and the Application architecture pin.
 
 ### T-049 · Read config.toml in the commands
 **Refs** FR-22, FR-19, 07-cli-tui · **Depends** T-029 · **Effort** M
@@ -266,8 +270,11 @@ Exit criteria per 12-roadmap.
   ignores.
 
 **Acceptance**
-- [ ] Missing config = defaults; invalid config is refused with line-level diagnostics
-- [ ] `scan` project roots: explicit `--projects` > config > none
-- [ ] `plan` policy/keep_latest/exclusions: flags > config > defaults, and exclusions survive a preset flag
-- [ ] `tui` starts with the configured project roots and policy
-- [ ] The platform config path is tested for Windows, Linux and macOS
+- [x] Missing config = defaults; invalid config is refused with line-level diagnostics
+- [x] `scan` project roots: explicit `--projects` > config > none
+- [x] `plan` policy/keep_latest/exclusions: flags > config > defaults, and exclusions survive a preset flag
+- [x] `tui` starts with the configured project roots and policy
+- [x] The platform config path is tested for Windows, Linux and macOS
+
+> T-049 landed as `3a0afcf` on top of T-048; run `40288339463` is green on all six cells. The config
+> tests are `ConfigWiringTests` and `PlanCommandTests`.

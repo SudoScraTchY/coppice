@@ -27,8 +27,8 @@ gateway, journal, audit stream and `QuarantineRestore` as the commands below.
 coppice doctor [--json]
 ```
 
-Resolves the .NET locations on this machine and reports what was found, how it was found, and whether it
-validated. It reads only; it writes nothing.
+Resolves the registered cache locations on this machine (NuGet, Go, Rust and Node) and reports what was
+found, how it was found, and whether it validated. It reads only; it writes nothing.
 
 Exit 3 if a location is ambiguous — two live sources disagree and Coppice will not guess which one to
 clean. A missing or denied location is a report, not a failure.
@@ -48,8 +48,8 @@ you need to know *why* a path was chosen.
 coppice scan [--projects <path>]... [--json]
 ```
 
-Inventories the NuGet global-packages cache, classifies each cached version using project evidence, runs
-.NET health checks, and stores a snapshot under Coppice's state root.
+Inventories the registered ecosystems (NuGet, Go, Rust and Node), classifies each cached version using
+project evidence, runs the available health checks, and stores a snapshot under Coppice's state root.
 
 - `--projects` is repeatable. Each path is a project tree; Coppice reads `obj/project.assets.json` there.
   Without any project root, every item is `Unknown` and a plan will propose nothing.
@@ -148,6 +148,15 @@ stdin is redirected, or under `--once`/`--ci`, it renders the Dashboard once as 
 `--projects` is used by the TUI's `s` rescan, so the rescan keeps the same usage evidence as the CLI. If
 you launch the TUI without it, it can still review the snapshot from your last `scan`.
 
+## completions
+
+```
+coppice completions <powershell|bash|zsh|fish>
+```
+
+Prints a self-contained completion script to stdout. It writes no files, makes no network call, and
+rejects an unknown shell with exit 2. Load it with the instructions in the script header.
+
 ## version and help
 
 ```
@@ -160,12 +169,12 @@ coppice help
 ## Not available yet
 
 - `coppice clean` (scan → plan → review → apply in one verb) — planned
-- `coppice report` (CSV/Markdown/HTML export command; exporters exist in the codebase, the verb is not wired) — planned
+- `coppice report` (CSV/Markdown/HTML export command; the exporters, including the self-contained HTML
+  exporter from T-042, exist in the codebase, but the verb is not wired) — planned
 - `coppice config` (config-file management) — planned
 
-`config.toml` is specified and its loader is tested, but the current commands do not read it. T-049 wires
-project roots, policy and exclusions, and T-052 consumes pins and quarantine settings. Until those cards
-land, use `--projects`, `--policy` and `--keep-latest` explicitly.
+`config.toml` is read for project roots, policy and exclusions (T-049). `[pins]` and `[quarantine]`
+are parsed but not applied until T-052. Explicit flags win over the file.
 
 ## State locations
 

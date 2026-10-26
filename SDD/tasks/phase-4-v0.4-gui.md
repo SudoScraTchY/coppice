@@ -52,8 +52,12 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - Completions for PowerShell/bash/zsh/fish; self-contained HTML exporter (no network assets).
 
 **Acceptance**
-- [ ] Completions tested per shell
-- [ ] HTML report passes offline validation (no external references)
+- [x] Completions tested per shell
+- [x] HTML report passes offline validation (no external references)
+
+> T-042 landed as `4d3ecd5`; run `40288530712` is green on all six cells. `CompletionScriptTests`
+> covers all four shells and `HtmlReportTests` checks escaping and the absence of external references.
+> The `report` verb itself stays planned.
 
 ### T-043 · v0.4 release
 **Refs** 12-roadmap · **Depends** T-039…T-042 · **Effort** S
@@ -161,6 +165,10 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - Inject `IEcosystemRegistry` through `ScanWiring`/`ApplyWiring`/`PlanPreviewService`; production and the fifth-ecosystem test use the same registry.
 - Make `EcosystemCatalog.AllowlistFor` fail-closed: an unknown layout gets no path-delete allowlist. Restore the .NET facts lost from the goldens and remove or wire the dead `NuGetPackageEnumerator`.
 - Make doctor probes cancellable and bounded; add an architecture test pinning Application's dependency graph and the single registration point.
+
+> Status 2026-10-26: T-048 already closed the .NET-facts, explicit-allowlist and
+> production-registry concerns. T-056 now owns the remaining `"dotnet"` branch, doctor cancellation
+> and the Application architecture pin.
 
 **Acceptance**
 - [ ] No `"dotnet"` literal branch in `ScanService`

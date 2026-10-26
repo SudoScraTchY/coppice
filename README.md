@@ -60,8 +60,8 @@ equivalent of the publish command.
 ## Quickstart
 
 ```bash
-coppice doctor                          # read-only: where are the .NET locations?
-coppice scan --projects ~/src           # inventory the NuGet cache, prove what is referenced
+coppice doctor                          # read-only: where are the registered cache locations?
+coppice scan --projects ~/src           # inventory the registered ecosystems, prove what is referenced
 coppice plan                            # propose steps from the newest snapshot
 coppice apply                           # show the plan, ask, then move to quarantine
 coppice quarantine list                 # see what moved; restore <id> puts it back
@@ -78,13 +78,14 @@ requires both `--plan` and `--yes`; consent is not a flag you can accidentally i
 
 | Command | What it does |
 |---|---|
-| `coppice doctor` | Resolve .NET locations; report what validated and what did not. Read-only. |
+| `coppice doctor` | Resolve registered locations (NuGet, Go, Rust, Node); report what validated and what did not. Read-only. |
 | `coppice roots` | The detailed candidate table behind `doctor`. Read-only. |
-| `coppice scan [--projects <path>]...` | Inventory the NuGet cache and store a snapshot. Read-only toward the cache. |
+| `coppice scan [--projects <path>]...` | Inventory the registered ecosystems and store a snapshot. Read-only toward the caches. |
 | `coppice plan [--policy ...] [--keep-latest N] [--out file]` | Build and store a plan. Touches no cache. |
 | `coppice apply [--plan file] [--yes] [--strict] [--resume]` | Move approved steps to quarantine. |
 | `coppice quarantine list\|restore\|prune` | Inspect, undo, or permanently discard quarantined items. |
 | `coppice audit show\|verify` | Read and verify the hash-chained mutation ledger. |
+| `coppice completions <shell>` | Print a PowerShell/bash/zsh/fish completion script. Read-only. |
 | `coppice tui` | Seven-screen terminal UI sharing the same plan, gateway and journal. |
 
 Full flags, confirmation rules, state locations and exit codes:
@@ -129,12 +130,13 @@ and [SDD/06-safety-model.md](./SDD/06-safety-model.md).
 
 ## Scope in v0.4 (development)
 
-- **Ecosystems.** The .NET plugin is the only one wired into `scan` today; the Go, Rust and Node
-  profiles exist and are wired by T-048.
-- **Config.** `config.toml` is specified and its loader is tested. T-049 reads project roots, policy
-  and exclusions; T-052 consumes pins and quarantine settings. Until those cards land, use
-  `--projects`, `--policy` and `--keep-latest` explicitly.
-- **No `clean`, `report` or `config` verbs.** The report exporters exist; the verbs are not wired.
+- **Ecosystems.** The .NET, Go, Rust and Node profiles are wired into `scan`/`plan`/`apply`
+  (T-048). A new manifest + plugin is one registry entry; T-056 removes the last ecosystem special
+  case.
+- **Config.** T-049 reads `config.toml` for project roots, policy and exclusions; explicit flags
+  still win. T-052 adds pins and quarantine settings.
+- **No `clean`, `report` or `config` verbs.** The report exporters, including the self-contained HTML
+  exporter, exist; the verbs are not wired. `completions` is implemented.
 - **GUI.** The T-039 shell is committed. T-050 finishes the parked redesign and the 200 ms cancel
   measurement; T-040 adds the pin editor.
 - **Not yet verified on a clean machine.** The publish path and both install variants are exercised,

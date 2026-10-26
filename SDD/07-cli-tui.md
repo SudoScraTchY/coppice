@@ -13,10 +13,12 @@
 | `coppice report` | Planned; not implemented (exporters exist, the verb is not wired) | — |
 | `coppice quarantine list\|restore <id>\|prune` | Manage quarantine | restore/prune |
 | `coppice audit show\|verify` | Inspect the audit log | no |
-| `coppice config path\|get\|set` | Planned; `config.toml` is read by T-049 and consumed by T-052 | — |
+| `coppice completions <powershell\|bash\|zsh\|fish>` | Print a self-contained completion script | no |
+| `coppice config path\|get\|set` | Planned; `config.toml` is read by T-049 and T-052 adds pins/quarantine | — |
 
 Global flags: `--no-color`, `--ci` (implemented). `-v/--verbose`, `--config <path>` and
-`--root <location-id>=<path>` are planned and are not accepted yet.
+`--root <location-id>=<path>` are planned and are not accepted yet. The config file itself is read from
+the platform path by `scan`, `plan` and `tui`; there is no flag to point at another file.
 
 Plain output automatically when stdout is piped. First run with no project
 roots configured prints an onboarding hint (reference resolution needs
@@ -30,11 +32,10 @@ automatic discovery from the current directory: scanning the wrong tree would tu
 another repository into `Unreferenced`, and the whole default policy depends on that verdict.
 
 A run with no roots is valid and safe — every item is `Unknown` and a plan proposes nothing — but it
-cannot prove a package is unused. Config-file wiring for project roots, policy, exclusions, pins and
-quarantine is specified and validated by `ConfigLoader`; **T-049** wires project roots, policy and
-exclusions into the commands, and **T-052** consumes pins and quarantine settings. Until those cards
-land, pass the values explicitly. The TUI's pin status shows the line a future config would use rather
-than claiming the pin is active.
+cannot prove a package is unused. `config.toml` is read for project roots, policy and exclusions
+(T-049); explicit `--projects`, `--policy` and `--keep-latest` flags win over the file. **T-052** adds
+the `[pins]` and `[quarantine]` consumption. The TUI's pin status shows the line a future config would
+use rather than claiming the pin is active.
 
 ## Install and runtime
 

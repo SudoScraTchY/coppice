@@ -47,15 +47,16 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-018 CI matrix + egress | `done` | run `40282093437` on `30917d3`; all six cells, egress and license green |
 | T-004 root-link anchoring | `done` | `30917d3`; path-safety regression tests + real kill test |
 | T-047 NuGet four-part ordering | `done` | `266be19`, tests in the commit |
-| T-048 Go/Rust/Node wiring | `parked` | `.qoder/worktrees/agent-general-purpose-09abdb8c` (24 modified + 7 new files) |
-| T-049 read `config.toml` | `parked` | detached worktree `M:\Agentic\Projects\Coppice-t049-config`, commit `5424de4` |
+| T-048 Go/Rust/Node wiring | `done` | `5db9c3f`; run `40287715101` green on all six cells; `EcosystemScanTests`/`EcosystemDoctorTests` |
+| T-049 read `config.toml` | `done` | `3a0afcf`; run `40288339463` green on all six cells |
 | T-050 GUI shell completion | `parked` | `wip/gui-shell` at `5e6efa0`; does not compile yet |
+| T-042 completions + HTML | `done` | `4d3ecd5`; run `40288530712` green on all six cells |
 | T-051 FR-01/FR-02 | `not-started` | card in phase 4 |
 | T-052 FR-22/FR-23 | `not-started` | card in phase 4 |
 | T-053 NFR-04 perf | `not-started` | card in phase 4 |
 | T-054 E-7 + escape filter | `done` | `bb148fe`; run `40284606058` green on all six cells with the tagged filter |
 | T-055 SDD truth + skills | `done` | `4afab29`, `d14dd80`, `a2d1d76`; run `40283969985` green on all six cells |
-| T-056 catalog hardening | `not-started` | card in phase 4 |
+| T-056 catalog hardening | `in-progress` | lane on base `5db9c3f` |
 | T-039 Avalonia shell | `done` except box 2 + human a11y | box 2 needs the T-050 cancellation measurement; box 4 is `blocked-human` |
 | T-040–T-043 | `not-started` | phase 4 |
 | T-036 TUI screens | `blocked-human` | box 4 screen-reader smoke pass |
@@ -87,6 +88,8 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | 2026-10-26 | SDD truth pass committed | `4afab29`; ADR-017, agenda, orchestration, T-048–T-056 cards, corrected docs, 0.4.0-dev, publish budgets |
 | 2026-10-26 | Truth-pass CI green | run `40283969985` on `a2d1d76`: all six cells, egress, license |
 | 2026-10-26 | E-7 and the escape filter landed | `bb148fe`; run `40284606058` green on all six cells |
+| 2026-10-26 | T-048 ecosystem wiring landed | `5db9c3f`; run `40287715101` green on all six cells |
+| 2026-10-26 | T-049 config wiring and T-042 reach merged | `3a0afcf`, `4d3ecd5`; runs `40288339463`, `40288530712` green on all six cells |
 | 2026-10-26 | First real six-cell run dispatched | run `40280980743` (superseded by `40282093437`) |
 
 ## Updating this file

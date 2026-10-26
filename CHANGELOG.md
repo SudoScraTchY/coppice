@@ -11,6 +11,17 @@ withdrawn 0.3.0 candidate: the CI repair, the path-safety fix it exposed, T-048/
 GUI and requirement closure.
 
 ### Added
+- T-048 ecosystem wiring: an application-layer `EcosystemRegistry` resolves the .NET code profile and
+  the Go/Rust/Node manifests through the existing engine, hands each root to its owning plugin, and
+  registers every ecosystem's version ordering for keep-latest. `doctor`, `roots`, `scan`, `plan`,
+  `apply`, the TUI and the GUI share the same registry. The .NET integrity facts are back in the
+  goldens, allowlists are explicit per location, and a fifth ecosystem can be registered as data.
+- T-049 config wiring: `scan`, `plan` and `tui` read `config.toml` for project roots, policy defaults
+  and exclusions. Explicit flags win; an unreadable or invalid file exits 2 with every diagnostic.
+  `[pins]` and `[quarantine]` remain parsed but unused until T-052.
+- T-042 reach: a self-contained HTML report exporter (inline CSS, no external references) and a
+  `completions <powershell|bash|zsh|fish>` verb with per-shell tests. The `report` verb itself is
+  still planned.
 - T-018 CI: six real cells on GitHub-hosted x64/arm64 runners, a RID assertion that fails a silently
   x64 cell, per-RID publish artifacts, and an egress job that runs the suite in `unshare --net` with a
   canary that proves the isolation is real. The TUI render test no longer depends on

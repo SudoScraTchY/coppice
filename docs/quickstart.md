@@ -69,13 +69,11 @@ coppice quarantine list
 
 What each step does:
 
-1. **doctor** resolves the registered locations on this machine and reports what it found and what it
-   could not validate. It changes nothing. (The .NET profile is wired today; T-048 adds Go, Rust and
-   Node.)
-2. **scan** inventories the registered cache locations and stores a snapshot. `--projects` is what lets
-   Coppice read `obj/project.assets.json` and prove which cached versions are referenced. Without a
-   project root every item is `Unknown`, and Coppice will not call it unused. (The .NET inventory is
-   wired today; T-048 adds the other ecosystems.)
+1. **doctor** resolves the registered locations on this machine (NuGet, Go, Rust and Node) and
+   reports what it found and what it could not validate. It changes nothing.
+2. **scan** inventories the registered cache locations and stores a snapshot. `--projects` is what
+   lets Coppice read `obj/project.assets.json` and prove which cached versions are referenced.
+   Without a project root every item is `Unknown`, and Coppice will not call it unused.
 3. **plan** builds a plan from the newest snapshot and stores it. It prints the policy, the steps, the
    bytes, and the reason for each step. It changes no cache files. `--out plan.json` also writes the
    checksummed plan to a file.
@@ -90,6 +88,13 @@ If the plan says "Nothing to propose", the usual causes are:
 - the projects have not been restored, so there is no `obj/project.assets.json` (run `dotnet restore`);
 - every cached version is referenced, or is within the policy's keep-latest-N window. The default keeps
   the newest two versions per package; `--policy aggressive` keeps one.
+
+## Configuration
+
+`config.toml` lives at the platform config path (`coppice doctor` prints the resolved locations; the
+`tui` roots screen shows the same path). T-049 reads `projects.roots`, `policy.*` and `exclude.*`;
+explicit `--projects`, `--policy` and `--keep-latest` flags win. `[pins]` and `[quarantine]` are parsed
+but not applied until T-052.
 
 ## Non-interactive use
 
