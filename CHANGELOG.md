@@ -22,6 +22,9 @@ GUI and requirement closure.
 - T-042 reach: a self-contained HTML report exporter (inline CSS, no external references) and a
   `completions <powershell|bash|zsh|fish>` verb with per-shell tests. The `report` verb itself is
   still planned.
+- T-056 catalog hardening: the last `"dotnet"` special case is gone, doctor probes are cancellable
+  and bounded at 2 s each, and architecture tests pin Application's dependency graph and the single
+  ecosystem-registration factory.
 - T-018 CI: six real cells on GitHub-hosted x64/arm64 runners, a RID assertion that fails a silently
   x64 cell, per-RID publish artifacts, and an egress job that runs the suite in `unshare --net` with a
   canary that proves the isolation is real. The TUI render test no longer depends on

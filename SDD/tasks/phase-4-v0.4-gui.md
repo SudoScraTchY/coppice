@@ -171,9 +171,13 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > and the Application architecture pin.
 
 **Acceptance**
-- [ ] No `"dotnet"` literal branch in `ScanService`
-- [ ] The fifth-ecosystem test runs through production wiring
-- [ ] An unknown manifest location cannot produce a path-delete step
-- [ ] The .NET facts are present in goldens and a regression test
-- [ ] Doctor probes honor cancellation
-- [ ] The architecture test pins Application's references
+- [x] No `"dotnet"` literal branch in `ScanService`
+- [x] The fifth-ecosystem test runs through production wiring
+- [x] An unknown manifest location cannot produce a path-delete step
+- [x] The .NET facts are present in goldens and a regression test
+- [x] Doctor probes honor cancellation
+- [x] The architecture test pins Application's references
+
+> T-056 landed as `336354b`; run `40290685781` is green on all six cells. 1,317 tests and 31
+> architecture tests pass; the blocked-probe cancellation is observed at 1.1 ms with each probe
+> bounded at 2 s. The overall `doctor < 5 s` budget remains T-053.

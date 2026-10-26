@@ -131,7 +131,7 @@ and [SDD/06-safety-model.md](./SDD/06-safety-model.md).
 ## Scope in v0.4 (development)
 
 - **Ecosystems.** The .NET, Go, Rust and Node profiles are wired into `scan`/`plan`/`apply`
-  (T-048). A new manifest + plugin is one registry entry; T-056 removes the last ecosystem special
+  (T-048). A new manifest + plugin is one registry entry; T-056 removed the last ecosystem special
   case.
 - **Config.** T-049 reads `config.toml` for project roots, policy and exclusions; explicit flags
   still win. T-052 adds pins and quarantine settings.

@@ -56,7 +56,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-053 NFR-04 perf | `not-started` | card in phase 4 |
 | T-054 E-7 + escape filter | `done` | `bb148fe`; run `40284606058` green on all six cells with the tagged filter |
 | T-055 SDD truth + skills | `done` | `4afab29`, `d14dd80`, `a2d1d76`; run `40283969985` green on all six cells |
-| T-056 catalog hardening | `in-progress` | lane on base `5db9c3f` |
+| T-056 catalog hardening | `done` | `336354b`; run `40290685781` green on all six cells; 1,317 tests, 31 architecture |
 | T-039 Avalonia shell | `done` except box 2 + human a11y | box 2 needs the T-050 cancellation measurement; box 4 is `blocked-human` |
 | T-040–T-043 | `not-started` | phase 4 |
 | T-036 TUI screens | `blocked-human` | box 4 screen-reader smoke pass |
@@ -90,6 +90,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | 2026-10-26 | E-7 and the escape filter landed | `bb148fe`; run `40284606058` green on all six cells |
 | 2026-10-26 | T-048 ecosystem wiring landed | `5db9c3f`; run `40287715101` green on all six cells |
 | 2026-10-26 | T-049 config wiring and T-042 reach merged | `3a0afcf`, `4d3ecd5`; runs `40288339463`, `40288530712` green on all six cells |
+| 2026-10-26 | T-056 catalog hardening landed | `336354b`; run `40290685781` green; cancellation observed at 1.1 ms, probes bounded at 2 s |
 | 2026-10-26 | First real six-cell run dispatched | run `40280980743` (superseded by `40282093437`) |
 
 ## Updating this file

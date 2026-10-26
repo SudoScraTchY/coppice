@@ -5,9 +5,9 @@ v1 scope: **.NET** (built-in code plugin), **Go, Rust, Node/npm**
 
 > **Wiring status (2026-10-26).** All four profiles are wired into `scan`/`plan`/`apply` through the
 > application-layer registry (T-048): the .NET code profile and the Go/Rust/Node manifests register as
-> data, and every production composition root uses one `EcosystemRegistry`. T-056 removes the last
-> ecosystem special case. A new manifest+plugin is one registration entry, not a branch in the scan
-> coordinator.
+> data, and every production composition root uses one `EcosystemRegistry`. T-056 removed the last
+> ecosystem special case; the registry is the only registration point. A new manifest+plugin is one
+> entry, not a branch in the scan coordinator.
 
 ## .NET (`net`) — built-in code plugin, phase v0.1
 
