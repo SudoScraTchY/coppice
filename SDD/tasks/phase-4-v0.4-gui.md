@@ -92,7 +92,7 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > both CLI variants reported the release version, the SC/GUI archives contain the screenshots, and no
 > GitHub Release was created off-tag. The `gh release create` step itself is tag-only and therefore
 > remains unexercised until sign-off; everything up to it ran. Measured bytes: FD 2,193,723–2,286,168;
-> SC 37,310,888–40,202,969; GUI 47,274,034–52,044,908. The rc.1 shell was launched from the published
+> SC 37,310,920–40,202,969; GUI 47,274,067–52,044,908. The rc.1 shell was launched from the published
 > binary and the Dashboard, Evidence and History screens were captured to `docs/images/`; both boxes
 > are ticked in the evidence commit that adds them. A scrubbed-PATH E2E of the final self-contained
 > archive completed the full pipeline, and the GUI archive from the same dry run was extracted and

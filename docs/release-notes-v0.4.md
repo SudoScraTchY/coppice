@@ -94,14 +94,14 @@ the source path.
 The GUI has no size budget; 47.71 MB is the recorded candidate. The CLI budgets (5 MB framework-dependent,
 50 MB self-contained) are enforced by `scripts/publish.sh`.
 
-A release dry run (run `40329677179` on `4d4cc46`) built every variant on all six RIDs and refused to
-create a Release off-tag. Ranges across those cells:
+A strict release dry run (run `40399283405` on `905bdba`) built every variant on all six RIDs and
+refused to create a Release off-tag. Ranges across those cells:
 
 | Variant | Bytes | Size |
 |---|---:|---:|
 | CLI framework-dependent | 2,193,723–2,286,168 | 2.09–2.18 MB |
-| CLI self-contained | 37,310,888–40,202,928 | 35.58–38.34 MB |
-| GUI self-contained | 47,274,034–52,044,876 | 45.08–49.63 MB |
+| CLI self-contained | 37,310,920–40,202,969 | 35.58–38.34 MB |
+| GUI self-contained | 47,274,067–52,044,908 | 45.08–49.63 MB |
 
 ## Known limits and open human gates
 
