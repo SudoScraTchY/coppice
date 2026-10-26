@@ -447,4 +447,14 @@ public class OutputParserTests
                 h => Assert.Contains("not installed", h, StringComparison.OrdinalIgnoreCase));
         }
     }
+
+    [Fact]
+    public void A_bare_windows_drive_path_is_a_value_not_a_label()
+    {
+        Coppice.Parsing.ParseResult result =
+            Coppice.Parsing.OutputParsers.ParseLabelValue(@"C:\Users\dev\go\pkg\mod");
+
+        Assert.True(result.IsConfident, string.Join("; ", result.Issues.Select(i => i.ToString())));
+        Assert.Equal(@"C:\Users\dev\go\pkg\mod", Assert.Single(result.Values));
+    }
 }

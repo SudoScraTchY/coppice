@@ -101,6 +101,10 @@ GUI and requirement closure.
   dropped from 190.6 s to 15.6–17.7 s with identical verdicts; a 30,000-item / 30 GB real-filesystem
   fixture scans in 9.965 s, meeting NFR-04's target. A regression test pins one read per project per
   scan.
+- T-059: doctor probes now run per ecosystem in concurrent groups; a slow .NET probe no longer starves
+  Go/Node/Rust. Bare Windows drive paths from `go env` keep their drive letter, and npm's Windows cache
+  resolves from `%LOCALAPPDATA%\npm-cache`. On the owner's machine doctor reports dotnet/go/node and
+  scan finds 3,152 .NET + 26 Go + 1 npm item.
 - T-047: keep-newest now compares all four numeric parts of a NuGet version. Four-part versions that
   differed only in the revision compared equal, so the deterministic `ItemId` tie-break could keep an
   older version and propose the true newest. Prerelease identifiers now follow NuGet ordering (numeric

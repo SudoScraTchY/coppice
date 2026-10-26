@@ -153,7 +153,9 @@ and [SDD/06-safety-model.md](./SDD/06-safety-model.md).
 
 - **Ecosystems.** The .NET, Go, Rust and Node profiles are wired into `scan`/`plan`/`apply`
   (T-048). A new manifest + plugin is one registry entry; T-056 removed the last ecosystem special
-  case, and T-057 adds opt-in user manifests.
+  case, and T-057 adds opt-in user manifests. On a real polyglot machine the doctor reports
+  dotnet/go/node and the scan inventories all three; T-059 fixed probe starvation and the Windows
+  Go/npm paths.
 - **Config.** T-049 reads `config.toml` for project roots, policy and exclusions; explicit flags
   still win. T-052 applies pins and quarantine retention, and T-057 adds opt-in user manifests.
 - **No `clean`, `report` or `config` verbs.** The report exporters, including the self-contained HTML
@@ -166,6 +168,7 @@ and [SDD/06-safety-model.md](./SDD/06-safety-model.md).
   gates recorded in `SDD/AGENDA.md`; this is why the release is `0.4.0-rc.1`, not a tag.
 - **Scan performance:** NFR-04 is met on a real fixture: 30,000 items / 31,457,280,000 bytes in
   9.965 s; the real 3,152-package / 19.4 GB cache is 15.6–17.7 s after the T-058 reference-index fix.
+  A real all-ecosystem scan of 3,179 items (3,152 .NET, 26 Go, 1 npm) takes 21.0 s.
 
 ## Documentation
 

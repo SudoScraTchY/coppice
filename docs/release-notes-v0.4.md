@@ -18,6 +18,10 @@ confirmed `quarantine prune`. Every mutation is appended to a hash-chained audit
 - **Ecosystem detection.** Each profile declares a local probe (for example `dotnet --version`,
   `go version`, `rustc --version`, `node --version`) and `doctor`/`scan` report present/absent with the
   source. A missing or erroring tool is an absent ecosystem, not a crash.
+- **Real-machine discovery.** Probes run per ecosystem in concurrent groups, so a slow .NET tool cannot
+  starve Go/Node/Rust; Windows drive-letter tool paths and npm's `%LOCALAPPDATA%\npm-cache` default are
+  fixed. On the owner's machine the doctor reports dotnet/go/node and the scan inventories 3,152 .NET
+  + 26 Go + 1 npm item in 21.0 s.
 - **Every root candidate is visible.** `coppice roots` prints denied, not-found, fingerprint-failed,
   inactive and ambiguous candidates with via, role, validity, owner, declared/real paths and size.
   Only `Ok` active roots are cleanable.
@@ -116,6 +120,9 @@ the published linux-x64 self-contained archive through scan→plan→apply→res
 - **NFR-04 is met on a real fixture.** 30,000 items / 31,457,280,000 bytes on the real filesystem
   (1 MB sparse files) scan in **9.965 s**; the real 3,152-package / 19.4 GB cache is **15.6–17.7 s**
   after the T-058 reference-index fix. The sparse 30k fake is no longer the only number.
+- The .NET probe group can still use the whole 4 s doctor budget on a loaded machine, so its remaining
+  tool/workload locations may be reported budget-exhausted. The primary NuGet cache and the other
+  ecosystems are still resolved; the skip is an issue, not silence.
 - The GUI visual layer is compiled and its view models are headless-tested; Avalonia rendering is not
   part of the automated gate.
 - `clean`, `report` and `config` verbs remain planned; the HTML exporter and completions are the
@@ -142,6 +149,8 @@ the published linux-x64 self-contained archive through scan→plan→apply→res
   `40411290645` (plan `pln_a7fcaccdefed`)
 - T-058: real 3,152-package scan 190.6 s → 15.6–17.7 s; 1,372 unit, 33 architecture, 12 goldens,
   53 escape tests at 100k
+- Real-machine polyglot: doctor dotnet/go/node in 4.94 s; scan 3,179 items (3,152 .NET, 26 Go, 1 npm)
+  in 21.0 s; 1,375 unit, 33 architecture, 12 goldens, 53 escape at 100k
 - `SDD/AGENDA.md` records the other run ids
 - `scripts/publish.sh` FD/SC and `scripts/publish-gui.sh` size measurements
 

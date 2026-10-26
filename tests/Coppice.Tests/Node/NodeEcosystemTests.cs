@@ -2,6 +2,7 @@ using Xunit;
 
 namespace Coppice.Tests.Node;
 
+using Coppice.Application;
 using Coppice.Manifests;
 using Coppice.Ports;
 using CoreDomain = Coppice.Core.Domain;
@@ -482,5 +483,23 @@ public class NodeEcosystemTests
 
         Assert.Equal("npm cache clean --force", Assert.Single(result.Locations, l => l.Id == "npm-cache").RemoveCommand);
         Assert.Equal("npm uninstall -g", Assert.Single(result.Locations, l => l.Id == "npm-global").RemoveCommand);
+    }
+
+    [Fact]
+    public void The_windows_npm_cache_resolves_from_LOCALAPPDATA_when_npm_is_absent()
+    {
+        var fs = new Support.FakeFileSystem(OperatingSystemKind.Windows);
+        fs.AddDirectory(@"C:\Users\dev\AppData\Local\npm-cache\_cacache");
+        var env = new Support.FakeEnvironment(OperatingSystemKind.Windows)
+            .With("LOCALAPPDATA", @"C:\Users\dev\AppData\Local");
+        var registry = EcosystemRegistry.CreateDefault(fs);
+        var doctor = new DoctorService(fs, new Support.FakeProcessRunner(), env, env.OS, registry);
+
+        DoctorReport report = doctor.Inspect();
+
+        RootReport root = Assert.Single(report.Roots, r => r.LocationId == "npm-cache");
+        Assert.Equal(CoreDomain.RootValidity.Ok, root.Root.Validity);
+        Assert.Equal(CoreDomain.ResolvedVia.Env, root.Root.Via);
+        Assert.Equal(@"C:\Users\dev\AppData\Local\npm-cache", root.Root.RealPath);
     }
 }

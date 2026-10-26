@@ -109,7 +109,10 @@ public sealed record ManifestSource
     /// <summary>Config key for <c>config</c> sources.</summary>
     public string? Key { get; init; }
 
-    /// <summary>Literal path for <c>pin</c>/<c>default</c> sources. May contain <c>{home}</c>.</summary>
+    /// <summary>
+    /// Relative path template for <c>tool</c>/<c>env</c> sources, literal path for <c>pin</c>/<c>default</c>
+    /// sources. May contain <c>{home}</c>.
+    /// </summary>
     public string? Path { get; init; }
 
     /// <summary>Registry value name for <c>registry</c> sources.</summary>

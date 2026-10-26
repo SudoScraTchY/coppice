@@ -141,69 +141,62 @@ public sealed class DoctorService
 
     private DoctorReport Inspect(CancellationToken cancellationToken, bool measureSizes)
     {
-        var engine = new ResolutionEngine(_fs, _os, _env.HomeDirectory);
-        var validator = new FingerprintValidator(_fs, _os);
-
         var roots = new List<RootReport>();
         var issues = new List<string>(_registry.ManifestErrors);
 
-        // NFR-04: doctor is an interactive health check. A per-probe timeout is not a total budget:
-        // several hung tools can each consume their 2 s and still exceed 5 s. This linked budget bounds
-        // the whole probe phase. Sizing is caller-cancellable and runs only for `roots`.
+        // NFR-04: doctor is an interactive health check. Probes run concurrently in one group per
+        // ecosystem, so a slow tool in one ecosystem cannot consume the budget before the others are
+        // asked. The shared budget is the wall-clock cap; each tool query still has ProbeTimeout.
+        // Sizing is caller-cancellable and runs only for `roots`.
         using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         budget.CancelAfter(_probeBudget);
-        bool budgetExhausted = false;
 
-        foreach (EcosystemLocation location in _registry.Locations.Where(l => l.AppliesTo(_os)))
+        EcosystemLocation[] locations = [.. _registry.Locations.Where(l => l.AppliesTo(_os))];
+        (EcosystemLocation Location, int Index)[][] groups = [.. locations
+            .Select((location, index) => (Location: location, Index: index))
+            .GroupBy(x => x.Location.EcosystemId)
+            .Select(group => group.ToArray())];
+
+        // Presence is a separate question and runs alongside location probing. A starved location
+        // probe must not silently erase the detection answer.
+        Task<IReadOnlyList<EcosystemDetectionReport>?> detectionTask = Task.Run(() =>
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (budget.IsCancellationRequested)
-            {
-                budgetExhausted = true;
-                issues.Add("[doctor] probe budget exhausted; the remaining locations were not probed");
-                break;
-            }
-
-            LocationSpec spec;
             try
             {
-                spec = BuildSpec(location, budget.Token);
+                return (IReadOnlyList<EcosystemDetectionReport>?)new EcosystemDetector(_fs, _runner, _env)
+                    .Detect(_registry.Ecosystems, budget.Token);
             }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException)
             {
-                budgetExhausted = true;
-                issues.Add($"[{location.Id}] probe budget exhausted; this location and the remaining probes were not resolved");
-                break;
+                return null;
             }
+        }, cancellationToken);
 
-            ResolutionOutcome outcome = engine.Resolve(spec, validator.AsPredicate(FingerprintFor(location)));
+        Task<GroupReport>[] groupTasks = [.. groups.Select(group => Task.Run(
+            () => ProcessGroup(group, measureSizes, budget.Token, cancellationToken),
+            cancellationToken))];
 
-            issues.AddRange(outcome.Issues.Select(i => $"[{location.Id}] {i.Code}: {i.Summary}"));
-
-            foreach (ResolvedRoot root in outcome.Roots)
-            {
-                (ulong? size, string? sizeNote) = measureSizes
-                    ? MeasureRoot(root, cancellationToken)
-                    : (null, null);
-
-                roots.Add(new RootReport(
-                    location.Id,
-                    root,
-                    FixHint(root),
-                    location.EcosystemId,
-                    location.Owner,
-                    size,
-                    sizeNote));
-            }
-
-            // A location that resolved to nothing at all still deserves a line: "no idea where
-            // dotnet-root is" is more useful to a user than silence.
-            if (outcome.Roots.Count == 0)
-            {
-                issues.Add($"[{location.Id}] no candidate resolved from any source");
-            }
+        GroupReport[] groupReports;
+        try
+        {
+            groupReports = Task.WhenAll(groupTasks).GetAwaiter().GetResult();
         }
+        catch
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            throw;
+        }
+
+        foreach (GroupReport group in groupReports)
+        {
+            roots.AddRange(group.Roots);
+        }
+
+        // Keep the issue order the sequential implementation produced: original location order.
+        issues.AddRange(groupReports
+            .SelectMany(group => group.Issues)
+            .OrderBy(issue => issue.Index)
+            .Select(issue => issue.Issue));
 
         roots.Sort(static (a, b) =>
         {
@@ -226,22 +219,21 @@ public sealed class DoctorService
         // FR-01: presence is its own question, answered by the profile's declared probe — not by
         // whether a cache happens to exist. The registry supplies both the list and the descriptors.
         IReadOnlyList<EcosystemDetectionReport> detection;
-        if (budgetExhausted)
+        try
         {
-            detection = [];
-            issues.Add("[ecosystems] detection skipped: the doctor probe budget was exhausted");
-        }
-        else
-        {
-            try
+            IReadOnlyList<EcosystemDetectionReport>? detected = detectionTask.GetAwaiter().GetResult();
+            cancellationToken.ThrowIfCancellationRequested();
+            detection = detected ?? [];
+            if (detected is null)
             {
-                detection = new EcosystemDetector(_fs, _runner, _env).Detect(_registry.Ecosystems, budget.Token);
-            }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-            {
-                detection = [];
                 issues.Add("[ecosystems] detection budget exhausted; presence was not answered");
             }
+        }
+        catch (OperationCanceledException)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            detection = [];
+            issues.Add("[ecosystems] detection budget exhausted; presence was not answered");
         }
 
         return new DoctorReport(_os, roots, issues, ecosystems)
@@ -250,6 +242,79 @@ public sealed class DoctorService
             SizesMeasured = measureSizes,
         };
     }
+
+    /// <summary>
+    /// Probes one ecosystem's locations sequentially, sharing the doctor's wall-clock budget with the
+    /// other ecosystems. Grouping keeps a slow .NET tool from starving Go, Node and Rust, while root
+    /// and issue ordering stays deterministic in the caller.
+    /// </summary>
+    private GroupReport ProcessGroup(
+        (EcosystemLocation Location, int Index)[] group,
+        bool measureSizes,
+        CancellationToken budgetToken,
+        CancellationToken callerToken)
+    {
+        var engine = new ResolutionEngine(_fs, _os, _env.HomeDirectory);
+        var validator = new FingerprintValidator(_fs, _os);
+        var roots = new List<RootReport>();
+        var issues = new List<(int Index, string Issue)>();
+
+        foreach ((EcosystemLocation location, int index) in group)
+        {
+            callerToken.ThrowIfCancellationRequested();
+
+            if (budgetToken.IsCancellationRequested)
+            {
+                issues.Add((index, "[doctor] probe budget exhausted; the remaining locations were not probed"));
+                break;
+            }
+
+            LocationSpec spec;
+            try
+            {
+                spec = BuildSpec(location, budgetToken);
+            }
+            catch (OperationCanceledException) when (!callerToken.IsCancellationRequested)
+            {
+                issues.Add((index, $"[{location.Id}] probe budget exhausted; this location and the remaining probes were not resolved"));
+                break;
+            }
+
+            ResolutionOutcome outcome = engine.Resolve(spec, validator.AsPredicate(FingerprintFor(location)));
+
+            issues.AddRange(outcome.Issues.Select(i => (index, $"[{location.Id}] {i.Code}: {i.Summary}")));
+
+            foreach (ResolvedRoot root in outcome.Roots)
+            {
+                (ulong? size, string? sizeNote) = measureSizes
+                    ? MeasureRoot(root, callerToken)
+                    : (null, null);
+
+                roots.Add(new RootReport(
+                    location.Id,
+                    root,
+                    FixHint(root),
+                    location.EcosystemId,
+                    location.Owner,
+                    size,
+                    sizeNote));
+            }
+
+            // A location that resolved to nothing at all still deserves a line: "no idea where
+            // dotnet-root is" is more useful to a user than silence.
+            if (outcome.Roots.Count == 0)
+            {
+                issues.Add((index, $"[{location.Id}] no candidate resolved from any source"));
+            }
+        }
+
+        return new GroupReport(roots, issues);
+    }
+
+    private sealed record GroupReport(
+        IReadOnlyList<RootReport> Roots,
+        IReadOnlyList<(int Index, string Issue)> Issues);
+
 
     /// <summary>
     /// Measures one candidate, or explains why not (FR-02).

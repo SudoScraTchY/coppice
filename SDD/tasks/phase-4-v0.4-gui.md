@@ -146,6 +146,9 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > inactive and missing candidates and the one-cleanable assertion; `ScanWiring` keeps the Ok+active
 > floor so no rejected candidate can become a plan step. Doctor probes add up to four 2 s bounds;
 > T-053 owns the overall doctor budget.
+>
+> 2026-10-27: real-machine roots now include `go-mod-cache` (`C:\...`, via Tool), `npm-cache`
+> (`LOCALAPPDATA` Env) and the .NET cache; T-059 fixed the Go drive path and the npm default.
 
 ### T-052 · FR-22: config pins and quarantine retention
 **Refs** FR-22, S-1 · **Depends** T-049, T-056 · **Effort** M · **Safety card**
@@ -189,8 +192,10 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > per-probe bound plus this total budget keep `doctor` under 5 s.
 >
 > 2026-10-27: a real-cache dogfood run measured 3,152 items / 19.4 GB in 190.6 s warm (empty cache
-> 5.0 s). The sparse fixture does not exercise per-file size measurement. T-058 owns the real-volume
-> gap; no NFR-04 claim is made until it is fixed or explicitly amended.
+> 5.0 s). The sparse fixture does not exercise per-file size measurement. T-058's reference-index fix
+> takes it to 15.6–17.7 s and a 30k/30 GB real-filesystem fixture to 9.965 s, so NFR-04 is met.
+> T-059 later found that the shared total budget starved non-.NET ecosystems on a real machine;
+> probes now run in per-ecosystem groups, and the doctor reports dotnet/go/node in 4.94 s.
 
 ### T-054 · E-7 and the escape job's real coverage
 **Refs** 11-testing, E-7, E-10, E-12 · **Depends** T-028, T-031 · **Effort** S
@@ -299,3 +304,20 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > 15.6 s warm (10.8–12.2x), with the same 46 Referenced / 3,106 Unknown verdicts. A 30,000-item
 > fixture with 1 MB per item (30 GB logical) on the real filesystem scans in 9.965 s, so NFR-04's
 > 30k / 30 GB target is met. T-058 is done; the tag waits only on the human gates.
+
+### T-059 · Real-machine polyglot discovery and Windows path parsing
+**Refs** FR-01, FR-02, FR-23, T-048, T-051, T-053, T-056 · **Depends** T-048, T-051, T-056 · **Effort** M · **Safety card**
+
+**Build**
+- The real doctor on the owner's Windows machine reported only dotnet: the sequential location probes shared a 4 s budget, and the slow .NET tool queries consumed it before Go, Node and Rust were asked. Probes now run in one group per ecosystem, concurrently, under the same 4 s wall cap; detection runs alongside them; roots and issues merge in the original location order.
+- `go env GOMODCACHE`/`GOPATH` print a bare `C:\...` path. The label-value parser split it at the drive colon, producing `\Users\...`. A drive-prefixed line is now a value, not a label; a bare absolute line without `=` is the same case.
+- npm's Windows default cache is `%LOCALAPPDATA%\npm-cache`, not `~/.npm`. The Node manifest now has a `LOCALAPPDATA` env source with `path = "npm-cache"` ahead of the `~/.npm` default, which still applies on Linux/macOS.
+- Regression tests: a slow `dotnet` probe must not prevent `go`/`npm` calls; a bare Windows drive path keeps its drive; a Windows npm cache resolves via `LOCALAPPDATA`.
+
+**Acceptance**
+- [x] Ecosystem probes cannot starve each other within the total budget
+- [x] Bare Windows tool paths retain the drive letter
+- [x] The Windows npm cache resolves from `LOCALAPPDATA`
+- [x] Real-machine doctor reports dotnet/go/node; real scan inventories .NET + Go + npm
+
+> Opened 2026-10-27 from a real-machine dogfood run. Before: doctor/roots reported only dotnet and "probe budget exhausted"; scan 3,152 items, all .NET. After: doctor reports dotnet/go/node in 4.94 s (<5 s), and scan inventories 3,152 .NET + 26 Go + 1 npm item in 21.0 s. The .NET group can still exhaust the budget on its remaining tool/workload locations; that is reported as an issue, not a silent skip.

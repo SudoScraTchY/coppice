@@ -9,6 +9,7 @@ namespace Coppice.Tests.Support;
 public sealed class FakeProcessRunner : IProcessRunner
 {
     private readonly Dictionary<string, Func<ProcessRequest, ProcessResult>> _rules = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _callGate = new();
 
     public List<ProcessRequest> Calls { get; } = [];
 
@@ -55,7 +56,10 @@ public sealed class FakeProcessRunner : IProcessRunner
     public Task<ProcessResult> RunAsync(ProcessRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        Calls.Add(request);
+        lock (_callGate)
+        {
+            Calls.Add(request);
+        }
 
         if (HangsByFile.ContainsKey(request.FileName))
         {
@@ -72,7 +76,11 @@ public sealed class FakeProcessRunner : IProcessRunner
             return Task.FromResult(handler(request));
         }
 
-        UnknownInvocations.Add(request.FileName);
+        lock (_callGate)
+        {
+            UnknownInvocations.Add(request.FileName);
+        }
+
         return Task.FromResult(new ProcessResult
         {
             ExitCode = 127,

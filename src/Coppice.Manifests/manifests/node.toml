@@ -37,6 +37,9 @@ resolve = "first"
 sources = [
   { via = "tool", run = "npm config get cache", parse = "line" },
   { via = "env", var = "npm_config_cache" },
+  # npm's Windows default is %LOCALAPPDATA%\npm-cache. LOCALAPPDATA is unset on Linux/macOS, so that
+  # source simply does not answer there and the ~/.npm default remains authoritative.
+  { via = "env", var = "LOCALAPPDATA", path = "npm-cache" },
   { via = "default", path = "{home}/.npm" },
 ]
 

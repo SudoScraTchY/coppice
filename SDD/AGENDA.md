@@ -60,10 +60,11 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-039 Avalonia shell | `done` except box 4 human | boxes 1/2 closed by T-050; box 4 is `blocked-human` |
 | T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
 | T-040 GUI pin editor | `done` | `110dc84`; run `40311141426` green on all six cells; pin/roots tests |
-| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; runs `40313952759` (six cells) and `40416009642` (post-T-058 strict release dry run with the linux-x64 install smoke: exact 18 archives + nupkg + sidecars, both CLI variants version-checked, screenshots inside the SC/GUI archives, no Release; `gh release create` is tag-only and unexercised); CLI 2.19/36.74 MB, GUI 47.72 MB on win-x64; tag withheld until the human gates |
+| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; run `40313952759` (six cells) and `40416009642` (strict dry run **before T-059**); T-059 is landed and a fresh dry run is pending; CLI 2.19/36.74 MB, GUI 47.72 MB on win-x64; tag withheld until the human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
 | T-058 real-volume scan perf | `done` | ReferenceIndex fix: 190.6 s → 15.6–17.7 s on 3,152/19.4 GB; 30k/30 GB real-filesystem fixture 9.965 s; regression test; NFR-04 met |
+| T-059 polyglot discovery/paths | `done` | Per-ecosystem probe groups (no starvation); bare Windows drive paths; npm LOCALAPPDATA default; real doctor dotnet/go/node in 4.94 s; real scan 3,152 .NET + 26 Go + 1 npm in 21.0 s |
 | T-057 FR-23 user manifests | `done` | `b0f1871` + `346a460`; runs `40309220254`, `40311675742` green |
 | T-036 TUI screens | `blocked-human` | box 4 screen-reader smoke pass |
 | T-038 v0.3 release docs | `blocked-human` | box 2 fresh-VM install; 0.3.0 itself withdrawn |
@@ -77,7 +78,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | Screen-reader smoke pass | T-036 box 4, T-039/T-040 a11y | dated checklist + notes | open |
 | Fresh-VM install → doctor → scan → plan → apply, no container runtime | T-038 box 2, T-043 | VM/OS version + transcript | open |
 | 5+ dogfood reports, every finding carded | T-019 | report links / commit refs | open |
-| Second safety reviewer sign-off | T-031/32/34/35/44/48/52/56 | reviewer name + commit | open |
+| Second safety reviewer sign-off | T-031/32/34/35/44/48/52/56/59 | reviewer name + commit | open |
 | Six-cell CI + egress canary | T-018, T-054 | run URL + TRX canary line | passed 2026-10-26: run `40282093437`; run `40333340213` archives the canary TRX as `egress-results` |
 
 ### Clean-environment E2E (supporting evidence, not a fresh VM)
@@ -169,6 +170,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-27 | Real-volume scan measurement | rc.1 SC binary on the real NuGet cache: 3,152 items / 19.4 GB warm 190.6 s (cold 210.5 s); empty cache 5.0 s; T-058 opened |
 | 2026-10-27 | T-058 reference-index fix | `DotnetEcosystem.Resolve` builds one assets index per project set; the same 3,152-item cache is 17.7 s, then 15.6 s warm, and a 30k-item fixture is 9.8 s; verdicts unchanged; 1,372 unit, 33 architecture, 12 goldens, 53 escape at 100k |
 | 2026-10-27 | NFR-04 exact shape met | 30,000 items / 31,457,280,000 bytes on the real filesystem (1 MB sparse files) scanned in 9.965 s; T-058 done |
+| 2026-10-27 | Real-machine polyglot discovery fixed | T-059: per-ecosystem probe groups; bare Windows drive paths; npm LOCALAPPDATA default; real doctor dotnet/go/node in 4.94 s; real scan 3,152 .NET + 26 Go + 1 npm in 21.0 s; 1,375 tests, 33 architecture, 12 goldens, 53 escape at 100k |
 | 2026-10-27 | Dogfood report 1/5 (owner machine, automated) | scoped to the owner's machine, not an independent user: rc.1 SC binary; 46 Referenced, 3,106 Unknown, 0 Unreferenced; `plan` correctly proposes nothing (0 candidates); finding T-058 |
 | 2026-10-26 | Clean-environment rc.1 E2E (not a fresh VM) | self-contained zip, scrubbed PATH, isolated state; version→doctor→scan→plan→apply→restore→audit verify; details in the section above |
 | 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |

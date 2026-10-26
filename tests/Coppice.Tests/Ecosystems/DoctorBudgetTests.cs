@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using Coppice.Application;
 using Coppice.Ports;
@@ -41,6 +42,60 @@ public sealed class DoctorBudgetTests
             stopwatch.Elapsed < TimeSpan.FromSeconds(2),
             $"doctor took {stopwatch.Elapsed.TotalMilliseconds:F0} ms with a 100 ms probe budget");
         Assert.Contains(report.Issues, issue => issue.Contains("budget", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void A_slow_dotnet_probe_does_not_starve_the_other_ecosystems()
+    {
+        var fs = new FakeFileSystem(OperatingSystemKind.Linux);
+        var env = new FakeEnvironment(OperatingSystemKind.Linux);
+        var runner = new SlowDotnetRunner();
+        var registry = EcosystemRegistry.CreateDefault(fs);
+        var doctor = new DoctorService(
+            fs,
+            runner,
+            env,
+            env.OS,
+            registry,
+            probeBudget: TimeSpan.FromMilliseconds(500));
+
+        var stopwatch = Stopwatch.StartNew();
+        DoctorReport report = doctor.Inspect();
+        stopwatch.Stop();
+        _output.WriteLine($"doctor returned after {stopwatch.Elapsed.TotalMilliseconds:F1} ms");
+        _output.WriteLine(string.Join("\n", runner.Calls));
+
+        Assert.Contains("go", runner.Calls);
+        Assert.Contains("npm", runner.Calls);
+        Assert.Contains(report.Issues, issue => issue.Contains("budget", StringComparison.OrdinalIgnoreCase));
+        Assert.True(
+            stopwatch.Elapsed < TimeSpan.FromSeconds(2),
+            $"doctor took {stopwatch.Elapsed.TotalMilliseconds:F0} ms with a 500 ms probe budget");
+    }
+
+    private sealed class SlowDotnetRunner : IProcessRunner
+    {
+        public ConcurrentBag<string> Calls { get; } = [];
+
+        public async Task<ProcessResult> RunAsync(
+            ProcessRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            Calls.Add(request.FileName);
+
+            if (request.FileName == "dotnet")
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken).ConfigureAwait(false);
+            }
+
+            return new ProcessResult
+            {
+                ExitCode = 0,
+                StandardOutput = "/not/a/cache",
+                ResolvedFileName = request.FileName,
+            };
+        }
     }
 
     private sealed class BlockingProcessRunner : IProcessRunner

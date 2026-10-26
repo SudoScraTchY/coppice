@@ -89,6 +89,22 @@ public static class OutputParsers
 
         foreach (string line in SplitLines(output))
         {
+            string unquotedLine = Unquote(line);
+            bool drivePath = unquotedLine.Length >= 3
+                && char.IsAsciiLetter(unquotedLine[0])
+                && unquotedLine[1] == ':'
+                && unquotedLine[2] is '/' or '\\';
+
+            // Real Go prints a BARE Windows path for `go env GOMODCACHE`. Splitting it at the drive
+            // colon turns `C:\Users\...\mod` into label "C" and the root-relative value
+            // "\Users\...\mod", which then fails to exist. A drive-prefixed line is a value, not a
+            // label-value pair; a bare absolute line without "=" is the same case on Unix.
+            if (drivePath || (line.IndexOf('=') < 0 && LooksAbsolute(unquotedLine)))
+            {
+                values.Add(TrimTrailingSeparators(unquotedLine));
+                continue;
+            }
+
             int separator = FindLabelSeparator(line);
             if (separator < 0)
             {
