@@ -31,8 +31,13 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - Roots screen shows via + detail per candidate; pin editor with live validation preview (gates run before saving); never-elevate guidance for NeedsElevation items.
 
 **Acceptance**
-- [ ] Pin editor rejects denylist paths with a visible reason
-- [ ] Every root displays its provenance string
+- [x] Pin editor rejects denylist paths with a visible reason
+- [x] Every root displays its provenance string
+
+> T-040 landed as `110dc84`; run `40311141426` is green on all six cells. `PinEditorServiceTests`
+> covers denylist/fingerprint rejection and config-preserving saves; `PinEditorUiTests` drives the
+> Roots view model and the pin commands. The write goes through `IConfigWriter` in Ports with
+> `PhysicalConfigWriter` in Adapters, and NeedsElevation rows carry the never-elevate note.
 
 ### T-041 · History & trends
 **Refs** nice-to-have #4 · **Depends** T-009 · **Effort** M
@@ -72,8 +77,13 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - Release notes, GUI screenshots in README, tag + binaries.
 
 **Acceptance**
-- [ ] GUI release artifact self-contained and < reasonable size (record actual)
-- [ ] Roadmap updated: v1.0 items become the only open cards
+- [x] GUI release artifact self-contained and < reasonable size (record actual) — 50,034,463 bytes (47.71 MB) via `scripts/publish-gui.sh win-x64`
+- [x] Roadmap updated: v1.0 items become the only open cards
+
+> T-043 prepared `0.4.0-rc.1`, not a tag. The CLI is 2.19 MB framework-dependent / 36.73 MB
+> self-contained; the GUI is 47.71 MB self-contained. The release remains `blocked-human`: screen
+> reader, fresh VM, dogfood reports and the second safety reviewer are still open in `SDD/AGENDA.md`.
+> Tagging before those are signed would repeat the 0.3.0 mistake.
 
 ### T-050 · Finish the parked Avalonia shell
 **Refs** 08-gui · **Depends** T-039, T-048 · **Effort** L
@@ -125,9 +135,14 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - Update `07`/`10`, help and the TUI/roots pin display.
 
 **Acceptance**
-- [ ] A config pin overrides a location; a denylisted or fingerprint-failing pin is refused with a visible reason
-- [ ] Quarantine retention config changes the default; manual-only remains the default
-- [ ] `doctor` reports config validation and the active pins
+- [x] A config pin overrides a location; a denylisted or fingerprint-failing pin is refused with a visible reason
+- [x] Quarantine retention config changes the default; manual-only remains the default
+- [x] `doctor` reports config validation and the active pins
+
+> T-052 landed as `69b1dd2`; run `40304314774` is green on all six cells. `ConfigPinWiringTests` covers
+> the override, `DENIED` and `FailsFingerprint` cases; `QuarantineRetentionTests` covers a positive
+> configured default, an explicit `--older-than` winning, and the 30-day floor when the config is 0.
+> Invalid config exits 2 in the commands, and roots/doctor show the pin provenance.
 
 > Scope split 2026-10-26: the original T-052 also covered FR-23 user manifests. That half is now
 > T-057 so the pins/quarantine path can land without claiming an unimplemented registry surface.
@@ -141,10 +156,16 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - Record the numbers in `SDD/AGENDA.md` and the release notes. Vectorization is considered only if profiling finds a CPU-bound loop and a benchmark exists; no package without that evidence.
 
 **Acceptance**
-- [ ] The perf fixture is reproducible and documented
-- [ ] Warm scan of 30k items is < 60 s
-- [ ] `doctor` is < 5 s
-- [ ] Cancellation and timeout coverage still pass
+- [x] The perf fixture is reproducible and documented
+- [x] Warm scan of 30k items is < 60 s
+- [x] `doctor` is < 5 s
+- [x] Cancellation and timeout coverage still pass
+
+> T-053 landed as `4faf9e9`; run `40306786443` is green on all six cells. The fake fixture measured
+> 30,000 items / 31,457,280,000 logical bytes in 1.379 s; the blocked-probe doctor returned in 105 ms
+> against a 100 ms test budget, while the production total budget is 4 s. These are enumeration/CPU
+> measurements, not real-volume throughput; no reference-machine script was added. T-056's 2 s
+> per-probe bound plus this total budget keep `doctor` under 5 s.
 
 ### T-054 · E-7 and the escape job's real coverage
 **Refs** 11-testing, E-7, E-10, E-12 · **Depends** T-028, T-031 · **Effort** S
@@ -213,10 +234,15 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - No new package, no network.
 
 **Acceptance**
-- [ ] An enabled drop-in manifest is used by `doctor`/`scan` without rebuilding
-- [ ] The default (disabled) ignores it
-- [ ] An invalid manifest is refused with line-level diagnostics
-- [ ] Shadowing behavior is asserted, not guessed
+- [x] An enabled drop-in manifest is used by `doctor`/`scan` without rebuilding
+- [x] The default (disabled) ignores it
+- [x] An invalid manifest is refused with line-level diagnostics
+- [x] Shadowing behavior is asserted, not guessed
+
+> T-057 landed as `b0f1871` (run `40309220254` green on all six cells); the explicit shadowing fix is
+> `346a460` (run `40311675742` green). `UserManifestTests` covers opt-in/disabled/invalid/shadowing and
+> scans two versions from a manifest-only cache. A shadowed built-in is excluded from plugin
+> construction and the diagnostic is carried by the doctor.
 
 > Split from T-052 on 2026-10-26: pins/quarantine and the manifest-registration surface are different
 > safety stories. This card is the opt-in trust decision OQ-08 describes.

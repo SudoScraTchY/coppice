@@ -17,9 +17,10 @@
 - **v0.3** — code complete. The 0.3.0 release claim is withdrawn (ADR-017); T-048/T-049 are landed in
   0.4.0. The kill/resume and quarantine evidence exists in the suite; six-cell CI evidence is green
   (run `40282093437`).
-- **v0.4** — in progress. T-041, T-042, T-050, T-051 and T-056 are landed; T-051's run is green.
-  T-052 (pins/quarantine) and T-053 (perf/doctor budget) are active, followed by T-040, T-057 (opt-in
-  user manifests) and T-043.
+- **v0.4** — **release candidate `0.4.0-rc.1`**. T-040–T-043 code and machine evidence are complete:
+  the GUI read→plan→apply flow with pin editor, history/completions, six-cell CI and recorded sizes.
+  The tag is withheld for the human gates (screen reader, fresh VM, dogfood, second safety reviewer).
+  `v1.0` items are the only planning items left.
 - **v1.0** — planning only. No distribution, docs-site or packaging work is in this goal.
 
 ## Risks

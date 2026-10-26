@@ -4,7 +4,7 @@
 
 | Command | Purpose | Mutates? |
 |---|---|---|
-| `coppice doctor` | Roots resolution + problems (config validation is T-052) | no |
+| `coppice doctor` | Roots resolution + problems + config validation | no |
 | `coppice roots` | Detailed location/candidate table | no |
 | `coppice scan [--projects <path>]... [--json]` | Snapshot the machine | no |
 | `coppice plan [--policy conservative\|default\|aggressive] [--keep-latest N] [--out plan.json]` | Build a plan from latest snapshot | no |
@@ -15,7 +15,7 @@
 | `coppice audit show\|verify` | Inspect the audit log | no |
 | `coppice completions <powershell\|bash\|zsh\|fish>` | Print a self-contained completion script | no |
 | `coppice history [--limit N] [--json]` | Compare recent snapshots and show per-ecosystem growth | no |
-| `coppice config path\|get\|set` | Planned; `config.toml` is read by T-049 and T-052 adds pins/quarantine | — |
+| `coppice config path\|get\|set` | Planned; `config.toml` is read by `scan`/`plan`/`tui`, `[pins]` is applied, and user manifests are opt-in (T-049/T-052/T-057) | — |
 
 Global flags: `--no-color`, `--ci` (implemented). `-v/--verbose`, `--config <path>` and
 `--root <location-id>=<path>` are planned and are not accepted yet. The config file itself is read from
@@ -34,9 +34,9 @@ another repository into `Unreferenced`, and the whole default policy depends on 
 
 A run with no roots is valid and safe — every item is `Unknown` and a plan proposes nothing — but it
 cannot prove a package is unused. `config.toml` is read for project roots, policy and exclusions
-(T-049); explicit `--projects`, `--policy` and `--keep-latest` flags win over the file. **T-052** adds
-the `[pins]` and `[quarantine]` consumption. The TUI's pin status shows the line a future config would
-use rather than claiming the pin is active.
+(T-049); explicit `--projects`, `--policy` and `--keep-latest` flags win over the file. T-052 applies
+`[pins]` and `[quarantine]` retention, and T-057 makes `[ecosystems] trust_user_manifests` an opt-in.
+The TUI's pin status shows the line a config would use rather than claiming a pin is active.
 
 ## Install and runtime
 

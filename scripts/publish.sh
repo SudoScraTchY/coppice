@@ -53,7 +53,7 @@ user_docs=(
   docs/quickstart.md
   docs/safety.md
   docs/commands.md
-  docs/release-notes-v0.3.md
+  docs/release-notes-v0.4.md
 )
 
 missing=0

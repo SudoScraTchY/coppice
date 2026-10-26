@@ -3,8 +3,8 @@
 ## User config
 
 > **Consumption status (2026-10-26).** `projects.roots`, `policy.*` and `exclude.*` are read by
-> `scan`/`plan`/`tui` (T-049), with explicit flags winning. `[pins]` and `[quarantine]` are parsed but
-> not applied until T-052.
+> `scan`/`plan`/`tui` (T-049), with explicit flags winning. `[pins]` and `[quarantine]` are applied
+> (T-052); `[ecosystems] trust_user_manifests` enables validated drop-in manifests (T-057, default off).
 
 Path: `%APPDATA%\coppice\config.toml` (win) · `~/.config/coppice/config.toml`
 (linux) · `~/Library/Application Support/coppice/config.toml` (mac).

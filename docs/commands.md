@@ -178,7 +178,7 @@ coppice version
 coppice help
 ```
 
-`version` prints the assembly version (the development build is `0.4.0-dev`; 0.3.0 was never tagged).
+`version` prints the assembly version (the release candidate is `0.4.0-rc.1`; 0.3.0 was never tagged).
 
 ## Not available yet
 
@@ -187,8 +187,9 @@ coppice help
   exporter from T-042, exist in the codebase, but the verb is not wired) — planned
 - `coppice config` (config-file management) — planned
 
-`config.toml` is read for project roots, policy and exclusions (T-049). `[pins]` and `[quarantine]`
-are parsed but not applied until T-052. Explicit flags win over the file.
+`config.toml` is read for project roots, policy, exclusions, pins and quarantine retention (T-049,
+T-052). `[ecosystems] trust_user_manifests` is an opt-in switch for validated drop-in manifests
+(T-057); the default is off. Explicit flags win over the file.
 
 ## State locations
 

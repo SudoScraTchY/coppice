@@ -34,7 +34,8 @@ wrong — it belongs in core.
 ## Current state (2026-10-26)
 
 T-050 landed the redesign (`8ef6c1e`): the committed shell has Setup/Scan/Dashboard, Items, Plan
-review, Apply, Quarantine, Roots and Problems; preferences use `IShellPreferencesStore`; the view
-model is driven headlessly through scan → plan → apply → restore, and a scan cancel is measured at
-19.3 ms against 200 ms. **T-040** adds the pin editor and per-candidate provenance; **T-043** packages
-the GUI. Principle 3 is still the open part, not silently claimed.
+review, Apply, Quarantine, Roots, Problems and History; preferences use `IShellPreferencesStore`; the
+view model is driven headlessly through scan → plan → apply → restore, and a scan cancel is measured at
+19.3 ms against 200 ms. **T-040** (`110dc84`) adds per-candidate provenance and the validated pin
+editor. **T-043** packages the GUI self-contained at 47.71 MB. The human screen-reader pass is still
+open; the release is `0.4.0-rc.1`.

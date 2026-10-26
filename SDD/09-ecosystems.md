@@ -7,7 +7,9 @@ v1 scope: **.NET** (built-in code plugin), **Go, Rust, Node/npm**
 > application-layer registry (T-048): the .NET code profile and the Go/Rust/Node manifests register as
 > data, and every production composition root uses one `EcosystemRegistry`. T-056 removed the last
 > ecosystem special case; the registry is the only registration point. A new manifest+plugin is one
-> entry, not a branch in the scan coordinator.
+> entry, not a branch in the scan coordinator. T-057 adds opt-in user manifests: a validated drop-in is
+> a generic Review-tier `{name}/{version}` cache with no removal strategy; a built-in id is shadowed
+> explicitly and invalid manifests surface diagnostics.
 
 ## .NET (`net`) — built-in code plugin, phase v0.1
 

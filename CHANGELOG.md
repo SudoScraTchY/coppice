@@ -4,9 +4,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0] — unreleased
+## [0.4.0-rc.1] — release candidate
 
-The development version is `0.4.0-dev`. This line folds in the work that had been stranded after the
+This is a release candidate, not a tagged release. The implementation and six-cell CI evidence are
+complete; the human gates listed in `SDD/AGENDA.md` (screen reader, fresh VM, dogfood, second safety
+reviewer) are still open, so no `v0.4.0` tag exists.
+
+The candidate version is `0.4.0-rc.1`. It folds in the work that had been stranded after the
 withdrawn 0.3.0 candidate: the CI repair, the path-safety fix it exposed, T-048/T-049, and the v0.4
 GUI and requirement closure.
 
@@ -22,6 +26,23 @@ GUI and requirement closure.
 - T-042 reach: a self-contained HTML report exporter (inline CSS, no external references) and a
   `completions <powershell|bash|zsh|fish>` verb with per-shell tests. The `report` verb itself is
   still planned.
+- T-043 release candidate: `scripts/publish-gui.sh` packages the self-contained Avalonia shell. Measured
+  on win-x64: CLI 2.19 MB framework-dependent / 36.73 MB self-contained, GUI 47.71 MB self-contained.
+  No `v0.4.0` tag is created because the human gates in `SDD/AGENDA.md` are still open.
+- T-040 resolution transparency: every Roots row shows its provenance (via plus detail), owner,
+  size when measured, ambiguity, and the never-elevate guidance. The pin editor validates a
+  candidate through the same denylist/fingerprint path a scan uses before writing one `[pins]` entry;
+  the rest of `config.toml` is preserved.
+- T-052 config pins and quarantine retention: `[pins]` now reaches the resolver through every
+  composition root while the denylist and fingerprint still gate; `quarantine prune` takes a positive
+  `[quarantine] retention_days` as its default age, with explicit `--older-than` winning and 0 keeping
+  the 30-day safety floor.
+- T-053 performance evidence: doctor probes share a 4 s total budget and report budget-exhausted
+  probes; a 30,000-item / 31.4 GB logical fake fixture scans in 1.38 s (enumeration/CPU, not real-volume
+  throughput).
+- T-057 opt-in user manifests: `[ecosystems] trust_user_manifests` is false by default; a trusted,
+  validated drop-in is registered through the same registry and scanned as a Review-tier generic cache,
+  invalid manifests surface diagnostics, and a built-in id is shadowed explicitly.
 - T-041 history and trends: stored snapshots can now be compared. `history [--limit N] [--json]`
   prints each scan's totals and per-ecosystem delta, and the GUI has a History page with a bounded
   bar chart and the same per-ecosystem growth rows. A first scan is a baseline, not a machine that

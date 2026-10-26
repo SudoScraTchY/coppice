@@ -1,7 +1,7 @@
 # Quickstart
 
-Coppice is a cross-platform cache cleaner. The current development line is v0.4; 0.3.0 was never
-tagged (see [ADR-017](../docs/adr/ADR-017-release-truth-and-size-budget.md)). It scans, proposes a
+Coppice is a cross-platform cache cleaner. The current release candidate is `0.4.0-rc.1`; 0.3.0 was
+never tagged (see [ADR-017](adr/ADR-017-release-truth-and-size-budget.md)). It scans, proposes a
 plan, asks for confirmation, and moves approved items into a quarantine you can restore from.
 
 Nothing in this guide requires Docker, a daemon, a service, or a helper process. Coppice is a single
@@ -19,7 +19,7 @@ From a checkout, `scripts/publish.sh` produces a single-file executable plus the
 # Needs the .NET 10 runtime. Roughly 2 MB and starts in about 80 ms.
 bash scripts/publish.sh win-x64
 
-# Needs no .NET runtime. Roughly 38 MB.
+# Needs no .NET runtime. Roughly 37 MB.
 SELF_CONTAINED=1 bash scripts/publish.sh win-x64
 ```
 
@@ -39,7 +39,13 @@ dotnet publish src/Coppice.Cli/Coppice.Cli.csproj -c Release -r win-x64 `
 ```
 
 For the self-contained variant, use `--self-contained true` and add
-`-p:EnableCompressionInSingleFile=true` (about 38 MB, and it needs no .NET runtime on the target).
+`-p:EnableCompressionInSingleFile=true` (about 37 MB, and it needs no .NET runtime on the target).
+
+The desktop shell is a separate, self-contained artifact:
+
+```bash
+bash scripts/publish-gui.sh win-x64   # ~47.7 MB, includes the .NET runtime and Avalonia
+```
 
 ### dotnet tool
 
@@ -47,7 +53,7 @@ Pack it from a checkout and install the package:
 
 ```bash
 dotnet pack src/Coppice.Cli/Coppice.Cli.csproj -c Release -o artifacts/packages
-dotnet tool install --global --add-source ./artifacts/packages coppice --version 0.4.0-dev
+dotnet tool install --global --add-source ./artifacts/packages coppice --version 0.4.0-rc.1
 coppice --version
 ```
 
@@ -93,8 +99,26 @@ If the plan says "Nothing to propose", the usual causes are:
 
 `config.toml` lives at the platform config path (`coppice doctor` prints the resolved locations; the
 `tui` roots screen shows the same path). T-049 reads `projects.roots`, `policy.*` and `exclude.*`;
-explicit `--projects`, `--policy` and `--keep-latest` flags win. `[pins]` and `[quarantine]` are parsed
-but not applied until T-052.
+explicit `--projects`, `--policy` and `--keep-latest` flags win. T-052 applies `[pins]` and
+`[quarantine]` retention; a pin still passes the denylist and fingerprint gates.
+
+Opt-in user manifests are also config-driven:
+
+```toml
+[ecosystems]
+trust_user_manifests = true
+# directory = "/path/to/ecosystems"   # default: <config-dir>/ecosystems
+```
+
+A valid `*.toml` dropped there is scanned as a Review-tier `{name}/{version}` cache without a rebuild;
+invalid manifests surface diagnostics. The default is off.
+
+## History and completions
+
+```bash
+coppice history --limit 12        # per-ecosystem growth across stored snapshots
+coppice completions bash          # also powershell, zsh, fish
+```
 
 ## Non-interactive use
 
@@ -127,4 +151,4 @@ permanently.
 
 - [Safety model](safety.md) — why the default is dry-run, what the gateway checks, what a restore verifies.
 - [Command reference](commands.md) — every flag, exit code and confirmation rule.
-- [v0.3 release notes](release-notes-v0.3.md) — the withdrawn 0.3.0 candidate and what it did not prove.
+- [v0.4 release notes](release-notes-v0.4.md) — the release candidate and its open human gates.

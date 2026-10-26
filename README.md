@@ -9,7 +9,7 @@ A native, plugin-based toolchain and cache cleaner for polyglot developers.
 | | |
 |---|---|
 | **License** | Apache-2.0 |
-| **Status** | v0.4.0-dev — GUI & time (in development; 0.3.0 was never tagged — see ADR-017) |
+| **Status** | v0.4.0-rc.1 — release candidate (human gates open; 0.3.0 was never tagged — see ADR-017) |
 | **Platforms** | Windows, Linux, macOS (x64/arm64) |
 | **Runtime** | .NET 10. No container runtime, daemon, service or middleman |
 
@@ -40,7 +40,7 @@ install or the command path.
 bash scripts/publish.sh win-x64        # or linux-x64, linux-arm64, osx-x64, osx-arm64, win-arm64
 ```
 
-**Self-contained single file** (needs no .NET installed; ~38 MB):
+**Self-contained single file** (needs no .NET installed; ~37 MB):
 
 ```bash
 SELF_CONTAINED=1 bash scripts/publish.sh win-x64
@@ -50,7 +50,7 @@ SELF_CONTAINED=1 bash scripts/publish.sh win-x64
 
 ```bash
 dotnet pack src/Coppice.Cli/Coppice.Cli.csproj -c Release -o artifacts/packages
-dotnet tool install --global --add-source ./artifacts/packages coppice --version 0.4.0-dev
+dotnet tool install --global --add-source ./artifacts/packages coppice --version 0.4.0-rc.1
 ```
 
 The publish directory contains the binary, `README.md`, `CHANGELOG.md`, `LICENSE`, `NOTICE` and
@@ -95,19 +95,24 @@ Full flags, confirmation rules, state locations and exit codes:
 Exit codes: `0` success · `1` runtime error · `2` usage error · `3` safety abort · `4` partial or
 cancelled apply.
 
-## GUI (v0.4, in progress)
+## GUI (v0.4 release candidate)
 
 The Avalonia desktop shell runs the same services as the CLI:
 
 ```bash
 dotnet run --project src/Coppice.Gui
+# or publish the self-contained artifact (~47.7 MB):
+bash scripts/publish-gui.sh win-x64
 ```
 
-The T-050 shell is the committed GUI: Setup/Scan/Dashboard, Items, Plan review, Apply, Quarantine,
-Roots and Problems, with the retention picker's **Keep newest only** policy (the same as
+The T-050 shell has Setup/Scan/Dashboard, Items, Plan review, Apply, Quarantine, Roots, Problems and
+History, with the retention picker's **Keep newest only** policy (the same as
 `coppice plan --keep-latest 1`). Preferences go through `IShellPreferencesStore`; the headless tests
 cover the full scan → plan → apply → restore flow and a measured scan cancel. T-040 adds the pin
-editor and per-candidate provenance; the GUI is not part of a release artifact yet (T-043).
+editor and per-candidate provenance: the Roots screen shows via/detail, owner, size, ambiguity and
+the never-elevate guidance, and a pin is validated through the same denylist/fingerprint path before
+it is written. The GUI is a release candidate, not part of the CLI artifact; `scripts/publish-gui.sh`
+builds it.
 
 ## Safety model
 
@@ -128,20 +133,20 @@ editor and per-candidate provenance; the GUI is not part of a release artifact y
 The reasoning, including the escape suite and the kill-and-resume test: [docs/safety.md](./docs/safety.md)
 and [SDD/06-safety-model.md](./SDD/06-safety-model.md).
 
-## Scope in v0.4 (development)
+## Scope in v0.4 (release candidate)
 
 - **Ecosystems.** The .NET, Go, Rust and Node profiles are wired into `scan`/`plan`/`apply`
   (T-048). A new manifest + plugin is one registry entry; T-056 removed the last ecosystem special
-  case.
+  case, and T-057 adds opt-in user manifests.
 - **Config.** T-049 reads `config.toml` for project roots, policy and exclusions; explicit flags
-  still win. T-052 adds pins and quarantine settings.
+  still win. T-052 applies pins and quarantine retention, and T-057 adds opt-in user manifests.
 - **No `clean`, `report` or `config` verbs.** The report exporters, including the self-contained HTML
-  exporter, exist; the verbs are not wired. `completions` is implemented.
-- **GUI.** The T-039 shell is committed. T-050 finishes the parked redesign and the 200 ms cancel
-  measurement; T-040 adds the pin editor.
+  exporter, exist; the verbs are not wired. `completions` and `history` are implemented.
+- **GUI.** The T-050 shell and T-040 pin editor are the release-candidate GUI. The manual
+  screen-reader pass is still open.
 - **Not yet verified on a clean machine.** The publish path and both install variants are exercised,
-  but a full install → apply pass on a fresh VM has not been completed. The manual screen-reader pass
-  is also outstanding.
+  but the fresh-VM install → apply pass and the dogfood reports are human gates recorded in
+  `SDD/AGENDA.md`. This is why the release is `0.4.0-rc.1`, not a tag.
 
 ## Documentation
 
@@ -150,6 +155,7 @@ and [SDD/06-safety-model.md](./SDD/06-safety-model.md).
 | [docs/quickstart.md](./docs/quickstart.md) | Install, first run, non-interactive use, state locations |
 | [docs/safety.md](./docs/safety.md) | Why the default is dry-run; gateway, quarantine, audit, limits |
 | [docs/commands.md](./docs/commands.md) | Every verb, flag, confirmation rule and exit code |
+| [docs/release-notes-v0.4.md](./docs/release-notes-v0.4.md) | The 0.4.0 release candidate and its open human gates |
 | [docs/release-notes-v0.3.md](./docs/release-notes-v0.3.md) | The withdrawn 0.3.0 candidate and what it did not prove |
 | [SDD/AGENDA.md](./SDD/AGENDA.md) | The live work queue, card status and human gates |
 | [SDD/ORCHESTRATION.md](./SDD/ORCHESTRATION.md) | Multi-agent roles, ownership, merge protocol and gates |
