@@ -60,7 +60,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-039 Avalonia shell | `done` except box 4 human | boxes 1/2 closed by T-050; box 4 is `blocked-human` |
 | T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
 | T-040 GUI pin editor | `done` | `110dc84`; run `40311141426` green on all six cells; pin/roots tests |
-| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; runs `40313952759` (six cells) and `40436348264` (post-fix final strict dry run with linux-x64 install smoke: exact 18 archives + nupkg + sidecars, both CLI variants version-checked, screenshots inside the SC/GUI archives, no Release; `gh release create` is tag-only and unexercised); CLI 2.21/36.74 MB, GUI 47.72 MB on win-x64; tag withheld until the human gates |
+| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate rebuilt on the sizing fix (`cce22ec`); build `40440689716` green on six cells; strict dry run `40441451129` (linux-x64 install smoke: exact 18 archives + nupkg + sidecars, checksums verified, both CLI variants version-checked, screenshots inside the SC/GUI archives, no Release; `gh release create` is tag-only and unexercised); CLI 2.31/38.52 MB, GUI 50.04 MB on win-x64; tag withheld until the human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
 | T-058 real-volume scan perf | `done` | ReferenceIndex fix: 190.6 s → 15.6–17.7 s on 3,152/19.4 GB; 30k/30 GB real-filesystem fixture 9.965 s; regression test; NFR-04 met |
@@ -84,10 +84,10 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 ### Clean-environment E2E (supporting evidence, not a fresh VM)
 
 2026-10-26: the published `coppice-0.4.0-rc.1-win-x64-self-contained.zip` (first from release dry run
-`40329677179`, then the post-fix artifact from `40436348264`) was run on this Windows host with
-`PATH` reduced to `C:\Windows\System32;C:\Windows` (no `dotnet`), and with `LOCALAPPDATA`,
-`NUGET_PACKAGES` and the bundle-extract directory isolated to a scratch tree holding a two-version
-cache and one project:
+`40329677179`, then the post-fix artifacts from `40436348264` and the final `40441451129`) was run on
+this Windows host with `PATH` reduced to `C:\Windows\System32;C:\Windows` (no `dotnet`), and with
+`LOCALAPPDATA`, `NUGET_PACKAGES`, `HOME`/`USERPROFILE`, `GOPATH` and the bundle-extract directory
+isolated to a scratch tree holding a two-version cache and one project:
 
 - `version` → `coppice 0.4.0-rc.1`
 - `doctor --json` → all four tools absent; `nuget-packages` valid and cleanable via `NUGET_PACKAGES`
@@ -101,8 +101,10 @@ This proves the self-contained artifact needs no .NET runtime on `PATH` and that
 read → plan → move → restore path works on isolated state. It is **not** the T-038/T-043 fresh-VM
 gate: the host is not fresh, and the missing .NET is a scrubbed `PATH`, not an absent runtime. The
 post-fix artifact repeated the run with plan `pln_2c2e7ee880e2` and quarantine `7c5fcb692391454b`.
+The final sizing-fix artifact repeated it with plan `pln_131fd9a28810` (1 step, 18 B; 5.0.0
+Referenced, 1.0.0 Unreferenced) and quarantine `7f07622df115f223`, restored byte-identical.
 The release workflow's linux-x64 install smoke covers the same pipeline for the published Linux
-archive on every release run (run `40436348264`).
+archive on every release run (run `40441451129`).
 
 ## Release sign-off procedure (human)
 
@@ -180,6 +182,9 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-27 | Final post-fix clean E2E | SC zip from `40436348264`; plan `pln_2c2e7ee880e2`, quarantine `7c5fcb692391454b`, audit 2 records intact |
 | 2026-10-27 | Final evidence run green after one egress rerun | run `40437717014` on `a81e88e`: six cells and license green; the egress unit/canary TRX shows 814/814 passed, the architecture test host flaked once with no TRX, and the rerun was green. A tag run must not be taken from a red egress job; rerun a test-host-only flake and confirm the canary TRX |
 | 2026-10-27 | Real roots sizes fixed | Sizing moved outside the probe budget; NuGet 21,212,383,881 B; Go module cache 455,406,626 B; npm cache 247,680,793 B; go-bin 54,646,784 B; the .NET group still reports its remaining probe-budget locations |
+| 2026-10-27 | rc.1 rebuilt on the sizing fix | commit `cce22ec`; build run `40440689716` green on all six cells, egress and license |
+| 2026-10-27 | Final rc.1 strict dry run | run `40441451129` on `cce22ec`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; `sha256sum -c` all OK; fd 2,201,915–2,313,489 B, sc 37,314,216–40,206,238 B, gui 47,277,342–52,048,220 B; SC/GUI `docs/images`; no Release |
+| 2026-10-27 | Final rc.1 clean E2E | SC zip from `40441451129`, scrubbed PATH and isolated home/state; version `0.4.0-rc.1`; scan 5.0.0 Referenced / 1.0.0 Unreferenced; plan `pln_131fd9a28810` (1 step, 18 B); quarantine `7f07622df115f223`; byte-identical restore; audit 2 records intact |
 | 2026-10-27 | Final strict dry run | run `40430172079` on `6a9c4de`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; fd/sc `0.4.0-rc.1`; SC/GUI archives contain `docs/images`; no Release |
 | 2026-10-27 | Final clean E2E | SC zip from `40430172079`, scrubbed PATH, isolated state; plan `pln_fb4fecbd898e`, quarantine `2fd884842a06fa8a`, audit 2 records intact |
 | 2026-10-27 | Final safety-build real scans | Go scratch: 1 Referenced / 25 Unreferenced in 12.1 s; owner cache: 3,179 items (3,152 .NET, 26 Go, 1 npm), 47 Referenced / 3,132 Unknown in 16.6 s; no apply |

@@ -69,9 +69,9 @@ required.
 
 | Artifact | Needs | Size |
 |---|---|---|
-| Framework-dependent single file | .NET 10 runtime | 2.19 MB |
-| Self-contained single file | nothing else | 36.73 MB |
-| Self-contained Avalonia GUI | nothing else | 47.71 MB |
+| Framework-dependent single file | .NET 10 runtime | 2.21 MB |
+| Self-contained single file | nothing else | 36.74 MB |
+| Self-contained Avalonia GUI | nothing else | 47.72 MB |
 | `dotnet tool` from a local pack | .NET 10 SDK/runtime | package |
 
 ```bash
@@ -99,15 +99,15 @@ The GUI has no size budget; 47.72 MB is the recorded candidate. The CLI budgets 
 50 MB self-contained) are enforced by `scripts/publish.sh`. Cold start is from the pre-T-059 local build;
 the resolver/doctor changes are not on the startup path.
 
-A strict release dry run (run `40436348264` on `02b3e96`) built every variant on all six RIDs, ran the
+A strict release dry run (run `40441451129` on `cce22ec`) built every variant on all six RIDs, ran the
 published linux-x64 self-contained archive through scan→plan→apply→restore→audit with no .NET on
-`PATH`, and refused to create a Release off-tag. Ranges across those cells:
+`PATH`, verified all checksums, and refused to create a Release off-tag. Ranges across those cells:
 
 | Variant | Bytes | Size |
 |---|---:|---:|
 | CLI framework-dependent | 2,201,915–2,313,489 | 2.10–2.21 MB |
-| CLI self-contained | 37,314,168–40,206,185 | 35.58–38.34 MB |
-| GUI self-contained | 47,277,287–52,048,156 | 45.08–49.63 MB |
+| CLI self-contained | 37,314,216–40,206,238 | 35.59–38.34 MB |
+| GUI self-contained | 47,277,342–52,048,220 | 45.09–49.64 MB |
 
 ## Known limits and open human gates
 
@@ -135,21 +135,28 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
 ## Verification
 
 - `dotnet build -warnaserror -c Release`
-- 1,371 unit tests + 33 architecture tests (local, after the last code card)
+- 1,384 unit tests + 33 architecture tests (local, after the last code card)
 - 12 golden reports, `dotnet format --verify-no-changes`, the 100k-case escape suite
-- Six-cell GitHub Actions run per code card; the release candidate's run is `40313952759` on `4bb1b7e`
-- Strict release dry run `40436348264` on `02b3e96`: exact 18 archive names plus the `dotnet tool`
-  package and checksums, both CLI variants version-checked, screenshots inside the SC and GUI
-  archives, the linux-x64 install smoke green, and no Release created off-tag
+- Six-cell GitHub Actions run per code card; the release candidate's final build is `40440689716` on
+  `cce22ec`
+- Strict release dry run `40441451129` on `cce22ec`: exact 18 archive names plus the `dotnet tool`
+  package and checksums (all verified with `sha256sum -c`), both CLI variants version-checked,
+  screenshots inside the SC and GUI archives, the linux-x64 install smoke green, and no Release
+  created off-tag
+- Final size table (framework-dependent / self-contained / GUI bytes): linux-x64 2,201,915 /
+  40,206,238 / 49,708,998; linux-arm64 2,227,263 / 38,069,631 / 47,277,342; win-x64 2,313,489 /
+  38,524,767 / 50,037,800; win-arm64 2,293,013 / 37,825,430 / 48,787,552; osx-x64 2,228,312 /
+  39,591,608 / 52,048,220; osx-arm64 2,294,424 / 37,314,216 / 49,773,756
 - Linux install smoke: the published linux-x64 self-contained archive ran scan→plan→apply→restore→audit
   with no .NET on `PATH`; the publish job depends on it
 - Release-artifact tamper checks: corrupted quarantine refused with `ContentAltered`; edited or
   deleted audit records fail `audit verify`; a trailing torn append is flagged as INFO, not a chain break
 - Build run `40333340213`: six cells green, and the egress canary TRX is archived as `egress-results`
-  (the upload silently skipped the dot-prefixed directory before `c97ae9c`)
-- Clean-environment E2E: the rc.1 self-contained binary, `PATH` without .NET, isolated state, completed
-  the full read → plan → move → restore → audit path; repeated against the post-fix archive from
-  `40436348264` (plan `pln_2c2e7ee880e2`)
+  (the upload silently skipped the dot-prefixed directory before `c97ae9c`); the final build
+  `40440689716` also archives the canary TRX
+- Clean-environment E2E: the rc.1 self-contained binary, `PATH` without .NET, isolated home and state,
+  completed the full read → plan → move → restore → audit path; repeated against the final archive
+  from `40441451129` (plan `pln_131fd9a28810`, quarantine `7f07622df115f223`, byte-identical restore)
 - T-058: real 3,152-package scan 190.6 s → 15.6–17.7 s; 1,372 unit, 33 architecture, 12 goldens,
   53 escape tests at 100k
 - Real-machine polyglot: doctor dotnet/go/node in 4.33–4.94 s; scan 3,179 items (3,152 .NET, 26 Go, 1 npm)
