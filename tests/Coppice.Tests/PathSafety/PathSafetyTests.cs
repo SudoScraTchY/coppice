@@ -84,10 +84,39 @@ public sealed class PathCanonicalizerTests
     }
 
     [Theory]
-    [InlineData("foo.", CanonicalFailure.TrailingDotOrSpace, OperatingSystemKind.Windows)]
-    [InlineData("foo ", CanonicalFailure.TrailingDotOrSpace, OperatingSystemKind.Windows)]
-    [InlineData("/a/b.c:", CanonicalFailure.AdsNotation, OperatingSystemKind.Windows)]
-    [InlineData("name:stream", CanonicalFailure.AdsNotation, OperatingSystemKind.Windows)]
+    [InlineData(@"\Windows")]
+    [InlineData("relative\\path")]
+    [InlineData("C:relative")]
+    [InlineData(@"\\server\share")]
+    public void A_non_local_or_drive_less_windows_path_is_refused(string input)
+    {
+        // A single leading separator is drive-relative and UNC is a network path: neither may be
+        // accepted as a local cache root, or it can slip past the drive-qualified denylist rules.
+        CanonicalResult result = PathCanonicalizer.Canonicalize(input, OperatingSystemKind.Windows);
+        Assert.False(result.Ok);
+        Assert.Equal(CanonicalFailure.NotAbsolute, result.Reason);
+    }
+
+    [Fact]
+    public void A_posix_relative_path_is_refused()
+    {
+        CanonicalResult result = PathCanonicalizer.Canonicalize("relative/path", OperatingSystemKind.Linux);
+        Assert.False(result.Ok);
+        Assert.Equal(CanonicalFailure.NotAbsolute, result.Reason);
+    }
+
+    [Fact]
+    public void A_windows_drive_root_is_denied()
+    {
+        Assert.True(Denylist.IsDenied(@"C:\", OperatingSystemKind.Windows));
+        Assert.Equal(@"{0}:\", Denylist.WhichDenied(@"C:\", OperatingSystemKind.Windows));
+    }
+
+    [Theory]
+    [InlineData(@"C:\foo.", CanonicalFailure.TrailingDotOrSpace, OperatingSystemKind.Windows)]
+    [InlineData(@"C:\foo ", CanonicalFailure.TrailingDotOrSpace, OperatingSystemKind.Windows)]
+    [InlineData(@"C:\a\b.c:", CanonicalFailure.AdsNotation, OperatingSystemKind.Windows)]
+    [InlineData(@"C:\name:stream", CanonicalFailure.AdsNotation, OperatingSystemKind.Windows)]
     public void Canonicalize_refuses_names_windows_cannot_represent(string input, CanonicalFailure expected, OperatingSystemKind os)
     {
         var result = PathCanonicalizer.Canonicalize(input, os);

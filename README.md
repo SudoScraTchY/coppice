@@ -139,6 +139,8 @@ builds it.
 - **One gateway.** Every path move passes a single executor: entry allowlist, containment in a
   validated root, denylist floor, lock probe, optional strict mtime check, and full TOCTOU
   re-verification immediately before the rename.
+- **Absolute local roots only.** Relative, drive-relative (`\Windows`) and UNC Windows paths are
+  refused canonicalization, and a drive root is denied; the denylist floor covers Windows drive roots.
 - **Quarantine, not deletion.** `apply` renames into `<cache-volume>/.coppice/quarantine/` on the same
   volume. Restore re-checks the content hash, containment and occupancy before moving anything back.
   Only the separately confirmed `quarantine prune` deletes permanently.

@@ -184,6 +184,16 @@ public sealed class DoctorService
         catch
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            // A group fault is about to leave this method: cancel the shared budget and observe the
+            // concurrently-running detection task so it neither hangs nor raises an unobserved
+            // exception after the CTS is disposed.
+            budget.Cancel();
+            _ = detectionTask.ContinueWith(
+                static task => _ = task.Exception,
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
             throw;
         }
 

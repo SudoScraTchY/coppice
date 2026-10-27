@@ -56,6 +56,7 @@ public static class Denylist
     [
         // ---- Container rules: the path itself only ----
         new("/", DenyScope.Container, Posix),
+        new("{0}:\\", DenyScope.Container, Win),
         new("{home}", DenyScope.Container, All),
         new("/home", DenyScope.Container, [OperatingSystemKind.Linux]),
         new("/Users", DenyScope.Container, [OperatingSystemKind.MacOS]),

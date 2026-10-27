@@ -123,6 +123,9 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
 - The .NET probe group can still use the whole 4 s doctor budget on a loaded machine, so its remaining
   tool/workload locations may be reported budget-exhausted. The primary NuGet cache and the other
   ecosystems are still resolved; the skip is an issue, not silence.
+- `roots` measures every non-denied candidate, including one whose fingerprint failed (T-051's
+  every-candidate-with-size behavior). `MeasureSize` is synchronous, so a huge rejected root can make
+  `roots` slow; `doctor` and `scan` do not size roots.
 - The GUI visual layer is compiled and its view models are headless-tested; Avalonia rendering is not
   part of the automated gate.
 - `clean`, `report` and `config` verbs remain planned; the HTML exporter and completions are the
@@ -154,6 +157,9 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
 - Go reference path: a scratch Go project referencing a cached module marks it Referenced; 25 other
   cached Go modules are Unreferenced; the read-only plan proposes 25 Go steps (340,140,377 B), not
   applied
+- Safety pre-review: drive-less/relative/UNC Windows paths refused; drive roots denied;
+  `npm_config_cache` wins over `LOCALAPPDATA`; 1,382 unit, 33 architecture, 12 goldens, 53 escape at
+  100k
 - `SDD/AGENDA.md` records the other run ids
 - `scripts/publish.sh` FD/SC and `scripts/publish-gui.sh` size measurements
 

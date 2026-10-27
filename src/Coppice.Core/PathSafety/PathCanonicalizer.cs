@@ -33,6 +33,9 @@ public enum CanonicalFailure
 
     /// <summary>Path contains a null byte.</summary>
     NullByte,
+
+    /// <summary>The input is not absolute for the requested OS (relative, drive-relative or UNC).</summary>
+    NotAbsolute,
 }
 
 /// <summary>
@@ -55,6 +58,17 @@ public static class PathCanonicalizer
         if (path.Contains('\0'))
         {
             return CanonicalResult.Fail(CanonicalFailure.NullByte, "Path contains a null byte.");
+        }
+
+        // A deletion root must be drive-qualified on Windows and slash-rooted on POSIX. A single
+        // leading separator on Windows is drive-relative (`\Windows` means the current drive's
+        // Windows), and UNC paths are not local cache roots; treating either as absolute would let
+        // it slip past the drive-qualified denylist rules.
+        if (!IsRooted(path, os))
+        {
+            return CanonicalResult.Fail(
+                CanonicalFailure.NotAbsolute,
+                $"Path '{path}' is not an absolute local path for {os}.");
         }
 
         // The canonical form is always prefix-free. Two spellings of the same path must produce
@@ -169,14 +183,19 @@ public static class PathCanonicalizer
             return false;
         }
 
-        if (path[0] is '/' or '\\')
+        if (os == OperatingSystemKind.Windows)
         {
-            return true;
+            // Drive-qualified only. A single leading separator is drive-relative, and UNC paths are
+            // not local cache roots, so neither is "rooted" for a deletion decision.
+            var probe = path.StartsWith(@"\\?\", StringComparison.Ordinal) ? path[4..] : path;
+            return probe.Length >= 3
+                && char.IsAsciiLetter(probe[0])
+                && probe[1] == ':'
+                && (probe[2] == '\\' || probe[2] == '/');
         }
 
-        // Drive-qualified, with or without the \\?\\ long-path prefix.
-        var probe = path.StartsWith(@"\\?\\", StringComparison.Ordinal) ? path[4..] : path;
-        return probe.Length >= 3 && char.IsAsciiLetter(probe[0]) && probe[1] == ':' && (probe[2] == '\\' || probe[2] == '/');
+        // POSIX: a backslash is an ordinary filename character, not a separator.
+        return path[0] == '/';
     }
 
     /// <summary>

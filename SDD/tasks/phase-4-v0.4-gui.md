@@ -321,3 +321,8 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - [x] Real-machine doctor reports dotnet/go/node; real scan inventories .NET + Go + npm
 
 > Opened 2026-10-27 from a real-machine dogfood run. Before: doctor/roots reported only dotnet and "probe budget exhausted"; scan 3,152 items, all .NET. After: doctor reports dotnet/go/node in 4.94 s (<5 s), and scan inventories 3,152 .NET + 26 Go + 1 npm item in 21.0 s. The .NET group can still exhaust the budget on its remaining tool/workload locations; that is reported as an issue, not a silent skip.
+>
+> 2026-10-27 safety pre-review: drive-less/relative/UNC Windows paths are refused and the denylist
+> covers a drive root (T-028); `npm_config_cache` is ordered after `LOCALAPPDATA` so a user-configured
+> cache wins; a group fault cancels the budget and observes the detection task. 1,382 unit, 33
+> architecture, 12 goldens, 53 escape at 100k; real doctor dotnet/go/node in 4.33 s.

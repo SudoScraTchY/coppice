@@ -101,6 +101,9 @@ GUI and requirement closure.
   dropped from 190.6 s to 15.6–17.7 s with identical verdicts; a 30,000-item / 30 GB real-filesystem
   fixture scans in 9.965 s, meeting NFR-04's target. A regression test pins one read per project per
   scan.
+- T-028/T-059: Windows roots must be drive-qualified. Relative, drive-relative (`\Windows`) and UNC
+  paths are refused with `NotAbsolute`, and a `{0}:\` container rule denies drive roots. The npm env
+  rung now lets a user-set `npm_config_cache` win over `LOCALAPPDATA`.
 - T-059: doctor probes now run per ecosystem in concurrent groups; a slow .NET probe no longer starves
   Go/Node/Rust. Bare Windows drive paths from `go env` keep their drive letter, and npm's Windows cache
   resolves from `%LOCALAPPDATA%\npm-cache`. On the owner's machine doctor reports dotnet/go/node and

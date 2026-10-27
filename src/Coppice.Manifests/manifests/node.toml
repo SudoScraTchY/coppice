@@ -36,10 +36,11 @@ resolve = "first"
 # by a real capture on Windows (tests/Coppice.Tests/recorded/npm-config-get-cache.Windows.txt).
 sources = [
   { via = "tool", run = "npm config get cache", parse = "line" },
-  { via = "env", var = "npm_config_cache" },
-  # npm's Windows default is %LOCALAPPDATA%\npm-cache. LOCALAPPDATA is unset on Linux/macOS, so that
-  # source simply does not answer there and the ~/.npm default remains authoritative.
+  # The env rung holds one source: list LOCALAPPDATA first so a user-set npm_config_cache (listed
+  # next) replaces it when present. On Windows, npm's default is %LOCALAPPDATA%\npm-cache; on
+  # Linux/macOS LOCALAPPDATA is unset, so the ~/.npm default remains authoritative.
   { via = "env", var = "LOCALAPPDATA", path = "npm-cache" },
+  { via = "env", var = "npm_config_cache" },
   { via = "default", path = "{home}/.npm" },
 ]
 

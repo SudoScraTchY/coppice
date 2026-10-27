@@ -502,4 +502,23 @@ public class NodeEcosystemTests
         Assert.Equal(CoreDomain.ResolvedVia.Env, root.Root.Via);
         Assert.Equal(@"C:\Users\dev\AppData\Local\npm-cache", root.Root.RealPath);
     }
+
+    [Fact]
+    public void A_user_configured_npm_cache_wins_over_LOCALAPPDATA()
+    {
+        var fs = new Support.FakeFileSystem(OperatingSystemKind.Windows);
+        fs.AddDirectory(@"C:\custom\npm-cache\_cacache");
+        fs.AddDirectory(@"C:\Users\dev\AppData\Local\npm-cache\_cacache");
+        var env = new Support.FakeEnvironment(OperatingSystemKind.Windows)
+            .With("LOCALAPPDATA", @"C:\Users\dev\AppData\Local")
+            .With("npm_config_cache", @"C:\custom\npm-cache");
+        var registry = EcosystemRegistry.CreateDefault(fs);
+        var doctor = new DoctorService(fs, new Support.FakeProcessRunner(), env, env.OS, registry);
+
+        DoctorReport report = doctor.Inspect();
+
+        RootReport root = Assert.Single(report.Roots, r => r.LocationId == "npm-cache");
+        Assert.Equal(CoreDomain.ResolvedVia.Env, root.Root.Via);
+        Assert.Equal(@"C:\custom\npm-cache", root.Root.RealPath);
+    }
 }
