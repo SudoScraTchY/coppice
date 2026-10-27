@@ -60,7 +60,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-039 Avalonia shell | `done` except box 4 human | boxes 1/2 closed by T-050; box 4 is `blocked-human` |
 | T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
 | T-040 GUI pin editor | `done` | `110dc84`; run `40311141426` green on all six cells; pin/roots tests |
-| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; runs `40313952759` (six cells) and `40424662335` (post-T-059 strict dry run with linux-x64 install smoke: exact 18 archives + nupkg + sidecars, both CLI variants version-checked, screenshots inside the SC/GUI archives, no Release; `gh release create` is tag-only and unexercised); CLI 2.21/36.74 MB, GUI 47.72 MB on win-x64; tag withheld until the human gates |
+| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; runs `40313952759` (six cells) and `40430172079` (post-T-028 final strict dry run with linux-x64 install smoke: exact 18 archives + nupkg + sidecars, both CLI variants version-checked, screenshots inside the SC/GUI archives, no Release; `gh release create` is tag-only and unexercised); CLI 2.21/36.74 MB, GUI 47.72 MB on win-x64; tag withheld until the human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
 | T-058 real-volume scan perf | `done` | ReferenceIndex fix: 190.6 s → 15.6–17.7 s on 3,152/19.4 GB; 30k/30 GB real-filesystem fixture 9.965 s; regression test; NFR-04 met |
@@ -84,7 +84,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 ### Clean-environment E2E (supporting evidence, not a fresh VM)
 
 2026-10-26: the published `coppice-0.4.0-rc.1-win-x64-self-contained.zip` (first from release dry run
-`40329677179`, then the post-T-059 artifact from `40424662335`) was run on this Windows host with
+`40329677179`, then the post-T-028 artifact from `40430172079`) was run on this Windows host with
 `PATH` reduced to `C:\Windows\System32;C:\Windows` (no `dotnet`), and with `LOCALAPPDATA`,
 `NUGET_PACKAGES` and the bundle-extract directory isolated to a scratch tree holding a two-version
 cache and one project:
@@ -100,9 +100,9 @@ cache and one project:
 This proves the self-contained artifact needs no .NET runtime on `PATH` and that the full
 read → plan → move → restore path works on isolated state. It is **not** the T-038/T-043 fresh-VM
 gate: the host is not fresh, and the missing .NET is a scrubbed `PATH`, not an absent runtime. The
-post-T-059 artifact repeated the run with plan `pln_581227d19afc` and quarantine `86541223733f5c26`.
+post-T-028 artifact repeated the run with plan `pln_fb4fecbd898e` and quarantine `2fd884842a06fa8a`.
 The release workflow's linux-x64 install smoke covers the same pipeline for the published Linux
-archive on every release run (run `40424662335`).
+archive on every release run (run `40430172079`).
 
 ## Release sign-off procedure (human)
 
@@ -175,6 +175,8 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-27 | Post-T-059 clean E2E | SC zip from `40424662335`, scrubbed PATH, isolated state; plan `pln_581227d19afc`, quarantine `86541223733f5c26`, audit 2 records intact |
 | 2026-10-27 | Dogfood report 2/5 (Go, owner machine, automated) | scratch Go project references `github.com/fatih/structtag v1.2.0`; scan 3,179 items, 1 Referenced / 25 Unreferenced Go; read-only plan `pln_69146caf2213` proposes 25 Go steps (340,140,377 B), not applied. Caveat: the project root was the scratch project only, so the other real Go modules would be protected by the owner's actual project roots. |
 | 2026-10-27 | Safety pre-review fixes | Drive-less/relative/UNC Windows paths refused (`NotAbsolute`); `{0}:\` denylist rule; `npm_config_cache` precedence; detection task observed on group fault; 1,382 unit, 33 architecture, 12 goldens, 53 escape at 100k; real doctor dotnet/go/node in 4.33 s |
+| 2026-10-27 | Final strict dry run | run `40430172079` on `6a9c4de`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; fd/sc `0.4.0-rc.1`; SC/GUI archives contain `docs/images`; no Release |
+| 2026-10-27 | Final clean E2E | SC zip from `40430172079`, scrubbed PATH, isolated state; plan `pln_fb4fecbd898e`, quarantine `2fd884842a06fa8a`, audit 2 records intact |
 | 2026-10-27 | Dogfood report 1/5 (owner machine, automated) | scoped to the owner's machine, not an independent user: rc.1 SC binary; 46 Referenced, 3,106 Unknown, 0 Unreferenced; `plan` correctly proposes nothing (0 candidates); finding T-058 |
 | 2026-10-26 | Clean-environment rc.1 E2E (not a fresh VM) | self-contained zip, scrubbed PATH, isolated state; version→doctor→scan→plan→apply→restore→audit verify; details in the section above |
 | 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |
