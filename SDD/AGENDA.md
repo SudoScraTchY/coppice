@@ -68,7 +68,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-057 FR-23 user manifests | `done` | `b0f1871` + `346a460`; runs `40309220254`, `40311675742` green |
 | T-036 TUI screens | `blocked-human` | box 4 screen-reader smoke pass |
 | T-038 v0.3 release docs | `blocked-human` | box 2 fresh-VM install; 0.3.0 itself withdrawn |
-| T-019 v0.1 release + dogfood | `blocked-human` | 1/5 automated owner-machine report (2026-10-27); 4 more human reports |
+| T-019 v0.1 release + dogfood | `blocked-human` | 2/5 automated owner-machine reports (2026-10-27: .NET; Go scratch project); 3 more human reports |
 | T-013 .NET health checks | `done` | `0e34bc4`; boxes ticked with `NetHealthCheckerTests` (30 cases) and `ReadOnlyAuditTests` |
 
 ## Human-only gates
@@ -173,6 +173,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-27 | Real-machine polyglot discovery fixed | T-059: per-ecosystem probe groups; bare Windows drive paths; npm LOCALAPPDATA default; real doctor dotnet/go/node in 4.94 s; real scan 3,152 .NET + 26 Go + 1 npm in 21.0 s; 1,375 tests, 33 architecture, 12 goldens, 53 escape at 100k |
 | 2026-10-27 | Post-T-059 strict dry run | run `40424662335` on `e5c98ea`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; fd/sc `0.4.0-rc.1`; SC/GUI archives contain `docs/images`; no Release |
 | 2026-10-27 | Post-T-059 clean E2E | SC zip from `40424662335`, scrubbed PATH, isolated state; plan `pln_581227d19afc`, quarantine `86541223733f5c26`, audit 2 records intact |
+| 2026-10-27 | Dogfood report 2/5 (Go, owner machine, automated) | scratch Go project references `github.com/fatih/structtag v1.2.0`; scan 3,179 items, 1 Referenced / 25 Unreferenced Go; read-only plan `pln_69146caf2213` proposes 25 Go steps (340,140,377 B), not applied. Caveat: the project root was the scratch project only, so the other real Go modules would be protected by the owner's actual project roots. |
 | 2026-10-27 | Dogfood report 1/5 (owner machine, automated) | scoped to the owner's machine, not an independent user: rc.1 SC binary; 46 Referenced, 3,106 Unknown, 0 Unreferenced; `plan` correctly proposes nothing (0 candidates); finding T-058 |
 | 2026-10-26 | Clean-environment rc.1 E2E (not a fresh VM) | self-contained zip, scrubbed PATH, isolated state; version→doctor→scan→plan→apply→restore→audit verify; details in the section above |
 | 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |

@@ -257,6 +257,11 @@ Exit criteria per 12-roadmap.
 > T-048 landed as `5db9c3f`; run `40287715101` is green on all six cells. The facts, explicit
 > allowlists and production registry are in `EcosystemScanTests`/`EcosystemDoctorTests`. T-056 owns
 > the remaining `"dotnet"` onboarding branch and the Application architecture pin.
+>
+> 2026-10-27: on the real Go cache, a scratch Go project referencing `github.com/fatih/structtag v1.2.0`
+> is marked Referenced; the other 25 cached Go modules are Unreferenced and a read-only plan proposes
+> 25 Go steps (340,140,377 B). Not applied: the project root was the scratch project only, so the
+> owner's real Go projects would protect the rest.
 
 ### T-049 · Read config.toml in the commands
 **Refs** FR-22, FR-19, 07-cli-tui · **Depends** T-029 · **Effort** M
