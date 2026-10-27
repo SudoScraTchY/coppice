@@ -21,8 +21,10 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > T-039: T-050 closed box 1 with `GuiFlowEndToEndTests` (the real ScanCommand → ApplyCommand →
 > RestoreSelectedCommand flow over fake ports) and box 2 with `GuiScanCancelTests` (19.3 ms from
 > cancel to `IsBusy == false`, bound 200 ms; the doctor phase is T-056's measured path). The
-> equality test compares the GUI policy's plan with the CLI `--keep-latest 1` plan. Box 4 (screen
-> reader) remains `blocked-human`; the pin editor and settings screen are T-040 work.
+> equality test compares the GUI policy's plan with the CLI `--keep-latest 1` plan. An automated
+> AXAML audit (2026-10-27) finds an `AutomationProperties.Name` or visible text on every interactive
+> control in all ten views, so there is no known unlabeled-control defect for the human pass to hit.
+> Box 4 (screen reader) remains `blocked-human`; the pin editor and settings screen are T-040 work.
 
 ### T-040 · GUI pin editor + resolution transparency
 **Refs** 08-gui principles 3–4 · **Depends** T-039 · **Effort** M
@@ -99,8 +101,9 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > earlier `40399283405` dry run was extracted and launched; the current GUI is name-checked and packaged.
 > A scrubbed-PATH E2E of the final candidate completed the full pipeline with plan
 > `pln_0f7580ff1171` and quarantine `7ac2c0c0353574a8`. The final GUI archive was extracted and
-> launched (window titled "Coppice - harvest what regrows"); the SC/GUI archives carry `docs/images`.
-> The fresh-VM gate and the other human gates remain open.
+> launched with .NET removed from `PATH` (window titled "Coppice - harvest what regrows"); the SC/GUI
+> archives carry `docs/images`. The Linux smoke transcript shows scan→plan→apply→restore→audit with
+> 2 audit records. The fresh-VM gate and the other human gates remain open.
 
 > T-043 prepared `0.4.0-rc.1`, not a tag. Run `40313952759` is green on all six cells; the final
 > candidate is run `40449319990` on `ba63550`. The CLI is 2.20–2.32 MB framework-dependent /
