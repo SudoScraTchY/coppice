@@ -101,6 +101,9 @@ GUI and requirement closure.
   dropped from 190.6 s to 15.6–17.7 s with identical verdicts; a 30,000-item / 30 GB real-filesystem
   fixture scans in 9.965 s, meeting NFR-04's target. A regression test pins one read per project per
   scan.
+- T-051: `roots` measures sizes after every probe returns. Measuring the 21.2 GB NuGet root inside the
+  4 s probe window had cancelled the probes behind it, so `go-bin` and `npm-global` disappeared from the
+  table; they are now reported and sized.
 - T-028/T-059: Windows roots must be drive-qualified. Relative, drive-relative (`\Windows`) and UNC
   paths are refused with `NotAbsolute`, a `{0}:\` container rule denies drive roots without blocking
   their caches, and lowercase drives normalize. The npm env rung now lets a user-set

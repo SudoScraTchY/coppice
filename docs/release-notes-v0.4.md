@@ -154,6 +154,9 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
   53 escape tests at 100k
 - Real-machine polyglot: doctor dotnet/go/node in 4.33–4.94 s; scan 3,179 items (3,152 .NET, 26 Go, 1 npm)
   in 16.6–21.0 s; 1,382 unit, 33 architecture, 12 goldens, 53 escape at 100k
+- Real roots: sizes are measured after every probe returns, so the table now includes `go-bin`
+  (54.6 MB), the Go module cache (455 MB), the npm cache (248 MB) and the NuGet cache (21.2 GB) in
+  12.3 s; only the .NET tool-group budget still reports its remaining locations
 - Go reference path: a scratch Go project referencing a cached module marks it Referenced; 25 other
   cached Go modules are Unreferenced; the read-only plan proposes 25 Go steps (340,140,377 B), not
   applied

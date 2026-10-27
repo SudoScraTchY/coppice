@@ -149,6 +149,12 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 >
 > 2026-10-27: real-machine roots now include `go-mod-cache` (`C:\...`, via Tool), `npm-cache`
 > (`LOCALAPPDATA` Env) and the .NET cache; T-059 fixed the Go drive path and the npm default.
+>
+> 2026-10-27: sizing is now outside the probe budget. The first real `roots` run measured the
+> 21.2 GB NuGet root inside the 4 s probe window and cancelled the probes behind it, so `go-bin` and
+> `npm-global` vanished. After the split: NuGet 21,212,383,881 B; Go module cache 455,406,626 B; npm
+> cache 247,680,793 B; `go-bin` 54,646,784 B. The .NET group can still report a probe-budget issue
+> for its remaining tool/workload locations; that is reported, not silent.
 
 ### T-052 · FR-22: config pins and quarantine retention
 **Refs** FR-22, S-1 · **Depends** T-049, T-056 · **Effort** M · **Safety card**

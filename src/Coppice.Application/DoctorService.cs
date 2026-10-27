@@ -173,7 +173,7 @@ public sealed class DoctorService
         }, cancellationToken);
 
         Task<GroupReport>[] groupTasks = [.. groups.Select(group => Task.Run(
-            () => ProcessGroup(group, measureSizes, budget.Token, cancellationToken),
+            () => ProcessGroup(group, budget.Token, cancellationToken),
             cancellationToken))];
 
         GroupReport[] groupReports;
@@ -246,6 +246,21 @@ public sealed class DoctorService
             issues.Add("[ecosystems] detection budget exhausted; presence was not answered");
         }
 
+        // Sizing is deliberately OUTSIDE the probe budget. The `roots` verb measures whole caches,
+        // and the 21 GB NuGet root took longer than the 4 s budget: doing it inside the groups
+        // cancelled the probes still queued behind it (go-bin and npm-global vanished). Probing
+        // answers "which candidates exist"; sizing answers "how large are they" and is caller-
+        // cancellable. It cannot starve discovery.
+        if (measureSizes)
+        {
+            for (int i = 0; i < roots.Count; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                (ulong? size, string? sizeNote) = MeasureRoot(roots[i].Root, cancellationToken);
+                roots[i] = roots[i] with { Size = size, SizeNote = sizeNote };
+            }
+        }
+
         return new DoctorReport(_os, roots, issues, ecosystems)
         {
             Detection = detection,
@@ -256,11 +271,10 @@ public sealed class DoctorService
     /// <summary>
     /// Probes one ecosystem's locations sequentially, sharing the doctor's wall-clock budget with the
     /// other ecosystems. Grouping keeps a slow .NET tool from starving Go, Node and Rust, while root
-    /// and issue ordering stays deterministic in the caller.
+    /// and issue ordering stays deterministic in the caller. Sizing happens after every group returns.
     /// </summary>
     private GroupReport ProcessGroup(
         (EcosystemLocation Location, int Index)[] group,
-        bool measureSizes,
         CancellationToken budgetToken,
         CancellationToken callerToken)
     {
@@ -296,18 +310,14 @@ public sealed class DoctorService
 
             foreach (ResolvedRoot root in outcome.Roots)
             {
-                (ulong? size, string? sizeNote) = measureSizes
-                    ? MeasureRoot(root, callerToken)
-                    : (null, null);
-
                 roots.Add(new RootReport(
                     location.Id,
                     root,
                     FixHint(root),
                     location.EcosystemId,
                     location.Owner,
-                    size,
-                    sizeNote));
+                    null,
+                    null));
             }
 
             // A location that resolved to nothing at all still deserves a line: "no idea where
