@@ -60,7 +60,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-039 Avalonia shell | `done` except box 4 human | boxes 1/2 closed by T-050; box 4 is `blocked-human` |
 | T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
 | T-040 GUI pin editor | `done` | `110dc84`; run `40311141426` green on all six cells; pin/roots tests |
-| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; run `40313952759` (six cells) and `40416009642` (strict dry run **before T-059**); T-059 is landed and a fresh dry run is pending; CLI 2.19/36.74 MB, GUI 47.72 MB on win-x64; tag withheld until the human gates |
+| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate; runs `40313952759` (six cells) and `40424662335` (post-T-059 strict dry run with linux-x64 install smoke: exact 18 archives + nupkg + sidecars, both CLI variants version-checked, screenshots inside the SC/GUI archives, no Release; `gh release create` is tag-only and unexercised); CLI 2.21/36.74 MB, GUI 47.72 MB on win-x64; tag withheld until the human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
 | T-058 real-volume scan perf | `done` | ReferenceIndex fix: 190.6 s → 15.6–17.7 s on 3,152/19.4 GB; 30k/30 GB real-filesystem fixture 9.965 s; regression test; NFR-04 met |
@@ -84,7 +84,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 ### Clean-environment E2E (supporting evidence, not a fresh VM)
 
 2026-10-26: the published `coppice-0.4.0-rc.1-win-x64-self-contained.zip` (first from release dry run
-`40329677179`, then the post-T-058 artifact from `40411290645`) was run on this Windows host with
+`40329677179`, then the post-T-059 artifact from `40424662335`) was run on this Windows host with
 `PATH` reduced to `C:\Windows\System32;C:\Windows` (no `dotnet`), and with `LOCALAPPDATA`,
 `NUGET_PACKAGES` and the bundle-extract directory isolated to a scratch tree holding a two-version
 cache and one project:
@@ -100,9 +100,9 @@ cache and one project:
 This proves the self-contained artifact needs no .NET runtime on `PATH` and that the full
 read → plan → move → restore path works on isolated state. It is **not** the T-038/T-043 fresh-VM
 gate: the host is not fresh, and the missing .NET is a scrubbed `PATH`, not an absent runtime. The
-post-T-058 artifact repeated the run with plan `pln_a7fcaccdefed` and quarantine `bd1efaf68327f914`.
+post-T-059 artifact repeated the run with plan `pln_581227d19afc` and quarantine `86541223733f5c26`.
 The release workflow's linux-x64 install smoke covers the same pipeline for the published Linux
-archive on every release run (run `40416009642`).
+archive on every release run (run `40424662335`).
 
 ## Release sign-off procedure (human)
 
@@ -171,6 +171,8 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-27 | T-058 reference-index fix | `DotnetEcosystem.Resolve` builds one assets index per project set; the same 3,152-item cache is 17.7 s, then 15.6 s warm, and a 30k-item fixture is 9.8 s; verdicts unchanged; 1,372 unit, 33 architecture, 12 goldens, 53 escape at 100k |
 | 2026-10-27 | NFR-04 exact shape met | 30,000 items / 31,457,280,000 bytes on the real filesystem (1 MB sparse files) scanned in 9.965 s; T-058 done |
 | 2026-10-27 | Real-machine polyglot discovery fixed | T-059: per-ecosystem probe groups; bare Windows drive paths; npm LOCALAPPDATA default; real doctor dotnet/go/node in 4.94 s; real scan 3,152 .NET + 26 Go + 1 npm in 21.0 s; 1,375 tests, 33 architecture, 12 goldens, 53 escape at 100k |
+| 2026-10-27 | Post-T-059 strict dry run | run `40424662335` on `e5c98ea`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; fd/sc `0.4.0-rc.1`; SC/GUI archives contain `docs/images`; no Release |
+| 2026-10-27 | Post-T-059 clean E2E | SC zip from `40424662335`, scrubbed PATH, isolated state; plan `pln_581227d19afc`, quarantine `86541223733f5c26`, audit 2 records intact |
 | 2026-10-27 | Dogfood report 1/5 (owner machine, automated) | scoped to the owner's machine, not an independent user: rc.1 SC binary; 46 Referenced, 3,106 Unknown, 0 Unreferenced; `plan` correctly proposes nothing (0 candidates); finding T-058 |
 | 2026-10-26 | Clean-environment rc.1 E2E (not a fresh VM) | self-contained zip, scrubbed PATH, isolated state; version→doctor→scan→plan→apply→restore→audit verify; details in the section above |
 | 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |

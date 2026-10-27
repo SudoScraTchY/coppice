@@ -87,18 +87,18 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - [x] A release dry run produces 18 archives + the package, with no Release created off-tag — run `40329677179`; `gh release list` stayed empty
 - [x] GUI screenshots in README, taken from the running shell — `docs/images/gui-{dashboard,items,history}.png` from the rc.1 binary
 
-> The strict release dry run (`workflow_dispatch`) succeeded as run `40416009642` on `020431c`: all six
+> The strict release dry run (`workflow_dispatch`) succeeded as run `40424662335` on `e5c98ea`: all six
 > cells built FD, SC and GUI variants, the aggregate required the exact 18 archive names + the nupkg,
 > both CLI variants reported the release version, the SC/GUI archives contain the screenshots, the
 > linux-x64 install smoke ran the published SC archive with no .NET on `PATH` through
 > scan→plan→apply→restore→audit, and no GitHub Release was created off-tag. The `gh release create`
 > step itself is tag-only and therefore remains unexercised until sign-off; everything up to it ran.
-> Measured bytes: FD 2,196,283–2,305,297; SC 37,311,912–40,203,961; GUI 47,275,062–52,045,900. The
+> Measured bytes: FD 2,200,891–2,313,489; SC 37,313,880–40,205,890; GUI 47,276,992–52,047,868. The
 > rc.1 shell was launched from the published binary and the Dashboard, Evidence and History screens
 > were captured to `docs/images/`; both boxes are ticked in the evidence commit that adds them. The
-> GUI archive from the earlier `40399283405` dry run was extracted and launched; the post-fix GUI is
-> name-checked and packaged in these runs. A scrubbed-PATH E2E of the post-fix self-contained archive
-> completed the full pipeline. The fresh-VM gate and the other human gates remain open.
+> GUI archive from the earlier `40399283405` dry run was extracted and launched; the post-T-059 GUI is
+> name-checked and packaged. A scrubbed-PATH E2E of the post-T-059 self-contained archive completed the
+> full pipeline. The fresh-VM gate and the other human gates remain open.
 
 > T-043 prepared `0.4.0-rc.1`, not a tag. Run `40313952759` is green on all six cells. The CLI is
 > 2.19 MB framework-dependent / 36.73 MB self-contained; the GUI is 47.71 MB self-contained. The
