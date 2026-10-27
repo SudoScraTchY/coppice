@@ -177,6 +177,11 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 > `architecture.trx`. The solution-wide step let the second project overwrite the first's TRX, so a
 > failed unit run could sit behind a green architecture file (run `40432055888`). The release workflow
 > uses the same split.
+>
+> 2026-10-27: the egress job's architecture command flaked once (run `40437717014`): the unit/canary
+> TRX was 814/814 green, but no architecture TRX was written and the step failed; the rerun passed. A
+> test-host-only egress flake is rerun, never waived; a tag run needs the green egress job and the
+> canary TRX.
 
 ### T-019 · v0.1 release + dogfooding
 **Refs** NFR-11, 12-roadmap · **Depends** T-005…T-018 · **Effort** M
