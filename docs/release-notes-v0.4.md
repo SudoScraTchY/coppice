@@ -167,6 +167,9 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
 - Clean-environment E2E: the rc.1 self-contained binary, `PATH` without .NET, isolated home and state,
   completed the full read → plan → move → restore → audit path; repeated against the final archive
   from `40449838956` (plan `pln_0f7580ff1171`, quarantine `7ac2c0c0353574a8`, byte-identical restore)
+- The final GUI archive was extracted and launched: `coppice-gui.exe` opened a window titled
+  "Coppice - harvest what regrows"; the egress job logs `egress canary ran and passed` under the
+  Passed-only assertion
 - T-058: real 3,152-package scan 190.6 s → 15.6–17.7 s; 1,372 unit, 33 architecture, 12 goldens,
   53 escape tests at 100k
 - Real-machine polyglot: doctor dotnet/go/node in 4.33–4.94 s; scan 3,179 items (3,152 .NET, 26 Go, 1 npm)

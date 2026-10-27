@@ -98,8 +98,9 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > `docs/images/`; both boxes are ticked in the evidence commit that adds them. The GUI archive from the
 > earlier `40399283405` dry run was extracted and launched; the current GUI is name-checked and packaged.
 > A scrubbed-PATH E2E of the final candidate completed the full pipeline with plan
-> `pln_0f7580ff1171` and quarantine `7ac2c0c0353574a8`. The fresh-VM gate and the other human gates
-> remain open.
+> `pln_0f7580ff1171` and quarantine `7ac2c0c0353574a8`. The final GUI archive was extracted and
+> launched (window titled "Coppice - harvest what regrows"); the SC/GUI archives carry `docs/images`.
+> The fresh-VM gate and the other human gates remain open.
 
 > T-043 prepared `0.4.0-rc.1`, not a tag. Run `40313952759` is green on all six cells; the final
 > candidate is run `40449319990` on `ba63550`. The CLI is 2.20–2.32 MB framework-dependent /
