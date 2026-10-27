@@ -78,6 +78,47 @@ public sealed class DoctorBudgetTests
             $"doctor took {stopwatch.Elapsed.TotalMilliseconds:F0} ms with a 500 ms probe budget");
     }
 
+    [Fact]
+    public void A_group_fault_surfaces_without_leaking_the_detection_task()
+    {
+        var fs = new FakeFileSystem(OperatingSystemKind.Linux);
+        var env = new FakeEnvironment(OperatingSystemKind.Linux);
+        var registry = EcosystemRegistry.CreateDefault(fs);
+        var doctor = new DoctorService(
+            fs,
+            new ThrowingRunner(),
+            env,
+            env.OS,
+            registry,
+            probeBudget: TimeSpan.FromSeconds(1));
+
+        // The fault must reach the caller (not be swallowed), while the concurrently running
+        // detection task is observed by the group-fault path instead of leaking.
+        Assert.Throws<NotSupportedException>(() => doctor.Inspect());
+    }
+
+    private sealed class ThrowingRunner : IProcessRunner
+    {
+        public Task<ProcessResult> RunAsync(
+            ProcessRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            if (request.FileName == "go")
+            {
+                throw new NotSupportedException("synthetic group fault");
+            }
+
+            return Task.FromResult(new ProcessResult
+            {
+                ExitCode = 0,
+                StandardOutput = "/not/a/cache",
+                ResolvedFileName = request.FileName,
+            });
+        }
+    }
+
     private sealed class SlowDotnetRunner : IProcessRunner
     {
         public ConcurrentBag<string> Calls { get; } = [];

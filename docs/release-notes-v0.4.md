@@ -157,9 +157,9 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
 - Go reference path: a scratch Go project referencing a cached module marks it Referenced; 25 other
   cached Go modules are Unreferenced; the read-only plan proposes 25 Go steps (340,140,377 B), not
   applied
-- Safety pre-review: drive-less/relative/UNC Windows paths refused; drive roots denied;
-  `npm_config_cache` wins over `LOCALAPPDATA`; 1,382 unit, 33 architecture, 12 goldens, 53 escape at
-  100k
+- Safety pre-review: drive-less/relative/UNC Windows paths refused; drive roots denied (container
+  scope, so their caches stay cleanable); `npm_config_cache` wins over `LOCALAPPDATA`; lowercase
+  drives normalize; 1,384 unit, 33 architecture, 12 goldens, 53 escape at 100k
 - `SDD/AGENDA.md` records the other run ids
 - `scripts/publish.sh` FD/SC and `scripts/publish-gui.sh` size measurements
 

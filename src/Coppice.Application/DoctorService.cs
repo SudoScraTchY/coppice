@@ -183,17 +183,17 @@ public sealed class DoctorService
         }
         catch
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             // A group fault is about to leave this method: cancel the shared budget and observe the
             // concurrently-running detection task so it neither hangs nor raises an unobserved
-            // exception after the CTS is disposed.
+            // exception after the CTS is disposed. Do this BEFORE caller-cancellation can rethrow,
+            // or a non-OCE detection fault would escape unobserved.
             budget.Cancel();
             _ = detectionTask.ContinueWith(
                 static task => _ = task.Exception,
                 CancellationToken.None,
                 TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
+            cancellationToken.ThrowIfCancellationRequested();
             throw;
         }
 

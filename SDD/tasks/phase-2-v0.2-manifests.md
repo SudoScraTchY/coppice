@@ -151,9 +151,13 @@ NuGet, but reusing it here needs measurement against a real pnpm store first.
 
 > 2026-10-27 safety pre-review follow-up: a Windows path must be drive-qualified. Drive-relative
 > (`\Windows`), relative and UNC inputs now fail canonicalization (`NotAbsolute`), and the denylist
-> gained a `{0}:\` container rule for drive roots. The escape suite still passes at 100k; 1,382 unit
+> gained a `{0}:\` container rule for drive roots. The escape suite still passes at 100k; 1,384 unit
 > and 33 architecture tests pass. `CanonicalFailure` gained `NotAbsolute`, a public Core addition
 > recorded for the ADR-011 freeze tracker.
+>
+> Post-fix review: lowercase drive letters canonicalize (`c:\cache` → `C:\cache`); the drive-root rule
+> is container-scope, so `C:\cache` stays cleanable; the detection observer is attached before a
+> caller-cancelled group fault can rethrow.
 
 ### T-029 · Config file
 **Refs** FR-22, 10-formats · **Depends** T-009 · **Effort** M

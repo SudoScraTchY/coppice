@@ -109,7 +109,19 @@ public sealed class PathCanonicalizerTests
     public void A_windows_drive_root_is_denied()
     {
         Assert.True(Denylist.IsDenied(@"C:\", OperatingSystemKind.Windows));
+        Assert.True(Denylist.IsDenied(@"c:\", OperatingSystemKind.Windows));
         Assert.Equal(@"{0}:\", Denylist.WhichDenied(@"C:\", OperatingSystemKind.Windows));
+
+        // Container scope: the drive root itself is protected, its caches are not.
+        Assert.False(Denylist.IsDenied(@"C:\cache", OperatingSystemKind.Windows));
+    }
+
+    [Fact]
+    public void A_lowercase_drive_is_canonicalized_not_refused()
+    {
+        CanonicalResult result = PathCanonicalizer.Canonicalize(@"c:\cache\pkg", OperatingSystemKind.Windows);
+        Assert.True(result.Ok);
+        Assert.Equal(@"C:\cache\pkg", result.Path);
     }
 
     [Theory]

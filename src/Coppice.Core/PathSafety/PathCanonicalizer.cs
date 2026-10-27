@@ -341,5 +341,5 @@ public static class PathCanonicalizer
     }
 
     private static bool IsDriveLetter(string segment) =>
-        segment.Length == 2 && segment[1] == ':' && segment[0] >= 'A' && segment[0] <= 'Z';
+        segment.Length == 2 && segment[1] == ':' && char.IsAsciiLetter(segment[0]);
 }
