@@ -89,8 +89,8 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 
 > The strict release dry run (`workflow_dispatch`) succeeded as run `40449838956` on `ba63550`: all six
 > cells built FD, SC and GUI variants, the aggregate required the exact 18 archive names + the nupkg,
-> both CLI variants reported the release version, the SC/GUI archives contain the screenshots, the
-> linux-x64 install smoke ran the published SC archive with no .NET on `PATH` through
+> `sha256sum -c` passed over all 19 checksums, both CLI variants reported the release version, the
+> SC/GUI archives contain the screenshots, the linux-x64 install smoke ran the published SC archive with no .NET on `PATH` through
 > scan→plan→apply→restore→audit, and no GitHub Release was created off-tag. The `gh release create` step
 > itself is tag-only and therefore remains unexercised until sign-off; everything up to it ran. Measured
 > bytes: FD 2,205,499–2,317,585; SC 37,315,816–40,207,825; GUI 47,278,816–52,049,692. The rc.1 shell was

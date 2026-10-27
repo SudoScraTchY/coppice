@@ -150,8 +150,9 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
 - Six-cell GitHub Actions run per code card; the release candidate's final build is `40449319990` on
   `ba63550`
 - Strict release dry run `40449838956` on `ba63550`: exact 18 archive names plus the `dotnet tool`
-  package and checksums, both CLI variants version-checked, screenshots inside the SC and GUI
-  archives, the linux-x64 install smoke green, and no Release created off-tag
+  package and checksums (all 19 verified with `sha256sum -c`), both CLI variants version-checked,
+  screenshots inside the SC and GUI archives, the linux-x64 install smoke green, and no Release
+  created off-tag
 - Final size table (framework-dependent / self-contained / GUI bytes): linux-x64 2,205,499 /
   40,207,825 / 49,710,472; linux-arm64 2,231,359 / 38,071,220 / 47,278,816; win-x64 2,317,585 /
   38,526,352 / 50,039,274; win-arm64 2,297,109 / 37,827,014 / 48,789,026; osx-x64 2,231,928 /
