@@ -23,7 +23,9 @@
   19.4 GB cache from 190.6 s to 15.6–17.7 s and a 30,000-item / 30 GB real-filesystem fixture to
   9.965 s, meeting NFR-04. T-059 made real-machine discovery work: per-ecosystem probe groups, Windows
   drive paths and npm's `LOCALAPPDATA` cache; the doctor now reports dotnet/go/node and the scan
-  inventories 3,152 .NET + 26 Go + 1 npm item in 21.0 s. The tag is withheld only for the human gates
+  inventories 3,152 .NET + 26 Go + 1 npm item in 21.0 s. An independent safety pre-review then found
+  two blockers in link resolution and the apply ordering; T-060 fixes them with regression tests and
+  rebuilds the candidate on `ba63550`. The tag is withheld only for the human gates
   (screen reader, fresh VM, dogfood, second safety reviewer). `v1.0` items are the only planning items.
 - **v1.0** — planning only. No distribution, docs-site or packaging work is in this goal.
 

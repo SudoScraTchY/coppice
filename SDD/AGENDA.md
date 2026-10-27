@@ -60,7 +60,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-039 Avalonia shell | `done` except box 4 human | boxes 1/2 closed by T-050; box 4 is `blocked-human` |
 | T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
 | T-040 GUI pin editor | `done` | `110dc84`; run `40311141426` green on all six cells; pin/roots tests |
-| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate rebuilt on the sizing fix (`cce22ec`); build `40440689716` green on six cells; strict dry run `40441451129` (linux-x64 install smoke: exact 18 archives + nupkg + sidecars, checksums verified, both CLI variants version-checked, screenshots inside the SC/GUI archives, no Release; `gh release create` is tag-only and unexercised); CLI 2.31/38.52 MB, GUI 50.04 MB on win-x64; tag withheld until the human gates |
+| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate rebuilt on the T-060 safety fixes (`ba63550`); build `40449319990` green on six cells; strict dry run `40449838956` (linux-x64 install smoke: exact 18 archives + nupkg + sidecars, both CLI variants version-checked, screenshots inside the SC/GUI archives, no Release; `gh release create` is tag-only and unexercised); CLI 2.32/38.53 MB, GUI 50.04 MB on win-x64; tag withheld until the human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
 | T-058 real-volume scan perf | `done` | ReferenceIndex fix: 190.6 s → 15.6–17.7 s on 3,152/19.4 GB; 30k/30 GB real-filesystem fixture 9.965 s; regression test; NFR-04 met |
@@ -84,10 +84,11 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 ### Clean-environment E2E (supporting evidence, not a fresh VM)
 
 2026-10-26: the published `coppice-0.4.0-rc.1-win-x64-self-contained.zip` (first from release dry run
-`40329677179`, then the post-fix artifacts from `40436348264` and the final `40441451129`) was run on
-this Windows host with `PATH` reduced to `C:\Windows\System32;C:\Windows` (no `dotnet`), and with
-`LOCALAPPDATA`, `NUGET_PACKAGES`, `HOME`/`USERPROFILE`, `GOPATH` and the bundle-extract directory
-isolated to a scratch tree holding a two-version cache and one project:
+`40329677179`, then the post-fix artifacts from `40436348264`, `40441451129`, the safety build
+`40448167148` and the final candidate `40449838956`) was run on this Windows host with `PATH` reduced to
+`C:\Windows\System32;C:\Windows` (no `dotnet`), and with `LOCALAPPDATA`, `NUGET_PACKAGES`,
+`HOME`/`USERPROFILE`, `GOPATH` and the bundle-extract directory isolated to a scratch tree holding a
+two-version cache and one project:
 
 - `version` → `coppice 0.4.0-rc.1`
 - `doctor --json` → all four tools absent; `nuget-packages` valid and cleanable via `NUGET_PACKAGES`
@@ -103,8 +104,11 @@ gate: the host is not fresh, and the missing .NET is a scrubbed `PATH`, not an a
 post-fix artifact repeated the run with plan `pln_2c2e7ee880e2` and quarantine `7c5fcb692391454b`.
 The final sizing-fix artifact repeated it with plan `pln_131fd9a28810` (1 step, 18 B; 5.0.0
 Referenced, 1.0.0 Unreferenced) and quarantine `7f07622df115f223`, restored byte-identical.
+The T-060 safety-fix artifact repeated it with plan `pln_f7fd9d6e348b` and quarantine
+`39ea84da25a323d3`, restored byte-identical, audit 2 records. The final candidate repeated it with
+plan `pln_0f7580ff1171` and quarantine `7ac2c0c0353574a8`, also byte-identical.
 The release workflow's linux-x64 install smoke covers the same pipeline for the published Linux
-archive on every release run (run `40441451129`).
+archive on every release run (run `40449838956`).
 
 ## Release sign-off procedure (human)
 
@@ -190,6 +194,12 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-27 | Final rc.1 clean E2E | SC zip from `40441451129`, scrubbed PATH and isolated home/state; version `0.4.0-rc.1`; scan 5.0.0 Referenced / 1.0.0 Unreferenced; plan `pln_131fd9a28810` (1 step, 18 B); quarantine `7f07622df115f223`; byte-identical restore; audit 2 records intact |
 | 2026-10-27 | Independent safety pre-review (advisory) | read-only review of `264ed34` returned FAIL: relative/nested link-target escapes and a hash-length TOCTOU window (blockers), missing home denylist floor, cancellable restore bookkeeping, tokenless sizing (majors), egress NotExecuted (minor); long-path minor disproved by a real >260-char test. Not the human sign-off |
 | 2026-10-27 | T-060 safety fixes | Link targets resolve with true `..`/root-relative semantics and re-walk after re-rooting; hash before the final re-check; home passed into gateway/restore; audit before index delete and non-cancellable; tokenized `MeasureSize`; egress requires `outcome="Passed"`; 1,395 unit, 33 architecture, 12 goldens, 4 escape suites at 100k, format clean |
+| 2026-10-27 | Safety-fix build green | run `40447602900` on `3ef126a`: six cells, egress (Passed-only assertion) and license |
+| 2026-10-27 | Safety-fix strict dry run | run `40448167148` on `3ef126a`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; fd 2,204,475–2,317,585 B, sc 37,315,528–40,207,540 B, gui 47,278,641–52,049,516 B; SC/GUI `docs/images`; no Release |
+| 2026-10-27 | Safety-fix clean E2E | SC zip from `40448167148`, scrubbed PATH and isolated home/state; plan `pln_f7fd9d6e348b` (1 step, 18 B); quarantine `39ea84da25a323d3`; byte-identical restore; audit 2 records intact |
+| 2026-10-27 | Final candidate build green | run `40449319990` on `ba63550`: six cells, egress and license; includes the missing-audit report |
+| 2026-10-27 | Final candidate strict dry run | run `40449838956` on `ba63550`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; fd 2,205,499–2,317,585 B, sc 37,315,816–40,207,825 B, gui 47,278,816–52,049,692 B; SC/GUI `docs/images`; no Release |
+| 2026-10-27 | Final candidate clean E2E | SC zip from `40449838956`, scrubbed PATH and isolated home/state; plan `pln_0f7580ff1171` (1 step, 18 B); quarantine `7ac2c0c0353574a8`; byte-identical restore; audit 2 records intact |
 | 2026-10-27 | Final strict dry run | run `40430172079` on `6a9c4de`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; fd/sc `0.4.0-rc.1`; SC/GUI archives contain `docs/images`; no Release |
 | 2026-10-27 | Final clean E2E | SC zip from `40430172079`, scrubbed PATH, isolated state; plan `pln_fb4fecbd898e`, quarantine `2fd884842a06fa8a`, audit 2 records intact |
 | 2026-10-27 | Final safety-build real scans | Go scratch: 1 Referenced / 25 Unreferenced in 12.1 s; owner cache: 3,179 items (3,152 .NET, 26 Go, 1 npm), 47 Referenced / 3,132 Unknown in 16.6 s; no apply |

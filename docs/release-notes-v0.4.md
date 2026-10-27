@@ -96,7 +96,7 @@ to publish if the tag disagrees with `<Version>` in `Directory.Build.props` or i
 no green six-cell `build.yml` run. The current candidate has no GitHub Release; the commands above are
 the source path.
 
-## Measured artifacts (win-x64, 0.4.0-rc.1, post-fix)
+## Measured artifacts (win-x64 local build, 0.4.0-rc.1, post-fix)
 
 | Artifact | Exact bytes | Cold start |
 |---|---:|---|
@@ -114,9 +114,9 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
 
 | Variant | Bytes | Size |
 |---|---:|---:|
-| CLI framework-dependent | 2,201,915–2,313,489 | 2.10–2.21 MB |
-| CLI self-contained | 37,314,216–40,206,238 | 35.59–38.34 MB |
-| GUI self-contained | 47,277,342–52,048,220 | 45.09–49.64 MB |
+| CLI framework-dependent | 2,205,499–2,317,585 | 2.10–2.21 MB |
+| CLI self-contained | 37,315,816–40,207,825 | 35.59–38.34 MB |
+| GUI self-contained | 47,278,816–52,049,692 | 45.09–49.64 MB |
 
 ## Known limits and open human gates
 
@@ -147,26 +147,25 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
 - 1,395 unit tests + 33 architecture tests (local; the network canary is the 1,396th and only runs in the
   egress job)
 - 12 golden reports, `dotnet format --verify-no-changes`, the 100k-case escape suite
-- Six-cell GitHub Actions run per code card; the release candidate's final build is `40440689716` on
-  `cce22ec`
-- Strict release dry run `40441451129` on `cce22ec`: exact 18 archive names plus the `dotnet tool`
-  package and checksums (all verified with `sha256sum -c`), both CLI variants version-checked,
-  screenshots inside the SC and GUI archives, the linux-x64 install smoke green, and no Release
-  created off-tag
-- Final size table (framework-dependent / self-contained / GUI bytes): linux-x64 2,201,915 /
-  40,206,238 / 49,708,998; linux-arm64 2,227,263 / 38,069,631 / 47,277,342; win-x64 2,313,489 /
-  38,524,767 / 50,037,800; win-arm64 2,293,013 / 37,825,430 / 48,787,552; osx-x64 2,228,312 /
-  39,591,608 / 52,048,220; osx-arm64 2,294,424 / 37,314,216 / 49,773,756
+- Six-cell GitHub Actions run per code card; the release candidate's final build is `40449319990` on
+  `ba63550`
+- Strict release dry run `40449838956` on `ba63550`: exact 18 archive names plus the `dotnet tool`
+  package and checksums, both CLI variants version-checked, screenshots inside the SC and GUI
+  archives, the linux-x64 install smoke green, and no Release created off-tag
+- Final size table (framework-dependent / self-contained / GUI bytes): linux-x64 2,205,499 /
+  40,207,825 / 49,710,472; linux-arm64 2,231,359 / 38,071,220 / 47,278,816; win-x64 2,317,585 /
+  38,526,352 / 50,039,274; win-arm64 2,297,109 / 37,827,014 / 48,789,026; osx-x64 2,231,928 /
+  39,593,224 / 52,049,692; osx-arm64 2,298,552 / 37,315,816 / 49,775,244
 - Linux install smoke: the published linux-x64 self-contained archive ran scan→plan→apply→restore→audit
   with no .NET on `PATH`; the publish job depends on it
 - Release-artifact tamper checks: corrupted quarantine refused with `ContentAltered`; edited or
   deleted audit records fail `audit verify`; a trailing torn append is flagged as INFO, not a chain break
 - Build run `40333340213`: six cells green, and the egress canary TRX is archived as `egress-results`
   (the upload silently skipped the dot-prefixed directory before `c97ae9c`); the final build
-  `40440689716` also archives the canary TRX
+  `40449319990` also archives the canary TRX and refuses a `NotExecuted` result
 - Clean-environment E2E: the rc.1 self-contained binary, `PATH` without .NET, isolated home and state,
   completed the full read → plan → move → restore → audit path; repeated against the final archive
-  from `40441451129` (plan `pln_131fd9a28810`, quarantine `7f07622df115f223`, byte-identical restore)
+  from `40449838956` (plan `pln_0f7580ff1171`, quarantine `7ac2c0c0353574a8`, byte-identical restore)
 - T-058: real 3,152-package scan 190.6 s → 15.6–17.7 s; 1,372 unit, 33 architecture, 12 goldens,
   53 escape tests at 100k
 - Real-machine polyglot: doctor dotnet/go/node in 4.33–4.94 s; scan 3,179 items (3,152 .NET, 26 Go, 1 npm)

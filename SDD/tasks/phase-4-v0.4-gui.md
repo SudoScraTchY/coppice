@@ -87,22 +87,22 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - [x] A release dry run produces 18 archives + the package, with no Release created off-tag — run `40329677179`; `gh release list` stayed empty
 - [x] GUI screenshots in README, taken from the running shell — `docs/images/gui-{dashboard,items,history}.png` from the rc.1 binary
 
-> The strict release dry run (`workflow_dispatch`) succeeded as run `40448167148` on `3ef126a`: all six
+> The strict release dry run (`workflow_dispatch`) succeeded as run `40449838956` on `ba63550`: all six
 > cells built FD, SC and GUI variants, the aggregate required the exact 18 archive names + the nupkg,
 > both CLI variants reported the release version, the SC/GUI archives contain the screenshots, the
 > linux-x64 install smoke ran the published SC archive with no .NET on `PATH` through
 > scan→plan→apply→restore→audit, and no GitHub Release was created off-tag. The `gh release create` step
 > itself is tag-only and therefore remains unexercised until sign-off; everything up to it ran. Measured
-> bytes: FD 2,204,475–2,317,585; SC 37,315,528–40,207,540; GUI 47,278,641–52,049,516. The rc.1 shell was
+> bytes: FD 2,205,499–2,317,585; SC 37,315,816–40,207,825; GUI 47,278,816–52,049,692. The rc.1 shell was
 > launched from the published binary and the Dashboard, Evidence and History screens were captured to
 > `docs/images/`; both boxes are ticked in the evidence commit that adds them. The GUI archive from the
 > earlier `40399283405` dry run was extracted and launched; the current GUI is name-checked and packaged.
-> A scrubbed-PATH E2E of the final safety archive completed the full pipeline with plan
-> `pln_f7fd9d6e348b` and quarantine `39ea84da25a323d3`. The fresh-VM gate and the other human gates
+> A scrubbed-PATH E2E of the final candidate completed the full pipeline with plan
+> `pln_0f7580ff1171` and quarantine `7ac2c0c0353574a8`. The fresh-VM gate and the other human gates
 > remain open.
 
 > T-043 prepared `0.4.0-rc.1`, not a tag. Run `40313952759` is green on all six cells; the final
-> safety rebuild is run `40447602900` on `3ef126a`. The CLI is 2.20–2.32 MB framework-dependent /
+> candidate is run `40449319990` on `ba63550`. The CLI is 2.20–2.32 MB framework-dependent /
 > 37.32–40.21 MB self-contained; the GUI is 47.28–52.05 MB self-contained. The release remains
 > `blocked-human`: screen reader, fresh VM, dogfood reports and the second safety reviewer are still
 > open in `SDD/AGENDA.md`. Tagging before those are signed would repeat the 0.3.0 mistake.
