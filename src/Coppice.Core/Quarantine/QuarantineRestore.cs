@@ -154,7 +154,8 @@ public sealed class QuarantineRestore
         return RestoreResult.Ok(
             entry.OriginalPath,
             $"Restored '{entry.Name} {entry.Version}' to '{entry.OriginalPath}', but the audit line could not "
-                + "be written. The quarantine index entry was kept so `audit verify` can report the gap.");
+                + "be written. The quarantine index entry was kept so `audit verify` can report the gap.",
+            audited: false);
     }
 
     /// <summary>

@@ -103,7 +103,14 @@ public sealed record RestoreResult
 
     public string Message { get; }
 
-    public static RestoreResult Ok(string path, string message) => new(true, null, path, message);
+    /// <summary>
+    /// False when the item moved back but its audit line could not be written. The restore still
+    /// happened; the caller must not claim the mutation is in the log.
+    /// </summary>
+    public bool Audited { get; private init; } = true;
+
+    public static RestoreResult Ok(string path, string message, bool audited = true) =>
+        new(true, null, path, message) { Audited = audited };
 
     public static RestoreResult Fail(RestoreFailure failure, string message) => new(false, failure, null, message);
 }

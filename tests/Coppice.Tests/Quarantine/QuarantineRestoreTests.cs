@@ -128,6 +128,7 @@ public sealed class QuarantineRestoreTests
         RestoreResult result = await restore.RestoreAsync(entry.EntryId);
 
         Assert.True(result.Restored, result.Message);
+        Assert.False(result.Audited);
         Assert.Contains("audit line could not", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.True(fs.DirectoryExists(entry.OriginalPath));
 

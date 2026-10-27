@@ -398,7 +398,17 @@ public sealed class QuarantineCommand
         else if (result.Restored)
         {
             _console.WriteLine($"Restored {entry.Name} {entry.Version} to {result.RestoredPath}");
-            _console.WriteLine("The restore is in the audit log.");
+
+            if (result.Audited)
+            {
+                _console.WriteLine("The restore is in the audit log.");
+            }
+            else
+            {
+                _console.WriteError(
+                    "warning: the audit line could not be written; the quarantine index entry was kept so "
+                        + "`coppice audit verify` can report the gap.");
+            }
         }
         else
         {

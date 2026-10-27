@@ -87,25 +87,25 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - [x] A release dry run produces 18 archives + the package, with no Release created off-tag — run `40329677179`; `gh release list` stayed empty
 - [x] GUI screenshots in README, taken from the running shell — `docs/images/gui-{dashboard,items,history}.png` from the rc.1 binary
 
-> The strict release dry run (`workflow_dispatch`) succeeded as run `40441451129` on `cce22ec`: all six
+> The strict release dry run (`workflow_dispatch`) succeeded as run `40448167148` on `3ef126a`: all six
 > cells built FD, SC and GUI variants, the aggregate required the exact 18 archive names + the nupkg,
-> `sha256sum -c` passed over all 19 checksums, both CLI variants reported the release version, the
-> SC/GUI archives contain the screenshots, the linux-x64 install smoke ran the published SC archive
-> with no .NET on `PATH` through scan→plan→apply→restore→audit, and no GitHub Release was created
-> off-tag. The `gh release create` step itself is tag-only and therefore remains unexercised until
-> sign-off; everything up to it ran. Measured bytes: FD 2,201,915–2,313,489; SC
-> 37,314,216–40,206,238; GUI 47,277,342–52,048,220. The rc.1 shell was launched from the published
-> binary and the Dashboard, Evidence and History screens were captured to `docs/images/`; both boxes
-> are ticked in the evidence commit that adds them. The GUI archive from the earlier `40399283405`
-> dry run was extracted and launched; the current GUI is name-checked and packaged. A scrubbed-PATH
-> E2E of the final self-contained archive completed the full pipeline with plan `pln_131fd9a28810`
-> and quarantine `7f07622df115f223`. The fresh-VM gate and the other human gates remain open.
+> both CLI variants reported the release version, the SC/GUI archives contain the screenshots, the
+> linux-x64 install smoke ran the published SC archive with no .NET on `PATH` through
+> scan→plan→apply→restore→audit, and no GitHub Release was created off-tag. The `gh release create` step
+> itself is tag-only and therefore remains unexercised until sign-off; everything up to it ran. Measured
+> bytes: FD 2,204,475–2,317,585; SC 37,315,528–40,207,540; GUI 47,278,641–52,049,516. The rc.1 shell was
+> launched from the published binary and the Dashboard, Evidence and History screens were captured to
+> `docs/images/`; both boxes are ticked in the evidence commit that adds them. The GUI archive from the
+> earlier `40399283405` dry run was extracted and launched; the current GUI is name-checked and packaged.
+> A scrubbed-PATH E2E of the final safety archive completed the full pipeline with plan
+> `pln_f7fd9d6e348b` and quarantine `39ea84da25a323d3`. The fresh-VM gate and the other human gates
+> remain open.
 
 > T-043 prepared `0.4.0-rc.1`, not a tag. Run `40313952759` is green on all six cells; the final
-> rebuild is run `40440689716` on `cce22ec`. The CLI is 2.20–2.31 MB framework-dependent / 37.31–40.21 MB
-> self-contained; the GUI is 47.28–52.05 MB self-contained. The release remains `blocked-human`:
-> screen reader, fresh VM, dogfood reports and the second safety reviewer are still open in
-> `SDD/AGENDA.md`. Tagging before those are signed would repeat the 0.3.0 mistake.
+> safety rebuild is run `40447602900` on `3ef126a`. The CLI is 2.20–2.32 MB framework-dependent /
+> 37.32–40.21 MB self-contained; the GUI is 47.28–52.05 MB self-contained. The release remains
+> `blocked-human`: screen reader, fresh VM, dogfood reports and the second safety reviewer are still
+> open in `SDD/AGENDA.md`. Tagging before those are signed would repeat the 0.3.0 mistake.
 
 ### T-050 · Finish the parked Avalonia shell
 **Refs** 08-gui · **Depends** T-039, T-048 · **Effort** L
@@ -353,7 +353,8 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
   now passed from `ApplyWiring` into both.
 - **Restore/prune bookkeeping.** The index row was deleted before the audit line was attempted, with the
   caller's token; a cancellation or failed append erased the only trace. Audit is written first and both
-  steps are non-cancellable; a failed append keeps the row and says so in the result.
+  steps are non-cancellable; a failed append keeps the row, the result carries `Audited = false`, and the
+  CLI no longer prints "The restore is in the audit log" when that is not true.
 - **Sizing cancellation.** `MeasureSize` is tokenless while the 21 GB walk ran; it now takes a
   `CancellationToken`, checks per 256 entries, and `roots`/`scan` pass theirs. This is the one public
   port change: an optional parameter, so every in-tree caller compiles unchanged and both in-tree
