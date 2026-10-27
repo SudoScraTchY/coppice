@@ -87,11 +87,23 @@ jobs:
       # Category!=Network is load-bearing. This job's claim is that the shipped suite makes NO network
       # calls; the one test that deliberately dials out belongs to the egress job, which is where its
       # failure would mean something.
-      - name: Test
+      #
+      # The two projects are separate steps with separate TRX files. A solution-wide `dotnet test`
+      # runs both and the second overwrites the first's results file, which hides a unit-test failure
+      # behind a green architecture TRX — observed on run 40432055888.
+      - name: Test (unit)
         run: >
-          dotnet test --configuration Release --no-build
+          dotnet test tests/Coppice.Tests/Coppice.Tests.csproj
+          --configuration Release --no-build
           --filter 'Category!=Network'
-          --logger "trx;LogFileName=tests.trx"
+          --logger "trx;LogFileName=unit.trx"
+          --results-directory "${{ runner.temp }}/test-results"
+
+      - name: Test (architecture)
+        run: >
+          dotnet test tests/Coppice.ArchitectureTests/Coppice.ArchitectureTests.csproj
+          --configuration Release --no-build
+          --logger "trx;LogFileName=architecture.trx"
           --results-directory "${{ runner.temp }}/test-results"
 
       - name: Verify formatting

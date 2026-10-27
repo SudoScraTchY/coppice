@@ -172,6 +172,11 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
 > 2026-10-26: the egress TRX was not actually being archived — `upload-artifact` skips hidden
 > directories, and the results path is `.egress-results`. `c97ae9c` includes hidden files and fails
 > the upload when no TRX exists; run `40333340213` carries the `egress-results` artifact.
+>
+> 2026-10-27: unit and architecture tests now run as separate steps with `unit.trx` and
+> `architecture.trx`. The solution-wide step let the second project overwrite the first's TRX, so a
+> failed unit run could sit behind a green architecture file (run `40432055888`). The release workflow
+> uses the same split.
 
 ### T-019 · v0.1 release + dogfooding
 **Refs** NFR-11, 12-roadmap · **Depends** T-005…T-018 · **Effort** M

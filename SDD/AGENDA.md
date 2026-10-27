@@ -178,6 +178,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-27 | Final strict dry run | run `40430172079` on `6a9c4de`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; fd/sc `0.4.0-rc.1`; SC/GUI archives contain `docs/images`; no Release |
 | 2026-10-27 | Final clean E2E | SC zip from `40430172079`, scrubbed PATH, isolated state; plan `pln_fb4fecbd898e`, quarantine `2fd884842a06fa8a`, audit 2 records intact |
 | 2026-10-27 | Final safety-build real scans | Go scratch: 1 Referenced / 25 Unreferenced in 12.1 s; owner cache: 3,179 items (3,152 .NET, 26 Go, 1 npm), 47 Referenced / 3,132 Unknown in 16.6 s; no apply |
+| 2026-10-27 | CI TRX split | `build.yml` and `release.yml` run unit and architecture tests as separate steps with `unit.trx`/`architecture.trx`; the solution-wide step overwrote the first TRX, hiding the failed unit result on run `40432055888` |
 | 2026-10-27 | Dogfood report 1/5 (owner machine, automated) | scoped to the owner's machine, not an independent user: rc.1 SC binary; 46 Referenced, 3,106 Unknown, 0 Unreferenced; `plan` correctly proposes nothing (0 candidates); finding T-058 |
 | 2026-10-26 | Clean-environment rc.1 E2E (not a fresh VM) | self-contained zip, scrubbed PATH, isolated state; version→doctor→scan→plan→apply→restore→audit verify; details in the section above |
 | 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |

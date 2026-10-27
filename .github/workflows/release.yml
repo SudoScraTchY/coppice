@@ -148,11 +148,20 @@ jobs:
       - name: Build (warnings are errors)
         run: dotnet build -warnaserror --configuration Release --no-restore
 
-      - name: Test
+      # Separate steps and TRX files so one project's results cannot overwrite the other's.
+      - name: Test (unit)
         run: >
-          dotnet test --configuration Release --no-build
+          dotnet test tests/Coppice.Tests/Coppice.Tests.csproj
+          --configuration Release --no-build
           --filter 'Category!=Network'
-          --logger "trx;LogFileName=tests.trx"
+          --logger "trx;LogFileName=unit.trx"
+          --results-directory "${{ runner.temp }}/test-results"
+
+      - name: Test (architecture)
+        run: >
+          dotnet test tests/Coppice.ArchitectureTests/Coppice.ArchitectureTests.csproj
+          --configuration Release --no-build
+          --logger "trx;LogFileName=architecture.trx"
           --results-directory "${{ runner.temp }}/test-results"
 
       - name: Escape suite (property-based safety gate)
