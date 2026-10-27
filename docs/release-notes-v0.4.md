@@ -21,7 +21,7 @@ confirmed `quarantine prune`. Every mutation is appended to a hash-chained audit
 - **Real-machine discovery.** Probes run per ecosystem in concurrent groups, so a slow .NET tool cannot
   starve Go/Node/Rust; Windows drive-letter tool paths and npm's `%LOCALAPPDATA%\npm-cache` default are
   fixed. On the owner's machine the doctor reports dotnet/go/node and the scan inventories 3,152 .NET
-  + 26 Go + 1 npm item in 21.0 s.
+  + 26 Go + 1 npm item in 16.6–21.0 s.
 - **Every root candidate is visible.** `coppice roots` prints denied, not-found, fingerprint-failed,
   inactive and ambiguous candidates with via, role, validity, owner, declared/real paths and size.
   Only `Ok` active roots are cleanable.
@@ -152,8 +152,8 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
   `40430172079` (plan `pln_fb4fecbd898e`)
 - T-058: real 3,152-package scan 190.6 s → 15.6–17.7 s; 1,372 unit, 33 architecture, 12 goldens,
   53 escape tests at 100k
-- Real-machine polyglot: doctor dotnet/go/node in 4.94 s; scan 3,179 items (3,152 .NET, 26 Go, 1 npm)
-  in 21.0 s; 1,375 unit, 33 architecture, 12 goldens, 53 escape at 100k
+- Real-machine polyglot: doctor dotnet/go/node in 4.33–4.94 s; scan 3,179 items (3,152 .NET, 26 Go, 1 npm)
+  in 16.6–21.0 s; 1,382 unit, 33 architecture, 12 goldens, 53 escape at 100k
 - Go reference path: a scratch Go project referencing a cached module marks it Referenced; 25 other
   cached Go modules are Unreferenced; the read-only plan proposes 25 Go steps (340,140,377 B), not
   applied

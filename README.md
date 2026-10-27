@@ -170,7 +170,7 @@ and [SDD/06-safety-model.md](./SDD/06-safety-model.md).
   gates recorded in `SDD/AGENDA.md`; this is why the release is `0.4.0-rc.1`, not a tag.
 - **Scan performance:** NFR-04 is met on a real fixture: 30,000 items / 31,457,280,000 bytes in
   9.965 s; the real 3,152-package / 19.4 GB cache is 15.6–17.7 s after the T-058 reference-index fix.
-  A real all-ecosystem scan of 3,179 items (3,152 .NET, 26 Go, 1 npm) takes 21.0 s.
+  A real all-ecosystem scan of 3,179 items (3,152 .NET, 26 Go, 1 npm) takes 16.6–21.0 s.
 
 ## Documentation
 
