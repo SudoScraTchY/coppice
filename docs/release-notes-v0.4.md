@@ -87,27 +87,27 @@ to publish if the tag disagrees with `<Version>` in `Directory.Build.props` or i
 no green six-cell `build.yml` run. The current candidate has no GitHub Release; the commands above are
 the source path.
 
-## Measured artifacts (win-x64, 0.4.0-rc.1, post-T-028)
+## Measured artifacts (win-x64, 0.4.0-rc.1, post-fix)
 
 | Artifact | Exact bytes | Cold start |
 |---|---:|---|
 | `coppice.exe` framework-dependent | 2,313,489 | 80–99 ms |
-| `coppice.exe` self-contained | 38,524,700 | 121–427 ms (first run extracts) |
-| `coppice-gui.exe` self-contained | 50,037,738 | not measured (opens a window) |
+| `coppice.exe` self-contained | 38,524,712 | 121–427 ms (first run extracts) |
+| `coppice-gui.exe` self-contained | 50,037,745 | not measured (opens a window) |
 
 The GUI has no size budget; 47.72 MB is the recorded candidate. The CLI budgets (5 MB framework-dependent,
 50 MB self-contained) are enforced by `scripts/publish.sh`. Cold start is from the pre-T-059 local build;
 the resolver/doctor changes are not on the startup path.
 
-A strict release dry run (run `40430172079` on `6a9c4de`) built every variant on all six RIDs, ran the
+A strict release dry run (run `40436348264` on `02b3e96`) built every variant on all six RIDs, ran the
 published linux-x64 self-contained archive through scan→plan→apply→restore→audit with no .NET on
 `PATH`, and refused to create a Release off-tag. Ranges across those cells:
 
 | Variant | Bytes | Size |
 |---|---:|---:|
 | CLI framework-dependent | 2,201,915–2,313,489 | 2.10–2.21 MB |
-| CLI self-contained | 37,314,168–40,206,176 | 35.58–38.34 MB |
-| GUI self-contained | 47,277,280–52,048,156 | 45.08–49.63 MB |
+| CLI self-contained | 37,314,168–40,206,185 | 35.58–38.34 MB |
+| GUI self-contained | 47,277,287–52,048,156 | 45.08–49.63 MB |
 
 ## Known limits and open human gates
 
@@ -138,7 +138,7 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
 - 1,371 unit tests + 33 architecture tests (local, after the last code card)
 - 12 golden reports, `dotnet format --verify-no-changes`, the 100k-case escape suite
 - Six-cell GitHub Actions run per code card; the release candidate's run is `40313952759` on `4bb1b7e`
-- Strict release dry run `40430172079` on `6a9c4de`: exact 18 archive names plus the `dotnet tool`
+- Strict release dry run `40436348264` on `02b3e96`: exact 18 archive names plus the `dotnet tool`
   package and checksums, both CLI variants version-checked, screenshots inside the SC and GUI
   archives, the linux-x64 install smoke green, and no Release created off-tag
 - Linux install smoke: the published linux-x64 self-contained archive ran scan→plan→apply→restore→audit
@@ -148,8 +148,8 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
 - Build run `40333340213`: six cells green, and the egress canary TRX is archived as `egress-results`
   (the upload silently skipped the dot-prefixed directory before `c97ae9c`)
 - Clean-environment E2E: the rc.1 self-contained binary, `PATH` without .NET, isolated state, completed
-  the full read → plan → move → restore → audit path; repeated against the post-T-028 archive from
-  `40430172079` (plan `pln_fb4fecbd898e`)
+  the full read → plan → move → restore → audit path; repeated against the post-fix archive from
+  `40436348264` (plan `pln_2c2e7ee880e2`)
 - T-058: real 3,152-package scan 190.6 s → 15.6–17.7 s; 1,372 unit, 33 architecture, 12 goldens,
   53 escape tests at 100k
 - Real-machine polyglot: doctor dotnet/go/node in 4.33–4.94 s; scan 3,179 items (3,152 .NET, 26 Go, 1 npm)

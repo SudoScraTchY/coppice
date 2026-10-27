@@ -87,17 +87,17 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - [x] A release dry run produces 18 archives + the package, with no Release created off-tag — run `40329677179`; `gh release list` stayed empty
 - [x] GUI screenshots in README, taken from the running shell — `docs/images/gui-{dashboard,items,history}.png` from the rc.1 binary
 
-> The strict release dry run (`workflow_dispatch`) succeeded as run `40430172079` on `6a9c4de`: all six
+> The strict release dry run (`workflow_dispatch`) succeeded as run `40436348264` on `02b3e96`: all six
 > cells built FD, SC and GUI variants, the aggregate required the exact 18 archive names + the nupkg,
 > both CLI variants reported the release version, the SC/GUI archives contain the screenshots, the
 > linux-x64 install smoke ran the published SC archive with no .NET on `PATH` through
 > scan→plan→apply→restore→audit, and no GitHub Release was created off-tag. The `gh release create`
 > step itself is tag-only and therefore remains unexercised until sign-off; everything up to it ran.
-> Measured bytes: FD 2,201,915–2,313,489; SC 37,314,168–40,206,176; GUI 47,277,280–52,048,156. The
+> Measured bytes: FD 2,201,915–2,313,489; SC 37,314,168–40,206,185; GUI 47,277,287–52,048,156. The
 > rc.1 shell was launched from the published binary and the Dashboard, Evidence and History screens
 > were captured to `docs/images/`; both boxes are ticked in the evidence commit that adds them. The
 > GUI archive from the earlier `40399283405` dry run was extracted and launched; the current GUI is
-> name-checked and packaged. A scrubbed-PATH E2E of the post-T-028 self-contained archive completed the
+> name-checked and packaged. A scrubbed-PATH E2E of the post-fix self-contained archive completed the
 > full pipeline. The fresh-VM gate and the other human gates remain open.
 
 > T-043 prepared `0.4.0-rc.1`, not a tag. Run `40313952759` is green on all six cells. The CLI is
