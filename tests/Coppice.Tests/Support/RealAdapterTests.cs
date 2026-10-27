@@ -55,6 +55,38 @@ public sealed class RealAdapterTests : IDisposable
     }
 
     [Fact]
+    public void MeasureSize_honours_a_cancelled_token()
+    {
+        var fs = new PhysicalFileSystem();
+        string dir = Path.Combine(_root, "cancel-sized");
+        Directory.CreateDirectory(dir);
+        File.WriteAllBytes(Path.Combine(dir, "a.bin"), new byte[10]);
+
+        Assert.Throws<OperationCanceledException>(
+            () => fs.MeasureSize(dir, new CancellationToken(canceled: true)));
+    }
+
+    [Fact]
+    public void Paths_past_the_legacy_windows_limit_are_usable()
+    {
+        // E-8: a deep cache entry must be inventoried, not silently reported as missing. This runs the
+        // REAL adapter on the host; on Windows it proves whether the runtime/OS needs the \\?\ prefix.
+        var fs = new PhysicalFileSystem();
+        string deep = _root;
+        while (deep.Length < 320)
+        {
+            deep = Path.Combine(deep, new string('d', 20));
+        }
+
+        Directory.CreateDirectory(deep);
+        File.WriteAllText(Path.Combine(deep, "a.txt"), "deep");
+
+        Assert.True(fs.DirectoryExists(deep));
+        Assert.NotNull(fs.GetEntry(Path.Combine(deep, "a.txt")));
+        Assert.True(fs.MeasureSize(deep) >= 4);
+    }
+
+    [Fact]
     public void Enumeration_finds_nested_files()
     {
         var fs = new PhysicalFileSystem();

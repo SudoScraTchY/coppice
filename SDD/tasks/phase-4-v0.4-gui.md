@@ -335,3 +335,46 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > architecture, 12 goldens, 53 escape at 100k; real doctor dotnet/go/node in 4.33 s; the Go scratch
 > scan still holds 1 Referenced / 25 Unreferenced, and the owner cache scans 3,179 items in 16.6 s
 > on the final safety build.
+
+### T-060 · Safety pre-review findings (two blockers, three majors, one minor)
+**Refs** 06-safety-model, E-1, E-8, S-2, S-11, S-14 · **Depends** T-028, T-031, T-032, T-034 · **Effort** L · **Safety card**
+
+**Build**
+- **Link resolution.** `ResolveOne` combined a relative link target with `PathCanonicalizer.Combine`, whose
+  root-anchored `..` clamp turned `C:\cache\pkg -> ..\..\outside` into `C:\cache\outside` and passed
+  containment; and a link exposed only after re-rooting an ancestor was never examined. Link targets now
+  fold with true OS semantics (`CombineLinkTarget`: drive-qualified, root-relative, UNC-refusing,
+  clamp-at-root), and `Resolve` re-walks after every re-root until no link remains.
+- **TOCTOU.** The index record (size + content hash) was computed *after* the final re-check and before the
+  move, leaving a window as long as the hash. Measurement now happens before the re-check, and a second
+  containment check runs after the quarantine parent is created, immediately before the rename.
+- **Home denylist floor.** `ContainmentCheck` called the two-argument `Denylist.IsDenied`, so
+  `{home}\desktop|documents|downloads` never expanded at the gateway or restore. The home directory is
+  now passed from `ApplyWiring` into both.
+- **Restore/prune bookkeeping.** The index row was deleted before the audit line was attempted, with the
+  caller's token; a cancellation or failed append erased the only trace. Audit is written first and both
+  steps are non-cancellable; a failed append keeps the row and says so in the result.
+- **Sizing cancellation.** `MeasureSize` is tokenless while the 21 GB walk ran; it now takes a
+  `CancellationToken`, checks per 256 entries, and `roots`/`scan` pass theirs. This is the one public
+  port change: an optional parameter, so every in-tree caller compiles unchanged and both in-tree
+  implementers were updated.
+- **Egress gate.** The workflow grepped only for the canary's name, so a skipped test (NotExecuted) passed.
+  It now requires `outcome="Passed"`.
+- **Long paths.** A real >260-character path test proves the .NET 10 adapter reads it; `ToLongPathForm`
+  remains a canonicalization helper rather than a required I/O prefix.
+
+**Acceptance**
+- [x] Relative link targets (`..\..\outside`, `../../outside`, `\Windows`) are resolved, not clamped, and refused when they leave the root
+- [x] A link exposed only after re-rooting is resolved and refused; an inside junction remains contained
+- [x] A junction swapped in during the pre-hash fails the final re-check and nothing moves
+- [x] A path under `{home}\Desktop` is refused by the gateway's own floor
+- [x] A failed restore audit keeps the index row and reports the gap
+- [x] `MeasureSize` observes a cancelled token; a deep path is inventoried by the real adapter
+- [x] The egress job rejects a NotExecuted canary (tested against a real Passed TRX and a synthetic NotExecuted one)
+- [ ] Second safety-reviewer sign-off (human; this card joins the T-031/32/34/35/43/44/48/52/56/59 review)
+
+> Opened 2026-10-27 from an independent read-only pre-review of `264ed34`. The review returned FAIL with
+> two blockers (relative/nested link escape, hash-length TOCTOU window) and three majors (home floor,
+> restore bookkeeping, sizing cancellation); one minor (egress NotExecuted) was real, and the long-path
+> minor was disproved by a real >260-character test. All findings are fixed with regression tests. The
+> pre-review is advisory: it does **not** satisfy the human second-reviewer gate.

@@ -244,11 +244,11 @@ jobs:
             echo "::error::the egress run produced no results file"
             exit 1
           fi
-          if ! grep -q 'Egress_is_blocked_in_this_environment' "$results"; then
-            echo "::error::the egress canary did not run — a green egress job without it proves nothing"
+          if ! grep -q 'testName="[^"]*Egress_is_blocked_in_this_environment"[^>]*outcome="Passed"' "$results"; then
+            echo "::error::the egress canary did not run and pass — a skipped canary (NotExecuted) proves nothing"
             exit 1
           fi
-          echo "egress canary ran under unshare --net"
+          echo "egress canary ran and passed under unshare --net"
 
       - uses: actions/upload-artifact@v7
         if: always()

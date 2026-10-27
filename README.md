@@ -141,6 +141,9 @@ builds it.
   re-verification immediately before the rename.
 - **Absolute local roots only.** Relative, drive-relative (`\Windows`) and UNC Windows paths are
   refused canonicalization, and a drive root is denied; the denylist floor covers Windows drive roots.
+- **Links are resolved, not trusted.** Symlink and junction targets are folded with OS semantics,
+  including relative `..` climbs, root-relative Windows targets and chains where one link exposes the
+  next. Containment and the home denylist floor apply to the resolved path.
 - **Quarantine, not deletion.** `apply` renames into `<cache-volume>/.coppice/quarantine/` on the same
   volume. Restore re-checks the content hash, containment and occupancy before moving anything back.
   Only the separately confirmed `quarantine prune` deletes permanently.

@@ -1,3 +1,5 @@
+using Coppice.Core.Apply;
+using Coppice.Core.Audit;
 using Coppice.Core.Domain;
 using Coppice.Core.Gateway;
 using Coppice.Core.Quarantine;
@@ -107,6 +109,38 @@ public sealed class QuarantineRestoreTests
         // THE acceptance criterion: the tree at the original path hashes to what it did before the move.
         // Not "a directory exists" — a broken restore produces a directory with the wrong contents.
         Assert.Equal(hashBefore, QuarantineIndex.HashTree(fs, original));
+    }
+
+    [Fact]
+    public async Task A_failed_audit_append_keeps_the_index_row_so_verify_can_see_it()
+    {
+        // The content moved back, so the restore succeeded. Deleting the index row after a failed
+        // append would erase the only record of that mutation; keeping it leaves both sides visible.
+        (_, QuarantineIndex index, FakeFileSystem fs, _, _) = await QuarantineOneAsync();
+        QuarantineEntry entry = Assert.Single(await index.ListAsync());
+
+        var restore = new QuarantineRestore(
+            fs,
+            Win,
+            index,
+            new AuditLog(new FailingAppendLog(), new FixedClock()));
+
+        RestoreResult result = await restore.RestoreAsync(entry.EntryId);
+
+        Assert.True(result.Restored, result.Message);
+        Assert.Contains("audit line could not", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.True(fs.DirectoryExists(entry.OriginalPath));
+
+        QuarantineEntry kept = Assert.Single(await index.ListAsync());
+        Assert.Equal(entry.EntryId, kept.EntryId);
+    }
+
+    private sealed class FailingAppendLog : IAppendLog
+    {
+        public Task AppendLineAsync(string key, string line) =>
+            throw new System.IO.IOException("synthetic disk full");
+
+        public Task<string?> ReadAllTextAsync(string key) => Task.FromResult<string?>(null);
     }
 
     [Fact]

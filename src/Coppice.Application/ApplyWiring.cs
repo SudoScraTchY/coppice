@@ -52,7 +52,7 @@ public static class ApplyWiring
         ArgumentNullException.ThrowIfNull(clock);
 
         QuarantineServices quarantine = CreateQuarantine(fs, env, state, log, clock);
-        var gateway = new GatewayEngine(fs, env.OS, quarantine.Index, clock, runner, quarantine.Audit);
+        var gateway = new GatewayEngine(fs, env.OS, quarantine.Index, clock, runner, quarantine.Audit, env.HomeDirectory);
         var apply = new ApplyRunner(gateway, fs, log, quarantine.Index, clock, quarantine.Audit);
 
         return new ApplyServices(quarantine.Index, quarantine.Audit, gateway, apply);
@@ -77,7 +77,7 @@ public static class ApplyWiring
 
         var index = new QuarantineIndex(state);
         var audit = new AuditLog(log, clock);
-        var restore = new QuarantineRestore(fs, env.OS, index, audit, clock);
+        var restore = new QuarantineRestore(fs, env.OS, index, audit, clock, env.HomeDirectory);
 
         return new QuarantineServices(index, audit, restore);
     }

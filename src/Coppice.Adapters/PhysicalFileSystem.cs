@@ -212,8 +212,10 @@ public sealed class PhysicalFileSystem : IFileSystem
     /// Recursive size with hard-link de-duplication (FR-05). Each unique file identity is counted
     /// once, and links are never descended into twice.
     /// </summary>
-    public ulong MeasureSize(string path)
+    public ulong MeasureSize(string path, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         FileEntry? root = GetEntry(path);
         if (root is null)
         {
@@ -228,9 +230,17 @@ public sealed class PhysicalFileSystem : IFileSystem
         var countedIdentities = new HashSet<string>(StringComparer.Ordinal);
         var visitedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         ulong total = 0;
+        var seen = 0;
 
         foreach (FileEntry entry in EnumerateEntries(path, new EnumerationRequest { FollowLinks = false }))
         {
+            // A 20 GB cache walk must answer cancellation while it is walking, not after the whole
+            // root is measured. One check per 256 entries keeps the cost negligible.
+            if ((seen++ & 0xFF) == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
             // Coppice's own state directory is not cache content (T-032): a root that CONTAINS another
             // root's quarantine would otherwise size the quarantined bytes into its own items, and the
             // fingerprint would then move with every apply.

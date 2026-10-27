@@ -31,8 +31,10 @@ Every path deletion goes through one executor. Before a move it:
 
 1. matches the item against the location's entry allowlist (`nuget-packages` permits `*/*`);
 2. canonicalizes the path and proves it is contained by the validated root — a relative-path injection
-   cannot escape;
-3. applies the denylist floor (system directories, home roots and other roots are hard-blocked);
+   cannot escape, and symlink/junction targets are resolved with their real `..` semantics, re-walking
+   until no link remains so a link exposed by another link cannot hide an escape;
+3. applies the denylist floor (system directories, home roots and, using the caller's home,
+   Desktop/Documents/Downloads);
 4. refuses to remove the root itself;
 5. probes for a lock and skips a locked item rather than forcing it;
 6. in `--strict` mode, re-checks the item's recorded path, size and mtime;

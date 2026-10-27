@@ -26,13 +26,15 @@ public sealed class QuarantineRestore
     private readonly QuarantineIndex _index;
     private readonly AuditLog? _audit;
     private readonly IClock _clock;
+    private readonly string? _home;
 
     public QuarantineRestore(
         IFileSystem fs,
         OperatingSystemKind os,
         QuarantineIndex index,
         AuditLog? audit = null,
-        IClock? clock = null)
+        IClock? clock = null,
+        string? homeDirectory = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(index);
@@ -44,6 +46,7 @@ public sealed class QuarantineRestore
         // A clock rather than DateTimeOffset.UtcNow directly, so `prune --older-than` is a decision the
         // command can test at a fixed instant instead of one that depends on the day the suite runs.
         _clock = clock ?? new SystemClock();
+        _home = homeDirectory;
     }
 
     /// <summary>
@@ -86,7 +89,7 @@ public sealed class QuarantineRestore
         // The original destination must still be inside its root, and must not have been filled by
         // something else in the meantime.
         var paths = new IFileSystemPaths(_fs, _os);
-        ContainmentResult containment = ContainmentCheck.Check(paths, entry.Root, entry.OriginalPath);
+        ContainmentResult containment = ContainmentCheck.Check(paths, entry.Root, entry.OriginalPath, _home);
 
         if (!containment.Safe)
         {
@@ -122,10 +125,10 @@ public sealed class QuarantineRestore
                 $"Not permitted to restore '{entry.OriginalPath}': {ex.Message}");
         }
 
-        await _index.DeleteAsync(entryId, cancellationToken).ConfigureAwait(false);
-
-        // A restore is a mutation, not an undo of one (S-11): the item moved again, so the log records it.
-        await AppendAuditBestEffortAsync(new AuditRecord
+        // The move happened; write the evidence before removing the index row. Cancellation and a
+        // failed append must not erase the only trace of a completed mutation: when the line cannot be
+        // written, the row stays so `audit verify` still has something to compare against.
+        bool audited = await AppendAuditAsync(new AuditRecord
         {
             StepId = entry.ItemId,
             Eco = entry.Ecosystem,
@@ -137,9 +140,21 @@ public sealed class QuarantineRestore
             Result = AuditRecord.OkResult,
         }).ConfigureAwait(false);
 
+        if (audited)
+        {
+            // Bookkeeping after a completed mutation is deliberately not cancellable: stopping here
+            // would leave the index and the ledger disagreeing with the filesystem.
+            await _index.DeleteAsync(entryId, CancellationToken.None).ConfigureAwait(false);
+
+            return RestoreResult.Ok(
+                entry.OriginalPath,
+                $"Restored '{entry.Name} {entry.Version}' to '{entry.OriginalPath}'.");
+        }
+
         return RestoreResult.Ok(
             entry.OriginalPath,
-            $"Restored '{entry.Name} {entry.Version}' to '{entry.OriginalPath}'.");
+            $"Restored '{entry.Name} {entry.Version}' to '{entry.OriginalPath}', but the audit line could not "
+                + "be written. The quarantine index entry was kept so `audit verify` can report the gap.");
     }
 
     /// <summary>
@@ -177,12 +192,9 @@ public sealed class QuarantineRestore
                     _fs.DeleteFile(entry.QuarantinePath, recursive: true);
                 }
 
-                await _index.DeleteAsync(entry.EntryId, cancellationToken).ConfigureAwait(false);
-
-                // The discard happened; the audit line records it (S-12). A failed append must not turn a
-                // completed prune into a reported failure — the index row is already gone, and `audit
-                // verify` reports the gap from the log's side.
-                await AppendAuditBestEffortAsync(new AuditRecord
+                // The discard happened; the audit line records it before the row disappears. A failed
+                // append keeps the row, so the gap is visible from both sides instead of vanished.
+                bool audited = await AppendAuditAsync(new AuditRecord
                 {
                     StepId = entry.ItemId,
                     Eco = entry.Ecosystem,
@@ -192,6 +204,11 @@ public sealed class QuarantineRestore
                     Bytes = entry.SizeBytes,
                     Result = AuditRecord.OkResult,
                 }).ConfigureAwait(false);
+
+                if (audited)
+                {
+                    await _index.DeleteAsync(entry.EntryId, CancellationToken.None).ConfigureAwait(false);
+                }
 
                 pruned.Add(entry);
             }
@@ -248,23 +265,25 @@ public sealed class QuarantineRestore
     }
 
     /// <summary>
-    /// Records one mutation in the audit log. A failed append must not fail a mutation that already
-    /// happened; the resulting gap is exactly what `audit verify` detects from the other side.
+    /// Appends one mutation record, returning false when the line could not be written. A mutation that
+    /// already happened is not failed by its audit line; the caller keeps the index evidence instead of
+    /// deleting it, so the gap remains detectable.
     /// </summary>
-    private async Task AppendAuditBestEffortAsync(AuditRecord record)
+    private async Task<bool> AppendAuditAsync(AuditRecord record)
     {
         if (_audit is null)
         {
-            return;
+            return true;
         }
 
         try
         {
             await _audit.AppendAsync(record).ConfigureAwait(false);
+            return true;
         }
         catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            // The mutation stands; the log carries a gap that verify reports.
+            return false;
         }
     }
 

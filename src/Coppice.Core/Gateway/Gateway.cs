@@ -38,6 +38,7 @@ public sealed class Gateway
     private readonly IClock _clock;
     private readonly IProcessRunner? _processes;
     private readonly AuditLog? _audit;
+    private readonly string? _home;
 
     /// <summary>
     /// The hard deadline for one native command (S-15, NFR-07). Generous enough for a real
@@ -51,7 +52,8 @@ public sealed class Gateway
         QuarantineIndex? quarantine = null,
         IClock? clock = null,
         IProcessRunner? processes = null,
-        AuditLog? audit = null)
+        AuditLog? audit = null,
+        string? homeDirectory = null)
     {
         ArgumentNullException.ThrowIfNull(fs);
         _fs = fs;
@@ -60,6 +62,7 @@ public sealed class Gateway
         _clock = clock ?? new DefaultClock();
         _processes = processes;
         _audit = audit;
+        _home = homeDirectory;
     }
 
     /// <summary>
@@ -106,7 +109,7 @@ public sealed class Gateway
         //    not-the-root (06 steps 1, 3, 4, and S-13/S-14). ContainmentCheck refuses rather than throws,
         //    which is what keeps a refusal reportable.
         var paths = new IFileSystemPaths(_fs, _os);
-        ContainmentResult containment = ContainmentCheck.Check(paths, step.Root, step.Path);
+        ContainmentResult containment = ContainmentCheck.Check(paths, step.Root, step.Path, _home);
 
         if (!containment.Safe)
         {
@@ -135,10 +138,36 @@ public sealed class Gateway
             }
         }
 
-        // 6. TOCTOU re-verify (06 step 6). The WHOLE chain, again, immediately before the mutation. This is
+        // 6. Measure what will be recorded BEFORE the last re-check. Hashing a multi-gigabyte package
+        //    after the re-check would leave a window as long as the hash in which the source could be
+        //    swapped for a junction, and the move would then act on the swapped tree. The check has to
+        //    be the last thing before the mutation; the hash records what was present when it passed.
+        QuarantineEntry? entry = null;
+        string? canonicalPath = step.Action.CanonicalPath;
+        if (_quarantine is not null
+            && step.Action.Kind == RemovalKind.PathDelete
+            && !string.IsNullOrEmpty(canonicalPath))
+        {
+            try
+            {
+                entry = BuildQuarantineEntry(step, canonicalPath);
+            }
+            catch (System.IO.IOException ex)
+            {
+                return Skip(step, GatewayRefusal.Locked,
+                    $"Could not read '{step.Action.CanonicalPath}' before the change: {ex.Message}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Skip(step, GatewayRefusal.NeedsElevation,
+                    $"Not permitted to read '{step.Action.CanonicalPath}': {ex.Message}");
+            }
+        }
+
+        // 7. TOCTOU re-verify (06 step 6). The WHOLE chain, again, immediately before the mutation. This is
         //    the point of the design: the race being guarded against is something changing between the
         //    first check and the write, so a check performed anywhere earlier would not catch it.
-        ContainmentResult recheck = ContainmentCheck.Check(paths, step.Root, step.Path);
+        ContainmentResult recheck = ContainmentCheck.Check(paths, step.Root, step.Path, _home);
 
         if (!recheck.Safe)
         {
@@ -156,11 +185,11 @@ public sealed class Gateway
                 $"'{step.Path}' became locked between the plan and the apply. It was not touched.");
         }
 
-        // 7. Mutate. Path deletes go to quarantine (S-11). Native commands never reach this switch: they
+        // 8. Mutate. Path deletes go to quarantine (S-11). Native commands never reach this switch: they
         //    leave at the asymmetry gate above, because a tool-owned mutation has no path to re-verify.
         return step.Action.Kind switch
         {
-            RemovalKind.PathDelete => await QuarantineAsync(step).ConfigureAwait(false),
+            RemovalKind.PathDelete => await QuarantineAsync(step, entry).ConfigureAwait(false),
             RemovalKind.ReportOnly => Skip(step, GatewayRefusal.InstallerOwned,
                 $"'{step.Path}' is report-only; no removal was performed."),
 
@@ -194,6 +223,32 @@ public sealed class Gateway
     }
 
     /// <summary>
+    /// Reads the live size and content hash for the index record before the final safety check. Live
+    /// state, not the plan's numbers: the index is the record of what was actually moved.
+    /// </summary>
+    private QuarantineEntry BuildQuarantineEntry(GatewayStep step, string originalPath)
+    {
+        DateTimeOffset quarantinedAt = _clock.UtcNow;
+
+        return new QuarantineEntry
+        {
+            EntryId = QuarantineIndex.FormatEntryId(originalPath, quarantinedAt),
+            OriginalPath = originalPath,
+            QuarantinePath = QuarantinePath.For(step.Root, step.LocationIdForQuarantine(), originalPath),
+            Root = step.Root,
+            LocationId = step.LocationIdForQuarantine(),
+            ItemId = step.ItemId,
+            SizeBytes = _fs.MeasureSize(originalPath),
+            QuarantinedAtUtc = quarantinedAt,
+            ContentHash = QuarantineIndex.HashTree(_fs, originalPath),
+            Ecosystem = step.Ecosystem ?? string.Empty,
+            Kind = step.Kind ?? string.Empty,
+            Name = step.Name ?? string.Empty,
+            Version = step.Version ?? string.Empty,
+        };
+    }
+
+    /// <summary>
     /// Moves a path into quarantine. The rename is the mutation: nothing is deleted, so a restore is a
     /// rename back (T-032).
     /// <para>
@@ -204,7 +259,7 @@ public sealed class Gateway
     /// window T-034's write-ahead journal exists to close.
     /// </para>
     /// </summary>
-    private async Task<GatewayStepResult> QuarantineAsync(GatewayStep step)
+    private async Task<GatewayStepResult> QuarantineAsync(GatewayStep step, QuarantineEntry? entry)
     {
         if (string.IsNullOrEmpty(step.Action.CanonicalPath))
         {
@@ -213,40 +268,28 @@ public sealed class Gateway
         }
 
         string destination;
-        QuarantineEntry? entry = null;
 
         try
         {
             // The destination is derived, not passed in: a caller-chosen destination is a caller-chosen
             // escape from the containment check that just approved the source.
-            destination = QuarantinePath.For(step.Root, step.LocationIdForQuarantine(), step.Action.CanonicalPath);
-
-            if (_quarantine is not null)
-            {
-                // Live state measured now, not the plan's numbers: the index is the record of what was
-                // actually moved, not of what the plan predicted. A stale fingerprint is the drift
-                // check's job to catch, not something to copy into the record.
-                DateTimeOffset quarantinedAt = _clock.UtcNow;
-
-                entry = new QuarantineEntry
-                {
-                    EntryId = QuarantineIndex.FormatEntryId(step.Action.CanonicalPath, quarantinedAt),
-                    OriginalPath = step.Action.CanonicalPath,
-                    QuarantinePath = destination,
-                    Root = step.Root,
-                    LocationId = step.LocationIdForQuarantine(),
-                    ItemId = step.ItemId,
-                    SizeBytes = _fs.MeasureSize(step.Action.CanonicalPath),
-                    QuarantinedAtUtc = quarantinedAt,
-                    ContentHash = QuarantineIndex.HashTree(_fs, step.Action.CanonicalPath),
-                    Ecosystem = step.Ecosystem ?? string.Empty,
-                    Kind = step.Kind ?? string.Empty,
-                    Name = step.Name ?? string.Empty,
-                    Version = step.Version ?? string.Empty,
-                };
-            }
+            destination = entry?.QuarantinePath
+                ?? QuarantinePath.For(step.Root, step.LocationIdForQuarantine(), step.Action.CanonicalPath);
 
             _fs.CreateDirectory(ParentOf(destination, _os));
+
+            // Creating the destination parent is the last I/O that is not the mutation itself. Re-check
+            // once more so the move is the immediate next action, not one that follows an unbounded gap.
+            ContainmentResult finalCheck = ContainmentCheck.Check(
+                new IFileSystemPaths(_fs, _os), step.Root, step.Action.CanonicalPath, _home);
+
+            if (!finalCheck.Safe)
+            {
+                return Skip(step, RefusalFor(finalCheck.Reason),
+                    $"'{step.Action.CanonicalPath}' failed the final safety check immediately before the move ({finalCheck.Message}). "
+                        + "The filesystem changed between the checks; nothing was moved.");
+            }
+
             _fs.Move(step.Action.CanonicalPath, destination);
         }
         catch (System.IO.IOException ex)

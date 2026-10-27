@@ -85,14 +85,21 @@ public sealed class IFileSystemPaths(IFileSystem fs, OperatingSystemKind os)
         var seen = new HashSet<string>(StringComparer.Ordinal) { path };
         string current = path;
 
-        // EVERY prefix of the path is examined, not just the path itself. A directory that IS a junction is
-        // the easy case; the one that matters is a path *under* a self-referencing junction, where the leaf
-        // is an ordinary directory and every check that looks only at the leaf reports it clean. That is
-        // how `C:\cache\pkg\1.0.0` came back "safe" while `C:\cache\pkg` pointed at itself.
-        foreach (string ancestor in Ancestors(current))
+        // Each pass re-walks the path from its first link. Re-rooting an ancestor can expose another
+        // link that was not an ancestor of the declared path — `/cache/a` -> `/cache/b`, then
+        // `/cache/b/c` -> `/outside` is the shape — so a single pass over the original ancestors
+        // would stop at `/cache/b` and report the escape as contained.
+        for (var pass = 0; pass < 64; pass++)
         {
-            if (IsLink(ancestor))
+            var changed = false;
+
+            foreach (string ancestor in Ancestors(current))
             {
+                if (!IsLink(ancestor))
+                {
+                    continue;
+                }
+
                 ResolvedPath ancestorResolution = ResolveOne(ancestor, seen);
 
                 if (ancestorResolution.IsLoop)
@@ -100,15 +107,28 @@ public sealed class IFileSystemPaths(IFileSystem fs, OperatingSystemKind os)
                     return ancestorResolution;
                 }
 
-                // Re-root the remaining segments under where the ancestor actually points, then continue
-                // the walk. Without this the rest of the path would be joined onto the DECLARED location
-                // rather than the real one, which is precisely the escape being defended against.
-                string remainder = path[ancestor.Length..];
-                current = ancestorResolution.Path + remainder;
+                // Re-root the remaining segments under where the ancestor actually points, then
+                // re-walk. Without this the rest of the path would be joined onto the DECLARED
+                // location rather than the real one, which is precisely the escape being defended
+                // against.
+                string remainder = current[ancestor.Length..];
+                string next = ancestorResolution.Path + remainder;
+
+                if (!PathCanonicalizer.PathsEqual(next, current, _os))
+                {
+                    current = next;
+                    changed = true;
+                    break;
+                }
+            }
+
+            if (!changed)
+            {
+                return ResolvedPath.At(current);
             }
         }
 
-        return ResolveOne(current, seen);
+        return ResolvedPath.Loop;
     }
 
     /// <summary>Every ancestor of <paramref name="path"/>, longest first. Includes the path itself.</summary>
@@ -158,10 +178,21 @@ public sealed class IFileSystemPaths(IFileSystem fs, OperatingSystemKind os)
                 return ResolvedPath.At(current);
             }
 
-            // Resolve relative targets against the link's parent directory.
-            string resolvedTarget = PathCanonicalizer.IsRooted(rawTarget, _os)
-                ? PathCanonicalizer.Canonicalize(rawTarget, _os).Path
-                : PathCanonicalizer.Combine(CurrentDirectory(current, _os), rawTarget, _os);
+            // Resolve relative targets against the link's parent directory with true `..` semantics.
+            // Combine would clamp the climb at the parent and turn an escape into an inside path.
+            CanonicalResult target = PathCanonicalizer.CombineLinkTarget(
+                CurrentDirectory(current, _os),
+                rawTarget,
+                _os);
+
+            if (!target.Ok)
+            {
+                // An unreadable target is not a directory that can be proven contained. Refuse it the
+                // same way a cycle is refused: "cannot resolve" must never look like "resolved safely".
+                return ResolvedPath.Loop;
+            }
+
+            string resolvedTarget = target.Path;
 
             // A cycle: back where we started, or onto a path already walked. Either way there is no
             // directory here to reason about.

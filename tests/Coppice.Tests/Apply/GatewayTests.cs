@@ -499,4 +499,47 @@ public sealed class GatewayTests
 
         Assert.Equal(shouldSucceed, result.Succeeded);
     }
+
+    // ---- T-060: pre-review findings -------------------------------------------------------------------
+
+    [Fact]
+    public async Task A_swap_during_the_pre_hash_is_caught_by_the_final_recheck()
+    {
+        // The index record is measured before the last check, so the check stays adjacent to the move.
+        // Swapping the source for a junction at exactly the measuring moment stood in the hash window
+        // before T-060: the old order checked, then hashed, then moved the swapped tree.
+        FakeFileSystem fs = Cache("pkg");
+        fs.AddDirectory(@"C:\outside");
+        var gateway = new Gateway(fs, Win, new Coppice.Core.Quarantine.QuarantineIndex(new FakeStateStore()));
+
+        fs.OnMeasureSize = () =>
+        {
+            fs.OnMeasureSize = null;
+            fs.AddJunction($@"{Root}\pkg\1.0.0", @"C:\outside");
+        };
+
+        GatewayStepResult result = await gateway.Execute(Step($@"{Root}\pkg\1.0.0"));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(GatewayRefusal.OutsideRoot, result.Refusal);
+        Assert.Null(result.QuarantinePath);
+        Assert.True(fs.DirectoryExists(@"C:\outside"));
+    }
+
+    [Fact]
+    public async Task The_home_denylist_floor_is_live_in_the_gateway()
+    {
+        // Root validation already knows the home; the gateway's own floor must too, or a plan that
+        // reaches a Desktop/Documents/Downloads path passes containment on the way to a move.
+        var fs = new FakeFileSystem(Win);
+        fs.AddDirectoryOfSize(@"C:\Users\alice\Desktop\pkg\1.0.0", 4096);
+        var gateway = new Gateway(fs, Win, homeDirectory: @"C:\Users\alice");
+
+        GatewayStepResult result = await gateway.Execute(
+            Step(@"C:\Users\alice\Desktop\pkg\1.0.0", allowlist: "", root: @"C:\Users\alice"));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(GatewayRefusal.Denied, result.Refusal);
+        Assert.True(fs.DirectoryExists(@"C:\Users\alice\Desktop\pkg\1.0.0"));
+    }
 }

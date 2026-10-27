@@ -100,7 +100,7 @@ public interface IFileSystem
     byte[] ReadSmallBytes(string path, int maxBytes = 64 * 1024);
 
     /// <summary>Recursive size in bytes, counting each unique hard-linked file once and not double-counting links.</summary>
-    ulong MeasureSize(string path);
+    ulong MeasureSize(string path, CancellationToken cancellationToken = default);
 
     /// <summary>Best-effort lock probe.</summary>
     LockState ProbeLock(string path);

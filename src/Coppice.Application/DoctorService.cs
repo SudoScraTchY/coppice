@@ -361,7 +361,7 @@ public sealed class DoctorService
 
         try
         {
-            ulong size = _fs.MeasureSize(root.RealPath);
+            ulong size = _fs.MeasureSize(root.RealPath, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             return (size, null);
         }

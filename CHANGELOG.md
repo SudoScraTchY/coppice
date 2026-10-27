@@ -104,6 +104,15 @@ GUI and requirement closure.
 - T-051: `roots` measures sizes after every probe returns. Measuring the 21.2 GB NuGet root inside the
   4 s probe window had cancelled the probes behind it, so `go-bin` and `npm-global` disappeared from the
   table; they are now reported and sized.
+- T-060: an independent safety review found and fixed two blockers. A relative link target such as
+  `..\..\outside` was folded with the root-anchored combiner, so the climb was clamped inside the root and
+  containment passed; link targets now resolve with true OS semantics and `Resolve` re-walks after every
+  re-rooting, so a link exposed by another link cannot hide an escape. The gateway also measured and
+  hashed a package *after* the final TOCTOU re-check, leaving a window as long as the hash; measurement
+  now runs first and a second containment check runs immediately before the move. The gateway and restore
+  now pass the home directory into the denylist floor (`Desktop`/`Documents`/`Downloads`), restore and
+  prune write the audit line before deleting the index row and neither step is caller-cancellable,
+  `MeasureSize` takes a token, and the egress job requires a `Passed` canary rather than the test's name.
 - T-028/T-059: Windows roots must be drive-qualified. Relative, drive-relative (`\Windows`) and UNC
   paths are refused with `NotAbsolute`, a `{0}:\` container rule denies drive roots without blocking
   their caches, and lowercase drives normalize. The npm env rung now lets a user-set

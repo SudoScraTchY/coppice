@@ -31,6 +31,13 @@ public sealed class FakeFileSystem : IFileSystem
     /// </summary>
     public TimeSpan EnumerationDelay { get; set; } = TimeSpan.Zero;
 
+    /// <summary>
+    /// Test hook run before every <see cref="MeasureSize"/> call. The gateway measures and hashes the
+    /// source before its final re-check, so a test can swap the directory at exactly that moment and
+    /// prove the last check catches it.
+    /// </summary>
+    public Action? OnMeasureSize { get; set; }
+
     /// <summary>Successful small-text reads; T-058 uses this to prove the assets index is built once.</summary>
     public int ReadSmallTextCount { get; private set; }
 
@@ -411,8 +418,11 @@ public sealed class FakeFileSystem : IFileSystem
         return node.Content;
     }
 
-    public ulong MeasureSize(string path)
+    public ulong MeasureSize(string path, CancellationToken cancellationToken = default)
     {
+        OnMeasureSize?.Invoke();
+        cancellationToken.ThrowIfCancellationRequested();
+
         string full = Normalize(path);
         if (!_nodes.TryGetValue(full, out Node? node))
         {

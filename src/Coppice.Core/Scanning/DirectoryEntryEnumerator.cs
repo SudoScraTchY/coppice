@@ -65,7 +65,7 @@ public sealed class DirectoryEntryEnumerator : IEntryEnumerator
                 continue;
             }
 
-            ulong size = _fs.MeasureSize(entry.Path);
+            ulong size = _fs.MeasureSize(entry.Path, cancellationToken);
 
             yield return new Item(
                 Ecosystem: string.Empty,

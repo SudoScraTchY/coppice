@@ -245,6 +245,124 @@ public static class PathCanonicalizer
     }
 
     /// <summary>
+    /// Folds a symlink/junction target against the link's parent with true OS semantics.
+    /// <para>
+    /// This is deliberately NOT <see cref="Combine"/>: that method is root-anchored and clamps <c>..</c>
+    /// at the root, which is right for untrusted plan paths but wrong for a link target. A symlink at
+    /// <c>/cache/pkg</c> pointing at <c>../../outside</c> really means <c>/outside</c>; clamping would
+    /// return <c>/cache/outside</c> and report a containment escape as safe. Windows root-relative
+    /// targets (<c>\Windows</c>) are resolved against the link parent's drive, and a drive-relative
+    /// target (<c>C:foo</c>) is refused because its meaning depends on per-drive process state.
+    /// </para>
+    /// </summary>
+    public static CanonicalResult CombineLinkTarget(string parent, string target, OperatingSystemKind os)
+    {
+        if (string.IsNullOrWhiteSpace(target))
+        {
+            return CanonicalResult.Fail(CanonicalFailure.EmptyPath, "Link target is empty.");
+        }
+
+        char sep = SeparatorFor(os);
+        string work = target.Replace('/', sep);
+
+        string prefix;
+        var segments = new List<string>();
+
+        if (os == OperatingSystemKind.Windows)
+        {
+            if (work.StartsWith(@"\\?\UNC\", StringComparison.Ordinal))
+            {
+                return CanonicalResult.Fail(CanonicalFailure.NotAbsolute,
+                    $"UNC link target '{target}' is not a local path.");
+            }
+
+            if (work.StartsWith(@"\\?\", StringComparison.Ordinal))
+            {
+                work = work[4..];
+            }
+
+            if (work.StartsWith(@"\\", StringComparison.Ordinal))
+            {
+                return CanonicalResult.Fail(CanonicalFailure.NotAbsolute,
+                    $"UNC link target '{target}' is not a local path.");
+            }
+
+            if (work.Length >= 3 && char.IsAsciiLetter(work[0]) && work[1] == ':' && work[2] == '\\')
+            {
+                prefix = char.ToUpperInvariant(work[0]) + ":\\";
+                work = work[3..];
+            }
+            else if (work.StartsWith('\\'))
+            {
+                // Root-relative: the drive is the link parent's drive, not the process cwd's.
+                if (parent.Length < 2 || parent[1] != ':')
+                {
+                    return CanonicalResult.Fail(CanonicalFailure.NotAbsolute,
+                        $"Root-relative link target '{target}' has no drive to anchor to.");
+                }
+
+                prefix = char.ToUpperInvariant(parent[0]) + ":\\";
+                work = work.TrimStart('\\');
+            }
+            else if (work.Length >= 2 && char.IsAsciiLetter(work[0]) && work[1] == ':')
+            {
+                return CanonicalResult.Fail(CanonicalFailure.NotAbsolute,
+                    $"Drive-relative link target '{target}' is not resolvable without process state.");
+            }
+            else
+            {
+                prefix = parent[..3];
+                segments.AddRange(parent[3..].Split('\\', StringSplitOptions.RemoveEmptyEntries));
+            }
+        }
+        else
+        {
+            prefix = "/";
+            if (work.StartsWith('/'))
+            {
+                work = work.TrimStart('/');
+            }
+            else
+            {
+                segments.AddRange(parent.TrimStart('/').Split('/', StringSplitOptions.RemoveEmptyEntries));
+            }
+        }
+
+        foreach (string segment in work.Split(sep, StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (segment == ".")
+            {
+                continue;
+            }
+
+            if (segment == "..")
+            {
+                // Clamp at the filesystem root, exactly as the kernel does for a link target.
+                if (segments.Count > 0)
+                {
+                    segments.RemoveAt(segments.Count - 1);
+                }
+
+                continue;
+            }
+
+            if (ValidateSegment(segment, os) is { } invalid)
+            {
+                return invalid;
+            }
+
+            segments.Add(segment);
+        }
+
+        var rest = string.Join(sep, segments);
+        string result = prefix.EndsWith(sep)
+            ? prefix + rest
+            : prefix + sep + rest;
+
+        return CanonicalResult.OkResult(result);
+    }
+
+    /// <summary>
     /// Case-folds a path for comparison according to the OS rules:
     /// OrdinalIgnoreCase on Windows and macOS, Ordinal on Linux.
     /// </summary>

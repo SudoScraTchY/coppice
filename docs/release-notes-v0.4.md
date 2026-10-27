@@ -60,7 +60,16 @@ confirmed `quarantine prune`. Every mutation is appended to a hash-chained audit
 - Doctor probes share a 4 s total budget and report budget-exhausted probes; a blocked-probe test
   returns in 105 ms against a 100 ms test budget.
 - CI runs six real cells (Windows/Linux/macOS × x64/arm64), publishes a RID artifact per cell, and proves
-  no network use in an `unshare --net` job whose canary fails if egress is available.
+  no network use in an `unshare --net` job whose canary fails if egress is available; a skipped canary is
+  no longer accepted as proof.
+- An independent pre-review of the candidate found two blockers, both fixed before sign-off. A relative
+  link target (`..\..\outside`) was clamped inside the root by the root-anchored combiner, and a link
+  exposed only after resolving another link was never examined; link resolution now uses true OS
+  semantics and re-walks until stable. The index hash was also taken after the final containment check,
+  leaving a window as long as the hash; measurement now precedes the check, with one more check
+  immediately before the rename. The gateway and restore carry the home directory into the denylist
+  floor, restore/prune write the audit line before removing the index row and finish non-cancellably,
+  and root sizing observes cancellation.
 
 ## Install
 
@@ -135,7 +144,8 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
 ## Verification
 
 - `dotnet build -warnaserror -c Release`
-- 1,384 unit tests + 33 architecture tests (local, after the last code card)
+- 1,395 unit tests + 33 architecture tests (local; the network canary is the 1,396th and only runs in the
+  egress job)
 - 12 golden reports, `dotnet format --verify-no-changes`, the 100k-case escape suite
 - Six-cell GitHub Actions run per code card; the release candidate's final build is `40440689716` on
   `cce22ec`
@@ -170,6 +180,12 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
 - Safety pre-review: drive-less/relative/UNC Windows paths refused; drive roots denied (container
   scope, so their caches stay cleanable); `npm_config_cache` wins over `LOCALAPPDATA`; lowercase
   drives normalize; 1,384 unit, 33 architecture, 12 goldens, 53 escape at 100k
+- T-060 safety fixes: relative, root-relative and nested link targets are refused when they leave the
+  root; a junction swapped in during the pre-hash fails the final check; a path under
+  `{home}\Desktop` is refused by the gateway's own floor; a failed restore audit keeps the index row;
+  `MeasureSize` observes cancellation; a >260-character path is inventoried by the real adapter; the
+  egress assertion rejects a `NotExecuted` TRX (tested against a real `Passed` one); 1,395 unit,
+  33 architecture, 12 goldens, 4 escape suites at 100k
 - `SDD/AGENDA.md` records the other run ids
 - `scripts/publish.sh` FD/SC and `scripts/publish-gui.sh` size measurements
 

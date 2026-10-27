@@ -372,6 +372,99 @@ public sealed class PathSafetyEscapeTests
             });
     }
 
+    // ---- E-1: link targets -------------------------------------------------------------------------
+
+    [Fact]
+    [Trait("Escape", "E-1")]
+    public void E1_a_relative_link_target_is_not_clamped_inside_the_root()
+    {
+        // `C:\cache\pkg -> ..\..\outside` really points at `C:\outside`. Root-anchored combining
+        // clamped the climb at the parent and reported `C:\cache\outside`, so containment passed and
+        // the move followed the link out of the root.
+        var fs = new FakeFileSystem(OperatingSystemKind.Windows);
+        fs.AddSymlink(@"C:\cache\pkg", @"..\..\outside");
+
+        var paths = new IFileSystemPaths(fs, OperatingSystemKind.Windows);
+        ResolvedPath resolved = paths.Resolve(@"C:\cache\pkg\1.0.0");
+
+        Assert.False(resolved.IsLoop);
+        Assert.Equal(@"C:\outside\1.0.0", resolved.Path, ignoreCase: true);
+        Assert.False(paths.IsWithin(@"C:\cache", resolved.Path));
+
+        ContainmentResult check = ContainmentCheck.Check(paths, @"C:\cache", @"C:\cache\pkg\1.0.0");
+        Assert.False(check.Safe);
+        Assert.Equal(ContainmentFailure.EscapedRoot, check.Reason);
+    }
+
+    [Fact]
+    [Trait("Escape", "E-1")]
+    public void E1_a_posix_relative_link_target_climbs_to_the_real_parent()
+    {
+        var fs = new FakeFileSystem(OperatingSystemKind.Linux);
+        fs.AddSymlink("/cache/pkg", "../../outside");
+
+        var paths = new IFileSystemPaths(fs, OperatingSystemKind.Linux);
+        ResolvedPath resolved = paths.Resolve("/cache/pkg/1.0.0");
+
+        Assert.False(resolved.IsLoop);
+        Assert.Equal("/outside/1.0.0", resolved.Path);
+        Assert.False(ContainmentCheck.Check(paths, "/cache", "/cache/pkg/1.0.0").Safe);
+    }
+
+    [Fact]
+    [Trait("Escape", "E-1")]
+    public void E1_a_windows_root_relative_link_target_uses_the_link_drive()
+    {
+        var fs = new FakeFileSystem(OperatingSystemKind.Windows);
+        fs.AddSymlink(@"C:\cache\pkg", @"\Windows");
+
+        var paths = new IFileSystemPaths(fs, OperatingSystemKind.Windows);
+        ResolvedPath resolved = paths.Resolve(@"C:\cache\pkg\1.0.0");
+
+        Assert.False(resolved.IsLoop);
+        Assert.Equal(@"C:\Windows\1.0.0", resolved.Path, ignoreCase: true);
+        Assert.False(ContainmentCheck.Check(paths, @"C:\cache", @"C:\cache\pkg\1.0.0").Safe);
+    }
+
+    [Fact]
+    [Trait("Escape", "E-1")]
+    public void E1_a_link_exposed_only_after_re_rooting_is_resolved()
+    {
+        // The first link re-roots the path under a directory whose child is another link. That
+        // second link is not an ancestor of the DECLARED path, so a single pass misses it and the
+        // escape looks contained.
+        var fs = new FakeFileSystem(OperatingSystemKind.Windows);
+        fs.AddJunction(@"C:\cache\a", @"C:\cache\b");
+        fs.AddJunction(@"C:\cache\b\c", @"C:\Users\dev");
+
+        var paths = new IFileSystemPaths(fs, OperatingSystemKind.Windows);
+        ResolvedPath resolved = paths.Resolve(@"C:\cache\a\c\1.0.0");
+
+        Assert.False(resolved.IsLoop);
+        Assert.Equal(@"C:\Users\dev\1.0.0", resolved.Path, ignoreCase: true);
+        Assert.False(paths.IsWithin(@"C:\cache", resolved.Path));
+
+        ContainmentResult check = ContainmentCheck.Check(paths, @"C:\cache", @"C:\cache\a\c\1.0.0");
+        Assert.False(check.Safe);
+        Assert.Equal(ContainmentFailure.EscapedRoot, check.Reason);
+    }
+
+    [Fact]
+    [Trait("Escape", "E-1")]
+    public void E1_a_link_that_stays_inside_is_still_contained()
+    {
+        // The fix must not over-refuse: an absolute junction to a sibling inside the root is legal.
+        var fs = new FakeFileSystem(OperatingSystemKind.Windows);
+        fs.AddJunction(@"C:\cache\a", @"C:\cache\b");
+
+        var paths = new IFileSystemPaths(fs, OperatingSystemKind.Windows);
+        ResolvedPath resolved = paths.Resolve(@"C:\cache\a\1.0.0");
+
+        Assert.False(resolved.IsLoop);
+        Assert.Equal(@"C:\cache\b\1.0.0", resolved.Path, ignoreCase: true);
+        Assert.True(ContainmentCheck.Check(paths, @"C:\cache", @"C:\cache\a\1.0.0").Safe);
+    }
+
     // ---- E-7: mount points and placeholders -------------------------------------------------------
 
     [Fact]

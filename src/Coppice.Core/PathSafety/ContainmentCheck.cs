@@ -58,7 +58,12 @@ public static class ContainmentCheck
     /// <param name="paths">Wrapper over the filesystem providing canonicalization and resolution.</param>
     /// <param name="root">The validated root directory. Must be an absolute, canonical path.</param>
     /// <param name="candidate">The path to check, as provided by an untrusted source (e.g., a plugin).</param>
-    public static ContainmentResult Check(IFileSystemPaths paths, string root, string candidate)
+    /// <param name="homeDirectory">
+    /// The caller's home directory, so the <c>{home}</c> denylist rules are live here too. The two-argument
+    /// denylist overload cannot expand them, and a gateway that enforced home protection only at root
+    /// validation would have no floor of its own (06-safety-model).
+    /// </param>
+    public static ContainmentResult Check(IFileSystemPaths paths, string root, string candidate, string? homeDirectory = null)
     {
         if (string.IsNullOrWhiteSpace(root))
         {
@@ -77,10 +82,10 @@ public static class ContainmentCheck
             return ContainmentResult.Fail(ContainmentFailure.CanonicalizationFailed, canonical.Message);
         }
 
-        // Step 2: Check the denylist floor.
-        if (Denylist.IsDenied(canonical.Path, paths.OS))
+        // Step 2: Check the denylist floor, including the {home} rules.
+        if (Denylist.IsDenied(canonical.Path, paths.OS, homeDirectory))
         {
-            var deniedBy = Denylist.WhichDenied(canonical.Path, paths.OS);
+            var deniedBy = Denylist.WhichDenied(canonical.Path, paths.OS, homeDirectory);
             return ContainmentResult.Fail(ContainmentFailure.Denied,
                 $"Path is on the denylist{(deniedBy is not null ? $" (matched '{deniedBy}')" : string.Empty)}.");
         }
@@ -135,6 +140,6 @@ public static class ContainmentCheck
     /// <summary>
     /// Convenience overload that takes an <see cref="IFileSystem"/> directly.
     /// </summary>
-    public static ContainmentResult Check(IFileSystem fs, OperatingSystemKind os, string root, string candidate) =>
-        Check(new IFileSystemPaths(fs, os), root, candidate);
+    public static ContainmentResult Check(IFileSystem fs, OperatingSystemKind os, string root, string candidate, string? homeDirectory = null) =>
+        Check(new IFileSystemPaths(fs, os), root, candidate, homeDirectory);
 }

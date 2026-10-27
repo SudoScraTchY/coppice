@@ -78,7 +78,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | Screen-reader smoke pass | T-036 box 4, T-039/T-040 a11y | dated checklist + notes | open |
 | Fresh-VM install → doctor → scan → plan → apply, no container runtime | T-038 box 2, T-043 | VM/OS version + transcript | open |
 | 5+ dogfood reports, every finding carded | T-019 | report links / commit refs | open |
-| Second safety reviewer sign-off | T-031/32/34/35/44/48/52/56/59 | reviewer name + commit | open |
+| Second safety reviewer sign-off | T-031/32/34/35/43/44/48/52/56/59/60 | reviewer name + commit | open |
 | Six-cell CI + egress canary | T-018, T-054 | run URL + TRX canary line | passed 2026-10-26: run `40282093437`; run `40333340213` archives the canary TRX as `egress-results` |
 
 ### Clean-environment E2E (supporting evidence, not a fresh VM)
@@ -115,15 +115,18 @@ none of them can be automated or self-certified.
    Narrator enabled; visit Setup, Evidence, Review, Apply, Quarantine, Locations, Health and History.
    Record the OS build, reader, screens and every unlabelled or duplicated control. T-036 box 4 and the
    T-039/T-040 accessibility boxes tick only with that record.
-2. **Fresh VM.** A machine with no .NET, no container runtime and no coppice state. Download the
-   self-contained release archive for its RID, unpack, create a scratch project, `dotnet restore` it,
-   then run `doctor`, `scan --projects`, `plan`, `apply --plan <file> --yes` and
+2. **Fresh VM.** A machine with no .NET, no container runtime and no coppice state. Take the
+   `release-bundle` artifact from dry run `40441451129` (the strictest machine build; the tag repeats
+   it on the final commit) or build with `scripts/publish.sh`, unpack the self-contained archive for
+   its RID, and copy in a small project whose `obj/project.assets.json` was restored elsewhere (the
+   VM has no SDK). Run `doctor`, `scan --projects`, `plan`, `apply --plan <file> --yes` and
    `quarantine restore`. Record OS, RID, commands and output. T-038 box 2 / T-043.
 3. **Dogfood.** Five reports from real projects, each naming the ecosystem, commands, cache size and
-   any surprising result; every finding gets a card ID. T-019.
+   any surprising result; every finding gets a card ID. T-019, currently 2/5 (both owner-machine
+   automated reports).
 4. **Second safety reviewer.** An independent read of the gateway, containment, denylist, TOCTOU,
    quarantine and the release workflow; record reviewer name, commit and PASS/FAIL.
-   T-031/32/34/35/44/48/52/56.
+   T-031/32/34/35/43/44/48/52/56/59. An AI pre-review does not satisfy this gate.
 5. **Tag.** Add the dated rows to the evidence log, then make the release-identity edit in one commit:
    `<Version>0.4.0</Version>`, the CHANGELOG heading, the release-notes title and candidate paragraphs,
    the README status/install/caption wording, and the quickstart/commands version strings — the dated
@@ -185,6 +188,8 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-27 | rc.1 rebuilt on the sizing fix | commit `cce22ec`; build run `40440689716` green on all six cells, egress and license |
 | 2026-10-27 | Final rc.1 strict dry run | run `40441451129` on `cce22ec`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; `sha256sum -c` all OK; fd 2,201,915–2,313,489 B, sc 37,314,216–40,206,238 B, gui 47,277,342–52,048,220 B; SC/GUI `docs/images`; no Release |
 | 2026-10-27 | Final rc.1 clean E2E | SC zip from `40441451129`, scrubbed PATH and isolated home/state; version `0.4.0-rc.1`; scan 5.0.0 Referenced / 1.0.0 Unreferenced; plan `pln_131fd9a28810` (1 step, 18 B); quarantine `7f07622df115f223`; byte-identical restore; audit 2 records intact |
+| 2026-10-27 | Independent safety pre-review (advisory) | read-only review of `264ed34` returned FAIL: relative/nested link-target escapes and a hash-length TOCTOU window (blockers), missing home denylist floor, cancellable restore bookkeeping, tokenless sizing (majors), egress NotExecuted (minor); long-path minor disproved by a real >260-char test. Not the human sign-off |
+| 2026-10-27 | T-060 safety fixes | Link targets resolve with true `..`/root-relative semantics and re-walk after re-rooting; hash before the final re-check; home passed into gateway/restore; audit before index delete and non-cancellable; tokenized `MeasureSize`; egress requires `outcome="Passed"`; 1,395 unit, 33 architecture, 12 goldens, 4 escape suites at 100k, format clean |
 | 2026-10-27 | Final strict dry run | run `40430172079` on `6a9c4de`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; fd/sc `0.4.0-rc.1`; SC/GUI archives contain `docs/images`; no Release |
 | 2026-10-27 | Final clean E2E | SC zip from `40430172079`, scrubbed PATH, isolated state; plan `pln_fb4fecbd898e`, quarantine `2fd884842a06fa8a`, audit 2 records intact |
 | 2026-10-27 | Final safety-build real scans | Go scratch: 1 Referenced / 25 Unreferenced in 12.1 s; owner cache: 3,179 items (3,152 .NET, 26 Go, 1 npm), 47 Referenced / 3,132 Unknown in 16.6 s; no apply |
