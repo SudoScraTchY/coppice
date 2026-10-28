@@ -7,8 +7,8 @@ Exit: T-000…T-004 done; CI green on an empty solution.
 > `dotnet build -warnaserror`, `dotnet test` (164 tests), and `dotnet format --verify-no-changes`.
 > Two spec ambiguities were resolved in `docs/adr/`: ADR-015 (denylist scope — a prefix match on
 > `/` or `/home` would deny every cache the tool exists to clean) and the canonical-form rules
-> recorded in the T-004 test suite. No CI pipeline is wired up yet, so "CI green" is currently
-> verified locally only.
+> recorded in the T-004 test suite. This phase predates the six-cell CI pipeline (T-018); its green
+> was verified locally at the time, and the later matrix now covers the same gate.
 
 ### T-000 · Project identity & FOSS hygiene
 **Refs** ADR-013, ADR-014 · **Depends** — · **Effort** S

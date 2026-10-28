@@ -39,9 +39,10 @@ GUI and requirement closure.
   `.github/workflows/release.yml`: it refuses a tag that disagrees with `<Version>` or names a commit
   with no green six-cell run, then builds framework-dependent, self-contained and GUI archives for all
   six RIDs plus the `dotnet tool` package. A linux-x64 install smoke runs the published self-contained
-  archive with no .NET on `PATH` and gates the Release. Measured on win-x64: CLI 2.19 MB
-  framework-dependent / 36.74 MB self-contained, GUI 47.72 MB self-contained. No `v0.4.0` tag is
-  created because the human gates in `SDD/AGENDA.md` are still open.
+  archive with no .NET on `PATH` and gates the Release. Measured on win-x64 at the final rc.1
+  candidate (run `40449838956`): CLI 2.317 MB framework-dependent / 38.526 MB self-contained, GUI
+  50.039 MB self-contained. No `v0.4.0` tag is created because the human gates in `SDD/AGENDA.md` are
+  still open.
 - T-040 resolution transparency: every Roots row shows its provenance (via plus detail), owner,
   size when measured, ambiguity, and the never-elevate guidance. The pin editor validates a
   candidate through the same denylist/fingerprint path a scan uses before writing one `[pins]` entry;

@@ -60,6 +60,8 @@ folders, dangling `PATH`/`DOTNET_ROOT`, x86/x64 duplicates, preview superseded
 by GA of same band, inactive default roots left behind.
 **Accept:** each problem has a fixture that triggers it, with code + path + summary.
 
+> 0.4.0 implements the .NET health checks (T-013). Go/Rust/Node health checks are T-071, v1.0 planning.
+
 ### FR-11 Plan generation
 Plans are serializable (JSON), versioned, checksummed; each step carries
 reason, risk, expected bytes, and a removal action (native command, path
@@ -152,3 +154,8 @@ Windows, Linux, macOS; x64 + arm64.
 | NFR-10 | Actionable errors with fix hints | Review checklist per message |
 | NFR-11 | Framework-dependent single-file CLI < 5 MB (primary); self-contained single-file < 50 MB (optional, for machines without .NET) | Release check; amended by ADR-017 |
 | NFR-12 | Versioned schemas (config, manifest, plan, snapshot) with migration policy | Schema tests |
+
+Evidence pointers for the release candidate: NFR-03 — `evidence/v0.4.0-rc.1/nfr-03.md` (egress canary
+`Passed`; no telemetry/network references in `src`); NFR-05 — `evidence/v0.4.0-rc.1/cold-start.md`
+(FD 78–93 ms, SC 119–127 ms; trimming is not enabled); NFR-09 — CLI plain mode is tested, and the GUI
+keyboard/a11y pass is the human screen-reader gate (T-036 box 4, T-039 box 4, T-040 box 3).

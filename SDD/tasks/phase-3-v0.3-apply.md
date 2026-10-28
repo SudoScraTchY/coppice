@@ -79,8 +79,12 @@ Exit criteria per 12-roadmap.
 - [x] Piped stdout → plain output (no ANSI) (NFR-09)
 - [ ] Screen reader smoke pass with labeled elements
 
-> T-036: every screen is built from labeled blocks and the plain renderer is tested, but the manual
-> screen-reader smoke pass has not been run — box 4 stays open until someone does it.
+> T-036: `TuiStateTests` pins the tab order (`The_tab_order_is_the_documented_one_and_wraps`), the
+> cancel paths (`Escape_during_apply_requests_cancel_and_never_quits`,
+> `Ctrl_c_during_apply_is_a_cancel_not_a_quit`), and the labeled/no-ANSI blocks
+> (`Every_screen_is_built_from_labeled_blocks_with_key_help`); `TuiRenderTests` covers the plain
+> renderer. Box 4 is the manual screen-reader pass; it has not been run, so it stays open and the kit
+> is in `docs/human-gates/screen-reader-checklist.md`.
 
 ### T-037 · `--ci` mode + exit-code contract
 **Refs** FR-21, 07-cli-tui · **Depends** T-034 · **Effort** S
@@ -107,7 +111,8 @@ Exit criteria per 12-roadmap.
 
 > T-038: `scripts/publish.sh` copies `README.md`, `CHANGELOG.md`, `LICENSE`, `NOTICE` and the four
 > `docs/*.md` guides into the publish output and refuses to publish if one is missing; verified for
-> win-x64, together with the packed `coppice` tool. The published self-contained rc.1 artifact was
+> win-x64, together with the packed `coppice` tool, and the strict dry run `40449838956`'s SC and GUI
+> archives contain `docs/images` and the guides. The published self-contained rc.1 artifact was
 > exercised end-to-end (version → doctor → scan → plan → apply → quarantine list → restore → audit
 > verify) against a synthetic cache with `PATH` scrubbed of .NET and isolated state (2026-10-26; see
 > `SDD/AGENDA.md`). Box 2 stays open: a fresh-VM install pass has not been run. The T-036
@@ -220,9 +225,8 @@ Exit criteria per 12-roadmap.
 > .NET table, and the plan preview knew only the .NET ordering. `coppice scan` could therefore never see a
 > Go module cache, a cargo registry or an npm cache; the plugins were inert.
 >
-> Status 2026-10-26: the implementation exists off-main in
-> `.qoder/worktrees/agent-general-purpose-09abdb8c` (24 modified + 7 new files). The boxes stay open
-> until it is rebased, reviewed, hardened by T-056 and gated.
+> Historical note (2026-10-26): the implementation initially lived off-main. It landed as `5db9c3f`,
+> was hardened by T-056, and the boxes above are closed.
 
 **Build**
 - Add an application-layer `EcosystemCatalog`/`EcosystemRegistry`: .NET locations come from the code
@@ -266,9 +270,8 @@ Exit criteria per 12-roadmap.
 ### T-049 · Read config.toml in the commands
 **Refs** FR-22, FR-19, 07-cli-tui · **Depends** T-029 · **Effort** M
 
-> Status 2026-10-26: the implementation exists as commit `5424de4` in detached worktree
-> `M:\Agentic\Projects\Coppice-t049-config`. The boxes stay open until it is cherry-picked after T-048
-> and gated.
+> Historical note (2026-10-26): the implementation initially lived in a detached worktree. It landed
+> as `3a0afcf`, and the boxes above are closed.
 
 **Build**
 - `UserConfigService` loads the platform config path. A missing file is working defaults, not an error;

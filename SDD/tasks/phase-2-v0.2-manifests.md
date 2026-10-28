@@ -116,6 +116,9 @@ NuGet, but reusing it here needs measurement against a real pnpm store first.
 - [x] Referenced item never proposed, even under `aggressive`
 - [x] Each preset has a golden plan on the reference fixture
 
+> Evidence: `RetentionEngineTests` covers determinism and referenced protection;
+> `RetentionGoldenPlanTests` pins the conservative/default/aggressive plans on the reference fixture.
+
 ### T-026 · Plan builder + plan JSON + checksum
 **Refs** FR-11 · **Depends** T-025 · **Effort** M
 
@@ -179,3 +182,6 @@ NuGet, but reusing it here needs measurement against a real pnpm store first.
 **Acceptance**
 - [x] Review doc committed listing every contract friction found
 - [x] Freeze decision recorded (ADR-011 closed or re-scheduled with reason)
+
+> Evidence: `docs/adr/ADR-011-api-freeze.md` records F-1…F-7, the freeze decision and the reopen
+> condition.

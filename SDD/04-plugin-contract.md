@@ -52,9 +52,9 @@ deferred: a plugin that deletes files is a supply-chain risk.
 
 ## API stability
 
-The contract is **not frozen** until two dissimilar ecosystems pass
-conformance: .NET (installer-managed, multi-root) and Go (cache-only,
-tool-resolved). Checkpoint at end of v0.2 (ADR-011).
+The contract is **frozen** as of ADR-011 (the v0.2 checkpoint). It reopens
+only if a fifth ecosystem requires a contract change; the manifest schema
+remains versioned separately (NFR-12).
 
 ## Conformance suite (per plugin)
 

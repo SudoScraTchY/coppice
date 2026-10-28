@@ -43,6 +43,8 @@ alongside.
 | T-054 | `tests/Coppice.Tests/Safety/**`, `tests/Coppice.ArchitectureTests/**` |
 | T-051 | `src/Coppice.Application/DoctorService.cs` (after T-056), `src/Coppice.Cli/CoppiceApp.cs` (`RunRoots`), `TextReport.cs`, `DoctorText.cs`, `tests/Coppice.Tests/{Projects,Resolution}/**` |
 | T-053/T-042 | perf fixture/scripts, exporter/completion tests, `tests/Coppice.Tests/**` for those cards |
+| T-057–T-060 | T-057: `src/Coppice.Application/UserManifest*`, `src/Coppice.Manifests/**`, `tests/Coppice.Tests/Config/**`; T-058/T-059: `src/Coppice.Plugins.Net/**`, `src/Coppice.Plugins.Go/**`, `src/Coppice.Application/DoctorService.cs`, ecosystem tests; T-060: `src/Coppice.Core/{PathSafety,Gateway,Quarantine,Audit}/**`, `src/Coppice.Adapters/**`, safety tests |
+| T-061–T-066 | orchestrator-owned `SDD/AGENDA.md`, `SDD/ORCHESTRATION.md`, `SDD/tasks/README.md`, `CHANGELOG.md`, `Directory.Build.props`, `.github/workflows/*`, `scripts/*`, `docs/adr/*`, `evidence/*`; T-062 code lane owns `src/Coppice.Cli/Tui/{TuiState,TuiBackend}.cs` and `tests/Coppice.Tests/Tui/TuiStateTests.cs`; T-064 owns `docs/human-gates/**` |
 
 Shared files (`CHANGELOG.md`, `SDD/tasks/phase-*.md`) are append-only for lanes and resolved by
 the orchestrator. The orchestrator adds the card text and acceptance evidence to the lane
@@ -60,6 +62,8 @@ commit before merging, so one card still equals one commit.
 5. A release tag is created only after the AGENDA evidence bundle is complete. The tag is then
    checked by `.github/workflows/release.yml`: it refuses to publish unless the tag equals
    `<Version>` and `build.yml` already succeeded on that exact commit.
+6. Evidence for a candidate is small text under `evidence/<version>/`; binaries stay in `artifacts/`
+   (ignored). A human gate is signed by a dated transcript, never by an agent.
 
 ## Gates
 
@@ -73,6 +77,8 @@ commit before merging, so one card still equals one commit.
 | **E** escape | `COPPICE_ESCAPE_CASES=100000 dotnet test ... --filter 'FullyQualifiedName~Coppice.Tests.Safety\|Escape=E-7\|Escape=E-10\|Escape=E-12'` |
 | **P** publish | `bash scripts/publish.sh win-x64`; `SELF_CONTAINED=1 bash scripts/publish.sh win-x64` for release |
 | **C** CI | `gh workflow run build.yml --ref <branch>`; inspect six cells, egress canary, license job, artifacts |
+| **D** docs truth | `py -3 scripts/check-docs-truth.py` locally; `python3` in CI |
+| **V** evidence | `bash scripts/verify-evidence.sh <run-id>`; `bash scripts/e2e-scrubbed-path.sh <zip> <version>` |
 | **R** release | `gh workflow run release.yml --ref main` (dry run); require 18 archives + nupkg, green version/size checks, no Release off-tag |
 
 ## Reviewer checklist
@@ -111,7 +117,7 @@ hardware-accelerated), `dotnet-pinvoke` and `nuget-trusted-publishing` (not used
 - A T-048 golden loses a .NET fact, or a new location is deletable without an explicit
   allowlist decision.
 - More than two conflicts in one cherry-pick.
-- A GUI file appears in a `main` diff before T-050.
+- A card lands without its reviewer PASS or its named gate evidence.
 - The host runs out of memory twice in one wave.
 - A release tag is proposed without the human-evidence bundle.
 

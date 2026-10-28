@@ -18,8 +18,8 @@ v1 scope: **.NET** (built-in code plugin), **Go, Rust, Node/npm**
 | Id | Kind | Sources (ordered) | Layout / fingerprint | Owner | Tier | Removal |
 |---|---|---|---|---|---|---|
 | `nuget-packages` | package-cache | tool `dotnet nuget locals global-packages --list` → env `NUGET_PACKAGES` → default | `{id}/{version}`, ratio ≥ 0.8 | user | Safe | selective raw delete via gateway; whole-cache via `dotnet nuget locals --clear` |
-| `nuget-http-cache` | http-cache | tool `… http-cache --list` → default | `v3-cache` layout | user | Safe | gateway |
-| `nuget-temp` | temp | tool `… temp --list` → default | scratch | user | Safe | gateway |
+| `nuget-http-cache` | http-cache | tool `… http-cache --list` → default | `v3-cache` layout | user | Manual | report-only (no fingerprint) |
+| `nuget-temp` | temp | tool `… temp --list` → default | scratch | user | Manual | report-only (no fingerprint) |
 | `dotnet-root` | toolchain | env `DOTNET_ROOT` → tool `dotnet --list-sdks` → registry (win) → OS defaults → `~/.dotnet` | dirs `host/fxr` + `sdk`; `resolve = all` | msi/apt/brew/… or user | Review (user) / Manual (installer) | user dirs via gateway w/ global.json pin refusal; installer → report-only route |
 | `dotnet-tools` | global-tools | default `~/.dotnet/tools` | package dirs | user | Review | `dotnet tool uninstall -g <id>` |
 | `dotnet-workloads` | workload-packs | default `~/.dotnet/{packs,metadata}` | workload manifests | user | Review/Manual | `dotnet workload clean` (native) |
@@ -36,7 +36,14 @@ Markers: `*.csproj`, `*.fsproj`, `global.json`, `nuget.config`.
 References: `obj/project.assets.json` → exact resolved package versions per
 project; `global.json` → SDK pins (refusal rule S-4).
 
+The code is authoritative for the two NuGet caches: `NetProfile` marks both report-only with an empty
+fingerprint, and `EcosystemCatalog` allowlists only `nuget-packages`. A cleanable path would need a
+fingerprint and its own safety card.
+
 ### Health checks
+
+In 0.4.0 these checks are implemented for .NET only; Go/Rust/Node health checks are T-071 (v1.0
+planning).
 
 - Orphaned SDK folders (present on disk, not in installer registration /
   `--list-sdks`).

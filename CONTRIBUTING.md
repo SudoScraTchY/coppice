@@ -39,13 +39,13 @@ Every card must satisfy the checklist in `SDD/tasks/README.md`:
 - [ ] Unit + fixture tests green on the win/linux/mac CI matrix
 - [ ] Conformance suite green (plugin cards)
 - [ ] No new network-capable dependency (CI egress job enforces)
-- [ ] Docs updated (bump the touched file's version header)
+- [ ] Docs updated; active status sections carry a date and the evidence log names the test, run, artifact or commit
 - [ ] Public API touched? → note it on the freeze tracker (until ADR-011)
 - [ ] No direct `System.IO`/`Process` in core or plugins (architecture test)
 
 ## Documentation changes
 
-When updating any SDD document, bump that file's version header (the first metadata block). Do not bump unrelated files.
+When updating any SDD document, update its active status date and add the evidence (test, run, artifact or commit) to `SDD/AGENDA.md`. Do not edit unrelated files.
 
 ## Code style
 
@@ -54,7 +54,7 @@ When updating any SDD document, bump that file's version header (the first metad
 
 ## Safety-critical work
 
-Cards in the safety path (`T-004`, `T-028`, `T-031`, `T-032`, `T-034`, `T-035`) require a **second reviewer** and explicit escape-suite sign-off before merge. See `SDD/06-safety-model.md` for details.
+Cards marked **Safety card** in `SDD/tasks/` require a **second reviewer** and explicit escape-suite sign-off before merge. See `SDD/06-safety-model.md` and the reviewer list in `SDD/AGENDA.md`.
 
 ## Reporting issues
 

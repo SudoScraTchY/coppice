@@ -8,7 +8,7 @@
 | **v0.4 — GUI & time** | Avalonia GUI (thin); history/trends from snapshots; shell completions; HTML report; requirement-evidence closure (FR-01/FR-02/FR-22/FR-23, E-7, NFR-04) | GUI performs the full read→plan→apply flow with pin editor; six-cell CI and the egress canary are green; performance numbers are recorded; the real-volume NFR-04 gap is fixed (T-058) |
 | **v1.0 — stability & reach** | Docs site; distribution (winget/scoop/brew); decide kondo/project-artifact integration; decide out-of-process plugin model | 30 days no safety incidents in the wild; published via two package managers |
 
-## Status (2026-10-26)
+## Status (2026-10-28)
 
 - **v0.1** — code complete. The six-cell CI run is now real (T-018); the dogfood requirement (T-019)
   is still `blocked-human`.
@@ -25,8 +25,10 @@
   drive paths and npm's `LOCALAPPDATA` cache; the doctor now reports dotnet/go/node and the scan
   inventories 3,152 .NET + 26 Go + 1 npm item in 21.0 s. An independent safety pre-review then found
   two blockers in link resolution and the apply ordering; T-060 fixes them with regression tests and
-  rebuilds the candidate on `ba63550`. The tag is withheld only for the human gates
-  (screen reader, fresh VM, dogfood, second safety reviewer). `v1.0` items are the only planning items.
+  rebuilds the candidate on `ba63550`. T-062 then corrected the TUI pin-status copy, so `0.4.0-rc.2` is
+  the candidate and the rc.1 build is historical. The tag is withheld only for the human gates
+  (screen reader, fresh VM, dogfood, second safety reviewer). The v1.0 cards are the only new planning
+  surface; the v0.4 human gates remain the release blockers.
 - **v1.0** — planning only. No distribution, docs-site or packaging work is in this goal.
 
 ## Risks

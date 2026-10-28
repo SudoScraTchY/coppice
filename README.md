@@ -40,7 +40,7 @@ install or the command path.
 bash scripts/publish.sh win-x64        # or linux-x64, linux-arm64, osx-x64, osx-arm64, win-arm64
 ```
 
-**Self-contained single file** (needs no .NET installed; ~37 MB):
+**Self-contained single file** (needs no .NET installed; ~38 MB):
 
 ```bash
 SELF_CONTAINED=1 bash scripts/publish.sh win-x64

@@ -36,7 +36,8 @@ A run with no roots is valid and safe — every item is `Unknown` and a plan pro
 cannot prove a package is unused. `config.toml` is read for project roots, policy and exclusions
 (T-049); explicit `--projects`, `--policy` and `--keep-latest` flags win over the file. T-052 applies
 `[pins]` and `[quarantine]` retention, and T-057 makes `[ecosystems] trust_user_manifests` an opt-in.
-The TUI's pin status shows the line a config would use rather than claiming a pin is active.
+The TUI's pin status reports the active pin from config, or the exact `[pins]` line to add when the
+location is unpinned (T-062).
 
 ## Install and runtime
 

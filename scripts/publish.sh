@@ -8,9 +8,9 @@
 #
 # Framework-dependent is the default because it is the smallest and fastest artifact. NFR-11, as
 # amended by ADR-017, budgets the framework-dependent single file at < 5 MB and the optional
-# self-contained single file at < 50 MB. Measured on win-x64: 1.93 MB framework-dependent / 65-92 ms
-# cold start, 38.4 MB self-contained / 108 ms. Trimming saved 1.8 MB, so the payload is the .NET
-# runtime, not coppice's code.
+# self-contained single file at < 50 MB. Measured on win-x64 (rc.1): 2.32 MB framework-dependent /
+# 78-93 ms cold start, 38.53 MB self-contained / 119-127 ms. Trimming is not enabled; the payload is
+# the .NET runtime, not coppice's code.
 #
 # SELF_CONTAINED=1 remains available. It is the answer for a machine with no .NET, which is why
 # F-004 exists.

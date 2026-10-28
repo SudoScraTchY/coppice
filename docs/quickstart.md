@@ -19,7 +19,7 @@ From a checkout, `scripts/publish.sh` produces a single-file executable plus the
 # Needs the .NET 10 runtime. Roughly 2 MB and starts in about 80 ms.
 bash scripts/publish.sh win-x64
 
-# Needs no .NET runtime. Roughly 37 MB.
+# Needs no .NET runtime. Roughly 38 MB.
 SELF_CONTAINED=1 bash scripts/publish.sh win-x64
 ```
 
@@ -39,7 +39,7 @@ dotnet publish src/Coppice.Cli/Coppice.Cli.csproj -c Release -r win-x64 `
 ```
 
 For the self-contained variant, use `--self-contained true` and add
-`-p:EnableCompressionInSingleFile=true` (about 37 MB, and it needs no .NET runtime on the target).
+`-p:EnableCompressionInSingleFile=true` (about 38 MB, and it needs no .NET runtime on the target).
 
 The desktop shell is a separate, self-contained artifact:
 

@@ -43,3 +43,10 @@ and never measured the self-contained build at all, so the requirement could not
 | The CI repair is the first attempt at real six-cell coverage | `git show 2ef5257 -- .github/workflows/build.yml` |
 | The self-contained artifact is ~38 MB, not < 30 MB | `SELF_CONTAINED=1 bash scripts/publish.sh win-x64` and read the measured size |
 | The publish gate now measures both modes | `scripts/publish.sh` fails on a missing binary or an over-budget artifact in either mode |
+
+## Amendment — 2026-10-28
+
+The Decision section records `0.4.0-dev` as the version consequence. The actual candidate sequence was
+`0.4.0-rc.1` (final rc.1 commit `ba63550`) and then `0.4.0-rc.2` after T-062 corrected the TUI
+pin-status copy. The tag remains `v0.4.0` and is created only after the human gates. No tag or Release
+exists.

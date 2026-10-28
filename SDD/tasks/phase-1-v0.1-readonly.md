@@ -3,10 +3,10 @@
 Goal: earn trust before touching anything. Exit criteria per 12-roadmap.
 Cards: T-005 … T-019. Nothing in this phase mutates user data.
 
-> **In progress (2026-09-29).** T-005 through T-011 are complete and verified. The remaining cards are
-> open. A CI pipeline (`.github/workflows/build.yml`) now runs the full gate on the
-> win/linux/mac matrix, closes the Phase 0 "CI green" caveat, and enforces the no-network-dependency
-> rule from the Definition of Done.
+> **Phase complete except the human dogfood gate (2026-10-28).** All v0.1 cards are closed except
+> T-019 box 2 (five independent dogfood reports). A CI pipeline (`.github/workflows/build.yml`) runs
+> the full gate on the six-cell win/linux/mac × x64/arm64 matrix, closes the Phase 0 "CI green"
+> caveat, and enforces the no-network-dependency rule from the Definition of Done.
 
 ### T-005 · Resolution engine — source chains, roles, provenance
 **Refs** FR-02, LR-1…LR-7 · **Depends** T-003, T-004 · **Effort** L
@@ -194,6 +194,10 @@ Cards: T-005 … T-019. Nothing in this phase mutates user data.
       Cold start 73 ms against a 300 ms target. See the note below.
 - [ ] 5+ dogfood reports collected; every finding has a card
 - [x] Zero mutations possible in v0.1 (verified by egress + VFS audit of commands)
+
+> 2026-10-28: two supporting owner-machine automated reports exist (dotnet and the Go scratch
+> project); they are not independent dogfood reports. Box 2 stays open until five independent reports
+> are linked.
 
 > **How the size budget was met, and what it cost.**
 >

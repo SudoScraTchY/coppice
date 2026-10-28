@@ -78,9 +78,9 @@ required.
 
 | Artifact | Needs | Size |
 |---|---|---|
-| Framework-dependent single file | .NET 10 runtime | 2.21 MB |
-| Self-contained single file | nothing else | 36.74 MB |
-| Self-contained Avalonia GUI | nothing else | 47.72 MB |
+| Framework-dependent single file | .NET 10 runtime | 2.32 MB |
+| Self-contained single file | nothing else | 38.53 MB |
+| Self-contained Avalonia GUI | nothing else | 50.04 MB |
 | `dotnet tool` from a local pack | .NET 10 SDK/runtime | package |
 
 ```bash
@@ -96,21 +96,22 @@ to publish if the tag disagrees with `<Version>` in `Directory.Build.props` or i
 no green six-cell `build.yml` run. The current candidate has no GitHub Release; the commands above are
 the source path.
 
-## Measured artifacts (win-x64 local build, 0.4.0-rc.2, post-fix)
+## Measured artifacts (win-x64, final rc.1 candidate 40449838956)
 
 | Artifact | Exact bytes | Cold start |
 |---|---:|---|
-| `coppice.exe` framework-dependent | 2,313,489 | 80–99 ms |
-| `coppice.exe` self-contained | 38,524,712 | 121–427 ms (first run extracts) |
-| `coppice-gui.exe` self-contained | 50,037,745 | not measured (opens a window) |
+| `coppice.exe` framework-dependent | 2,317,585 | 78–93 ms |
+| `coppice.exe` self-contained | 38,526,352 | 119–127 ms (warm; first run extracts) |
+| `coppice-gui.exe` self-contained | 50,039,274 | not measured (opens a window) |
 
-The GUI has no size budget; 47.72 MB is the recorded candidate. The CLI budgets (5 MB framework-dependent,
-50 MB self-contained) are enforced by `scripts/publish.sh`. Cold start is from the pre-T-059 local build;
-the resolver/doctor changes are not on the startup path.
+The GUI has no size budget; 50.04 MB is the recorded rc.1 candidate. The CLI budgets (5 MB
+framework-dependent, 50 MB self-contained) are enforced by `scripts/publish.sh`. Trimming is not
+enabled; cold start is measured on the shipped binaries. The rc.2 candidate reruns the same matrix;
+its exact bytes are recorded in `evidence/v0.4.0-rc.2/candidate.md`.
 
-A strict release dry run (run `40441451129` on `cce22ec`) built every variant on all six RIDs, ran the
-published linux-x64 self-contained archive through scan→plan→apply→restore→audit with no .NET on
-`PATH`, verified all checksums, and refused to create a Release off-tag. Ranges across those cells:
+The final rc.1 strict dry run (run `40449838956` on `ba63550`) built every variant on all six RIDs, ran
+the published linux-x64 self-contained archive through scan→plan→apply→restore→audit with no .NET on
+`PATH`, verified 19/19 checksums, and refused to create a Release off-tag. Ranges across those cells:
 
 | Variant | Bytes | Size |
 |---|---:|---:|
@@ -147,8 +148,8 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
 - 1,395 unit tests + 33 architecture tests (local; the network canary is the 1,396th and only runs in the
   egress job)
 - 12 golden reports, `dotnet format --verify-no-changes`, the 100k-case escape suite
-- Six-cell GitHub Actions run per code card; the release candidate's final build is `40449319990` on
-  `ba63550`
+- Six-cell GitHub Actions run per code card; the rc.1 final build is `40449319990` on `ba63550`; the
+  rc.2 build and dry run are recorded in `evidence/v0.4.0-rc.2/`
 - Strict release dry run `40449838956` on `ba63550`: exact 18 archive names plus the `dotnet tool`
   package and checksums (all 19 verified with `sha256sum -c`), both CLI variants version-checked,
   screenshots inside the SC and GUI archives, the linux-x64 install smoke green, and no Release
@@ -166,7 +167,9 @@ published linux-x64 self-contained archive through scan→plan→apply→restore
   `40449319990` also archives the canary TRX and refuses a `NotExecuted` result
 - Clean-environment E2E: the rc.1 self-contained binary, `PATH` without .NET, isolated home and state,
   completed the full read → plan → move → restore → audit path; repeated against the final archive
-  from `40449838956` (plan `pln_0f7580ff1171`, quarantine `7ac2c0c0353574a8`, byte-identical restore)
+  from `40449838956` (plan `pln_0f7580ff1171`, quarantine `7ac2c0c0353574a8`, byte-identical restore).
+  A 2026-10-28 re-run with the archived harness produced plan `pln_b1d928e13a84` and quarantine
+  `2ebdac1cfda06b42`, also byte-identical; see `evidence/v0.4.0-rc.1/e2e-scrubbed-path.md`.
 - The final GUI archive was extracted and launched: `coppice-gui.exe` opened a window titled
   "Coppice - harvest what regrows"; the egress job logs `egress canary ran and passed` under the
   Passed-only assertion

@@ -41,6 +41,9 @@ resolution fully visible.
 - Anything requiring elevation (sudo/UAC).
 - Background daemons, schedulers, auto-updates, multi-user scans.
 
+Non-goals mean no mutation, not no visibility: report-only integration and recommendations for project
+artifacts and Docker are the v1.0 path (T-069).
+
 ## Success metrics
 
 | Metric | Target |

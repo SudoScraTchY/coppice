@@ -40,9 +40,11 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | W3 | T-051 FR-01/FR-02 | T-052 FR-22/FR-23 | T-056 / T-049 | B/T/G; pin-denied and drop-in-manifest tests |
 | W4 | T-040 pin editor/provenance | T-041 history/trends | T-050 / T-048 | B/T; headless GUI; two-snapshot delta |
 | W5 | T-053 NFR-04 perf/doctor | T-042 completions + HTML | T-051 / T-015 | B/T/P; recorded perf evidence; offline HTML |
-| W6 | T-043 v0.4 release | — | all | full CI on release commit; release dry run (18 archives + package); human gates; tag |
+| W6 | T-043 v0.4 release + T-060 safety sign-off | — | all | full CI on release commit; release dry run (18 archives + package); human gates; tag |
+| W7 | T-062 TUI copy + T-063 evidence | T-061 truth pass + T-064 kits | T-060 | B/T/F + six-cell CI; 19/19 evidence; reviewer |
+| W8 | T-065 docs guard | T-066 v1.0 planning | T-061/T-064 | docs-truth; reviewer; no v1.0 code |
 
-## Card status (as of 2026-10-26)
+## Card status (as of 2026-10-28)
 
 | Card | Status | Evidence / location |
 |---|---|---|
@@ -57,10 +59,10 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-054 E-7 + escape filter | `done` | `bb148fe`; run `40284606058` green on all six cells with the tagged filter |
 | T-055 SDD truth + skills | `done` | `4afab29`, `d14dd80`, `a2d1d76`; run `40283969985` green on all six cells |
 | T-056 catalog hardening | `done` | `336354b`; run `40290685781` green on all six cells; 1,317 tests, 31 architecture |
-| T-039 Avalonia shell | `done` except box 4 human | boxes 1/2 closed by T-050; box 4 is `blocked-human` |
+| T-039 Avalonia shell | `blocked-human` | boxes 1–3 closed by T-050; box 4 is the human screen-reader pass |
 | T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
-| T-040 GUI pin editor | `done` | `110dc84`; run `40311141426` green on all six cells; pin/roots tests |
-| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.1` candidate rebuilt on the T-060 safety fixes (`ba63550`); build `40449319990` green on six cells; strict dry run `40449838956` (linux-x64 install smoke: exact 18 archives + nupkg + sidecars, both CLI variants version-checked, screenshots inside the SC/GUI archives, no Release; `gh release create` is tag-only and unexercised); CLI 2.32/38.53 MB, GUI 50.04 MB on win-x64; tag withheld until the human gates |
+| T-040 GUI pin editor | `blocked-human` | `110dc84`; run `40311141426` green on all six cells; box 3 is the human screen-reader pass |
+| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.2` re-candidate after T-062; rc.1 evidence is historical (`ba63550`, build `40449319990`, dry run `40449838956`: exact 18 archives + nupkg, 19/19 checksums, linux-x64 install smoke, no Release; `gh release create` is tag-only and unexercised); rc.1 win-x64 exact bytes FD 2,317,585 / SC 38,526,352 / GUI 50,039,274; tag withheld until the human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
 | T-058 real-volume scan perf | `done` | ReferenceIndex fix: 190.6 s → 15.6–17.7 s on 3,152/19.4 GB; 30k/30 GB real-filesystem fixture 9.965 s; regression test; NFR-04 met |
@@ -68,16 +70,22 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-057 FR-23 user manifests | `done` | `b0f1871` + `346a460`; runs `40309220254`, `40311675742` green |
 | T-036 TUI screens | `blocked-human` | box 4 screen-reader smoke pass |
 | T-038 v0.3 release docs | `blocked-human` | box 2 fresh-VM install; 0.3.0 itself withdrawn |
-| T-019 v0.1 release + dogfood | `blocked-human` | 2/5 automated owner-machine reports (2026-10-27: .NET; Go scratch project); 3 more human reports |
+| T-019 v0.1 release + dogfood | `blocked-human` | 2 supporting owner-machine automated reports (2026-10-27: .NET; Go scratch project); 5 independent reports still required |
 | T-013 .NET health checks | `done` | `0e34bc4`; boxes ticked with `NetHealthCheckerTests` (30 cases) and `ReadOnlyAuditTests` |
+| T-060 Safety pre-review fixes | `blocked-human` | fixes `3ef126a` and `ba63550`; build `40447602900`; box 8 awaits the second safety reviewer |
+| T-061 v0.4 truth pass | `in-progress` | this commit; reviewer pending |
+| T-062 TUI pin copy | `in-progress` | `1c469d2`; local B/T/F green (1,395 unit, 33 architecture, 12 goldens); six-cell rerun `40633428577` pending confirmation |
+| T-063 evidence archive | `in-progress` | harness + rc.1 baseline; rc.2 evidence pending |
+| T-064 human-gate kits | `in-progress` | `docs/human-gates/**`; reviewer pending |
+| T-065 docs-truth guard | `not-started` | script + CI job pending |
 
 ## Human-only gates
 
 | Gate | Cards | Evidence | Status |
 |---|---|---|---|
-| Screen-reader smoke pass | T-036 box 4, T-039/T-040 a11y | dated checklist + notes | open |
-| Fresh-VM install → doctor → scan → plan → apply, no container runtime | T-038 box 2, T-043 | VM/OS version + transcript | open |
-| 5+ dogfood reports, every finding carded | T-019 | report links / commit refs | open |
+| Screen-reader smoke pass | T-036 box 4, T-039 box 4, T-040 box 3 | dated checklist + notes (`docs/human-gates/screen-reader-checklist.md`) | open |
+| Fresh-VM install → doctor → scan → plan → apply, no container runtime | T-038 box 2, T-043 | VM/OS version + transcript; candidate in `evidence/v0.4.0-rc.2/candidate.md` | open |
+| 5+ dogfood reports, every finding carded | T-019 | report links / commit refs; 2 supporting owner-machine automated reports exist, independent reports still required | open |
 | Second safety reviewer sign-off | T-031/32/34/35/43/44/48/52/56/59/60 | reviewer name + commit | open |
 | Six-cell CI + egress canary | T-018, T-054 | run URL + TRX canary line | passed 2026-10-26: run `40282093437`; run `40333340213` archives the canary TRX as `egress-results` |
 
@@ -110,33 +118,43 @@ plan `pln_0f7580ff1171` and quarantine `7ac2c0c0353574a8`, also byte-identical.
 The release workflow's linux-x64 install smoke covers the same pipeline for the published Linux
 archive on every release run (run `40449838956`).
 
+2026-10-28: the final rc.1 archive was re-run with the archived harness (`scripts/e2e-scrubbed-path.sh`)
+and the transcript is `evidence/v0.4.0-rc.1/e2e-scrubbed-path.md`: plan `pln_b1d928e13a84`,
+quarantine `2ebdac1cfda06b42`, audit 2 records, byte-identical restore. This is the same supporting
+machine evidence, not a fresh VM.
+
 ## Release sign-off procedure (human)
 
-The machine work is complete at `0.4.0-rc.1`. These steps are the only remaining path to `v0.4.0`;
+The machine work is complete at `0.4.0-rc.2`. These steps are the only remaining path to `v0.4.0`;
 none of them can be automated or self-certified.
 
-1. **Screen reader.** On Windows, publish and run the GUI (`bash scripts/publish-gui.sh win-x64`) with
-   Narrator enabled; visit Setup, Evidence, Review, Apply, Quarantine, Locations, Health and History.
-   Record the OS build, reader, screens and every unlabelled or duplicated control. T-036 box 4 and the
-   T-039/T-040 accessibility boxes tick only with that record.
+1. **Screen reader.** On Windows, publish and run the GUI from the rc.2 candidate
+   (`bash scripts/publish-gui.sh win-x64`) with Narrator enabled; visit every view listed in
+   `docs/human-gates/screen-reader-checklist.md`. Record the OS build, reader, screens and every
+   unlabelled or duplicated control. T-036 box 4 and the T-039 box 4 / T-040 box 3 accessibility boxes
+   tick only with that record.
 2. **Fresh VM.** A machine with no .NET, no container runtime and no coppice state. Take the
-   `release-bundle` artifact from dry run `40441451129` (the strictest machine build; the tag repeats
-   it on the final commit) or build with `scripts/publish.sh`, unpack the self-contained archive for
-   its RID, and copy in a small project whose `obj/project.assets.json` was restored elsewhere (the
-   VM has no SDK). Run `doctor`, `scan --projects`, `plan`, `apply --plan <file> --yes` and
-   `quarantine restore`. Record OS, RID, commands and output. T-038 box 2 / T-043.
-3. **Dogfood.** Five reports from real projects, each naming the ecosystem, commands, cache size and
-   any surprising result; every finding gets a card ID. T-019, currently 2/5 (both owner-machine
-   automated reports).
+   `release-bundle` artifact named in `evidence/v0.4.0-rc.2/candidate.md` (the current candidate; the
+   tag repeats it on the final commit) or build with `scripts/publish.sh`, unpack the self-contained
+   archive for its RID, and copy in a small project whose `obj/project.assets.json` was restored
+   elsewhere (the VM has no SDK). Run `doctor`, `scan --projects`, `plan`, `apply --plan <file> --yes`
+   and `quarantine restore`. Record OS, RID, commands and output. T-038 box 2 / T-043; the template is
+   `docs/human-gates/fresh-vm.md`.
+3. **Dogfood.** Five independent reports from real projects, each naming the ecosystem, commands,
+   cache size and any surprising result; every finding gets a card ID. T-019 currently has two
+   supporting owner-machine automated reports; they do not replace independent dogfood reports. The
+   template is `docs/human-gates/dogfood-report-template.md`.
 4. **Second safety reviewer.** An independent read of the gateway, containment, denylist, TOCTOU,
    quarantine and the release workflow; record reviewer name, commit and PASS/FAIL.
-   T-031/32/34/35/43/44/48/52/56/59. An AI pre-review does not satisfy this gate.
+   T-031/32/34/35/43/44/48/52/56/59/60. An AI pre-review does not satisfy this gate; the brief is
+   `docs/human-gates/second-reviewer-brief.md`.
 5. **Tag.** Add the dated rows to the evidence log, then make the release-identity edit in one commit:
    `<Version>0.4.0</Version>`, the CHANGELOG heading, the release-notes title and candidate paragraphs,
    the README status/install/caption wording, and the quickstart/commands version strings — the dated
-   evidence rows keep their historical `rc.1` references. Push, wait for a green `build.yml` on that
-   commit, then `git tag -a v0.4.0 -m "v0.4.0" && git push origin v0.4.0`. `release.yml` refuses the tag
-   if the version disagrees or the commit has no green six-cell run.
+   evidence rows keep their historical `rc.1`/`rc.2` references. Push, wait for a green `build.yml` on
+   that commit (six cells, egress Passed, license, docs-truth), then
+   `git tag -a v0.4.0 -m "v0.4.0" && git push origin v0.4.0`. `release.yml` refuses the tag if the
+   version disagrees or the commit has no green six-cell run.
 
 A gate is signed by a dated row in the evidence log. "I ran it" without a transcript is not evidence.
 
@@ -171,11 +189,14 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-26 | Egress TRX archive fixed | `c97ae9c`; `upload-artifact` skips hidden paths, so the upload now sets `include-hidden-files` + `if-no-files-found: error`; run `40333340213` green and `egress-results` present (335,932 B) |
 | 2026-10-26 | Packaging evidence commit green; artifacts inspected | run `40334346355` on `4d2f77b`: six cells, egress and license; `coppice-win-x64` contains `docs/images/*.png`; `egress-results/egress.trx` contains `Egress_is_blocked_in_this_environment` |
 | 2026-10-26 | Strict release dry run | run `40399283405` on `905bdba`: six cells, package and aggregate green; exact 18 names + nupkg; fd/sc report `0.4.0-rc.1`; SC and GUI archives contain `docs/images`; the extracted GUI archive opened its window; no Release |
+| 2026-10-26 | Final rc.1 artifact clean E2E | SC zip from `40399283405`, scrubbed PATH, isolated state; plan `pln_2e4ffbf65e6d`, quarantine `493083826337143c`, audit 2 records intact |
+| 2026-10-26 | Clean-environment rc.1 E2E (not a fresh VM) | self-contained zip, scrubbed PATH, isolated state; version→doctor→scan→plan→apply→restore→audit verify; details in the section above |
+| 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |
+| 2026-10-26 | First real six-cell run dispatched | run `40280980743` (superseded by `40282093437`) |
 | 2026-10-27 | Post-T-058 release dry run | run `40411290645` on `238dbdd`: six cells, package and aggregate green; exact 18 names + nupkg; fd/sc report `0.4.0-rc.1`; SC/GUI archives contain `docs/images`; no Release |
 | 2026-10-27 | Linux install smoke + strict dry run | run `40416009642` on `020431c`: six cells, package, linux-x64 install smoke and aggregate green; the published SC archive ran scan→plan→apply→restore→audit with no .NET on PATH; exact 18 names; no Release |
 | 2026-10-27 | Release-artifact tamper checks | rc.1 SC binary: corrupted quarantine → restore refused `ContentAltered` (exit 3, original absent); edited audit record → verify exit 1 `chain-hash`; deleted middle link → exit 1 `chain-seq`/`chain-link`; trailing garbage → torn-tail INFO (exit 0, by design) |
 | 2026-10-27 | Post-fix clean E2E | SC zip from `40411290645`, scrubbed PATH, isolated state; plan `pln_a7fcaccdefed`, quarantine `bd1efaf68327f914`, audit 2 records intact |
-| 2026-10-26 | Final rc.1 artifact clean E2E | SC zip from `40399283405`, scrubbed PATH, isolated state; plan `pln_2e4ffbf65e6d`, quarantine `493083826337143c`, audit 2 records intact |
 | 2026-10-27 | Real-volume scan measurement | rc.1 SC binary on the real NuGet cache: 3,152 items / 19.4 GB warm 190.6 s (cold 210.5 s); empty cache 5.0 s; T-058 opened |
 | 2026-10-27 | T-058 reference-index fix | `DotnetEcosystem.Resolve` builds one assets index per project set; the same 3,152-item cache is 17.7 s, then 15.6 s warm, and a 30k-item fixture is 9.8 s; verdicts unchanged; 1,372 unit, 33 architecture, 12 goldens, 53 escape at 100k |
 | 2026-10-27 | NFR-04 exact shape met | 30,000 items / 31,457,280,000 bytes on the real filesystem (1 MB sparse files) scanned in 9.965 s; T-058 done |
@@ -185,13 +206,13 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-27 | Dogfood report 2/5 (Go, owner machine, automated) | scratch Go project references `github.com/fatih/structtag v1.2.0`; scan 3,179 items, 1 Referenced / 25 Unreferenced Go; read-only plan `pln_69146caf2213` proposes 25 Go steps (340,140,377 B), not applied. Caveat: the project root was the scratch project only, so the other real Go modules would be protected by the owner's actual project roots. |
 | 2026-10-27 | Safety pre-review fixes | Drive-less/relative/UNC Windows paths refused (`NotAbsolute`); `{0}:\` denylist rule; `npm_config_cache` precedence; detection task observed on group fault; 1,382 unit, 33 architecture, 12 goldens, 53 escape at 100k; real doctor dotnet/go/node in 4.33 s |
 | 2026-10-27 | Post-fix safety review | Lowercase drive normalization; drive-root rule is container-scope; detection observation before caller-cancel rethrow; 1,384 unit, 33 architecture, 12 goldens, 53 escape at 100k |
-| 2026-10-27 | Final post-fix strict dry run | run `40436348264` on `02b3e96`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; fd/sc `0.4.0-rc.1`; SC/GUI `docs/images`; no Release |
-| 2026-10-27 | Final post-fix clean E2E | SC zip from `40436348264`; plan `pln_2c2e7ee880e2`, quarantine `7c5fcb692391454b`, audit 2 records intact |
-| 2026-10-27 | Final evidence run green after one egress rerun | run `40437717014` on `a81e88e`: six cells and license green; the egress unit/canary TRX shows 814/814 passed, the architecture test host flaked once with no TRX, and the rerun was green. A tag run must not be taken from a red egress job; rerun a test-host-only flake and confirm the canary TRX |
+| 2026-10-27 | Post-T-028 safety strict dry run | run `40436348264` on `02b3e96`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; fd/sc `0.4.0-rc.1`; SC/GUI `docs/images`; no Release |
+| 2026-10-27 | Post-T-028 safety clean E2E | SC zip from `40436348264`; plan `pln_2c2e7ee880e2`, quarantine `7c5fcb692391454b`, audit 2 records intact |
+| 2026-10-27 | a81e88e evidence run | run `40437717014` on `a81e88e`: six cells and license green; the egress unit/canary TRX shows 814/814 passed, the architecture test host flaked once with no TRX, and the rerun was green. A tag run must not be taken from a red egress job; rerun a test-host-only flake and confirm the canary TRX |
 | 2026-10-27 | Real roots sizes fixed | Sizing moved outside the probe budget; NuGet 21,212,383,881 B; Go module cache 455,406,626 B; npm cache 247,680,793 B; go-bin 54,646,784 B; the .NET group still reports its remaining probe-budget locations |
 | 2026-10-27 | rc.1 rebuilt on the sizing fix | commit `cce22ec`; build run `40440689716` green on all six cells, egress and license |
-| 2026-10-27 | Final rc.1 strict dry run | run `40441451129` on `cce22ec`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; `sha256sum -c` all OK; fd 2,201,915–2,313,489 B, sc 37,314,216–40,206,238 B, gui 47,277,342–52,048,220 B; SC/GUI `docs/images`; no Release |
-| 2026-10-27 | Final rc.1 clean E2E | SC zip from `40441451129`, scrubbed PATH and isolated home/state; version `0.4.0-rc.1`; scan 5.0.0 Referenced / 1.0.0 Unreferenced; plan `pln_131fd9a28810` (1 step, 18 B); quarantine `7f07622df115f223`; byte-identical restore; audit 2 records intact |
+| 2026-10-27 | rc.1 sizing-fix strict dry run | run `40441451129` on `cce22ec`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; `sha256sum -c` all OK; fd 2,201,915–2,313,489 B, sc 37,314,216–40,206,238 B, gui 47,277,342–52,048,220 B; SC/GUI `docs/images`; no Release |
+| 2026-10-27 | rc.1 sizing-fix clean E2E | SC zip from `40441451129`, scrubbed PATH and isolated home/state; version `0.4.0-rc.1`; scan 5.0.0 Referenced / 1.0.0 Unreferenced; plan `pln_131fd9a28810` (1 step, 18 B); quarantine `7f07622df115f223`; byte-identical restore; audit 2 records intact |
 | 2026-10-27 | Independent safety pre-review (advisory) | read-only review of `264ed34` returned FAIL: relative/nested link-target escapes and a hash-length TOCTOU window (blockers), missing home denylist floor, cancellable restore bookkeeping, tokenless sizing (majors), egress NotExecuted (minor); long-path minor disproved by a real >260-char test. Not the human sign-off |
 | 2026-10-27 | T-060 safety fixes | Link targets resolve with true `..`/root-relative semantics and re-walk after re-rooting; hash before the final re-check; home passed into gateway/restore; audit before index delete and non-cancellable; tokenized `MeasureSize`; egress requires `outcome="Passed"`; 1,395 unit, 33 architecture, 12 goldens, 4 escape suites at 100k, format clean |
 | 2026-10-27 | Safety-fix build green | run `40447602900` on `3ef126a`: six cells, egress (Passed-only assertion) and license |
@@ -201,15 +222,14 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-27 | Final candidate GUI artifact launched | `coppice-gui.exe` from the `40449838956` win-x64 zip opened a window titled "Coppice - harvest what regrows" with `PATH` scrubbed of .NET and no `DOTNET_ROOT`; SC/GUI archives carry `docs/images` |
 | 2026-10-27 | Final candidate strict dry run | run `40449838956` on `ba63550`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; `sha256sum -c` 19/19 OK; fd 2,205,499–2,317,585 B, sc 37,315,816–40,207,825 B, gui 47,278,816–52,049,692 B; SC/GUI `docs/images`; no Release |
 | 2026-10-27 | Final candidate clean E2E | SC zip from `40449838956`, scrubbed PATH and isolated home/state; plan `pln_0f7580ff1171` (1 step, 18 B); quarantine `7ac2c0c0353574a8`; byte-identical restore; audit 2 records intact |
-| 2026-10-27 | Final strict dry run | run `40430172079` on `6a9c4de`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; fd/sc `0.4.0-rc.1`; SC/GUI archives contain `docs/images`; no Release |
-| 2026-10-27 | Final clean E2E | SC zip from `40430172079`, scrubbed PATH, isolated state; plan `pln_fb4fecbd898e`, quarantine `2fd884842a06fa8a`, audit 2 records intact |
-| 2026-10-27 | Final safety-build real scans | Go scratch: 1 Referenced / 25 Unreferenced in 12.1 s; owner cache: 3,179 items (3,152 .NET, 26 Go, 1 npm), 47 Referenced / 3,132 Unknown in 16.6 s; no apply |
+| 2026-10-27 | Pre-T-060 strict dry run | run `40430172079` on `6a9c4de`: six cells, package, linux-x64 install smoke and aggregate green; exact 18 names + nupkg; fd/sc `0.4.0-rc.1`; SC/GUI archives contain `docs/images`; no Release |
+| 2026-10-27 | Pre-T-060 clean E2E | SC zip from `40430172079`, scrubbed PATH, isolated state; plan `pln_fb4fecbd898e`, quarantine `2fd884842a06fa8a`, audit 2 records intact |
+| 2026-10-27 | Safety-build real scans | Go scratch: 1 Referenced / 25 Unreferenced in 12.1 s; owner cache: 3,179 items (3,152 .NET, 26 Go, 1 npm), 47 Referenced / 3,132 Unknown in 16.6 s; no apply |
 | 2026-10-27 | CI TRX split | `build.yml` and `release.yml` run unit and architecture tests as separate steps with `unit.trx`/`architecture.trx`; the solution-wide step overwrote the first TRX, hiding the failed unit result on run `40432055888` |
 | 2026-10-27 | Dogfood report 1/5 (owner machine, automated) | scoped to the owner's machine, not an independent user: rc.1 SC binary; 46 Referenced, 3,106 Unknown, 0 Unreferenced; `plan` correctly proposes nothing (0 candidates); finding T-058 |
-| 2026-10-26 | Clean-environment rc.1 E2E (not a fresh VM) | self-contained zip, scrubbed PATH, isolated state; version→doctor→scan→plan→apply→restore→audit verify; details in the section above |
-| 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |
-| 2026-10-26 | First real six-cell run dispatched | run `40280980743` (superseded by `40282093437`) |
-
+| 2026-10-28 | T-062 TUI pin copy fixed | `1c469d2`; `TuiStateTests` 13/13; six-cell rerun `40633428577` pending confirmation after a `setup-dotnet` infra failure on windows-arm64 |
+| 2026-10-28 | rc.2 identity committed | `14321d0`; version strings, CHANGELOG, README, quickstart, commands, release notes, AGENDA |
+| 2026-10-28 | T-061 truth pass | this commit; AGENDA/cards/docs corrected; T-060 and the closure cards added |
 ## Updating this file
 
 1. The orchestrator moves a card's status only after the reviewer returns PASS and the gate

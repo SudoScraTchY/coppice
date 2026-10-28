@@ -17,6 +17,7 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - [x] Full read → plan → apply flow works end-to-end in the GUI
 - [x] UI never blocks on scans; cancel works within 200 ms
 - [x] Same plans produced via CLI and GUI from one snapshot (equality test)
+- [ ] Screen reader smoke pass with labeled elements (human)
 
 > T-039: T-050 closed box 1 with `GuiFlowEndToEndTests` (the real ScanCommand → ApplyCommand →
 > RestoreSelectedCommand flow over fake ports) and box 2 with `GuiScanCancelTests` (19.3 ms from
@@ -35,11 +36,13 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 **Acceptance**
 - [x] Pin editor rejects denylist paths with a visible reason
 - [x] Every root displays its provenance string
+- [ ] Screen reader smoke pass on the Roots and pin-editor controls (human)
 
 > T-040 landed as `110dc84`; run `40311141426` is green on all six cells. `PinEditorServiceTests`
 > covers denylist/fingerprint rejection and config-preserving saves; `PinEditorUiTests` drives the
 > Roots view model and the pin commands. The write goes through `IConfigWriter` in Ports with
 > `PhysicalConfigWriter` in Adapters, and NeedsElevation rows carry the never-elevate note.
+> Box 3 is the human screen-reader pass; the automated AXAML audit covers labels only.
 
 ### T-041 · History & trends
 **Refs** nice-to-have #4 · **Depends** T-009 · **Effort** M
@@ -84,10 +87,11 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
   same bundle, no Release off-tag.
 
 **Acceptance**
-- [x] GUI release artifact self-contained and < reasonable size (record actual) — 50,034,463 bytes (47.71 MB) via `scripts/publish-gui.sh win-x64`
-- [x] Roadmap updated: v1.0 items become the only open cards
-- [x] A release dry run produces 18 archives + the package, with no Release created off-tag — run `40329677179`; `gh release list` stayed empty
-- [x] GUI screenshots in README, taken from the running shell — `docs/images/gui-{dashboard,items,history}.png` from the rc.1 binary
+- [x] GUI release artifact self-contained and < reasonable size (record actual) — final rc.1 candidate 50,039,274 bytes; the rc.2 re-candidate is recorded in `evidence/v0.4.0-rc.2/candidate.md`
+- [ ] Roadmap updated and the v1.0 planning surface created (T-066)
+- [x] A release dry run produces 18 archives + the package, with no Release created off-tag — run `40449838956`; `gh release list` stayed empty
+- [x] GUI screenshots in README, taken from the running shell — `docs/images/gui-{dashboard,items,history}.png` from the rc.1 binary; the GUI is unchanged in rc.2
+- [ ] v0.4.0 tag and GitHub Release published (all human gates first)
 
 > The strict release dry run (`workflow_dispatch`) succeeded as run `40449838956` on `ba63550`: all six
 > cells built FD, SC and GUI variants, the aggregate required the exact 18 archive names + the nupkg,
@@ -110,6 +114,10 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > 37.32–40.21 MB self-contained; the GUI is 47.28–52.05 MB self-contained. The release remains
 > `blocked-human`: screen reader, fresh VM, dogfood reports and the second safety reviewer are still
 > open in `SDD/AGENDA.md`. Tagging before those are signed would repeat the 0.3.0 mistake.
+>
+> 2026-10-28: T-062 changes shipped code (the TUI pin-status copy), so the candidate is now
+> `0.4.0-rc.2`. The rc.1 run `40449838956` remains historical; the rc.2 run and checksums are recorded
+> in `evidence/` before the human gates.
 
 ### T-050 · Finish the parked Avalonia shell
 **Refs** 08-gui · **Depends** T-039, T-048 · **Effort** L
@@ -181,6 +189,9 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 
 > Scope split 2026-10-26: the original T-052 also covered FR-23 user manifests. That half is now
 > T-057 so the pins/quarantine path can land without claiming an unimplemented registry surface.
+>
+> 2026-10-28: T-062 corrects the TUI copy that still said config-file pins were unread. The pin path
+> itself is unchanged.
 
 ### T-053 · NFR-04 performance evidence and the doctor budget
 **Refs** NFR-04, NFR-05 · **Depends** T-051, T-056 · **Effort** M
@@ -207,6 +218,11 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > takes it to 15.6–17.7 s and a 30k/30 GB real-filesystem fixture to 9.965 s, so NFR-04 is met.
 > T-059 later found that the shared total budget starved non-.NET ecosystems on a real machine;
 > probes now run in per-ecosystem groups, and the doctor reports dotnet/go/node in 4.94 s.
+>
+> 2026-10-28 truth correction: the 1.379 s number is the sparse fake fixture; NFR-04 is met by T-058's
+> real-filesystem 9.965 s. The 105 ms doctor number is a blocked-probe test, not the real doctor;
+> T-059 measured 4.33–4.94 s on the real machine. No reference-laptop script exists; the real-data
+> measurements are the evidence.
 
 ### T-054 · E-7 and the escape job's real coverage
 **Refs** 11-testing, E-7, E-10, E-12 · **Depends** T-028, T-031 · **Effort** S
@@ -376,10 +392,97 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - [x] A failed restore audit keeps the index row and reports the gap
 - [x] `MeasureSize` observes a cancelled token; a deep path is inventoried by the real adapter
 - [x] The egress job rejects a NotExecuted canary (tested against a real Passed TRX and a synthetic NotExecuted one)
-- [ ] Second safety-reviewer sign-off (human; this card joins the T-031/32/34/35/43/44/48/52/56/59 review)
+- [ ] Second safety-reviewer sign-off (human; this card joins the T-031/32/34/35/43/44/48/52/56/59/60 review)
 
 > Opened 2026-10-27 from an independent read-only pre-review of `264ed34`. The review returned FAIL with
 > two blockers (relative/nested link escape, hash-length TOCTOU window) and three majors (home floor,
 > restore bookkeeping, sizing cancellation); one minor (egress NotExecuted) was real, and the long-path
 > minor was disproved by a real >260-character test. All findings are fixed with regression tests. The
 > pre-review is advisory: it does **not** satisfy the human second-reviewer gate.
+
+### T-061 · v0.4 documentation truth pass
+**Refs** 12-roadmap, 11-testing, ADR-017 · **Depends** T-043, T-060 · **Effort** M
+
+**Build**
+- Correct the AGENDA, ORCHESTRATION, task cards, roadmap, SDD/README, docs/safety, SDD/04–09,
+  CHANGELOG, release notes and ADR-017 against the evidence. Add T-060 to the status table, W6, phase
+  index and safety-card list; add T-039 box 4 and T-040 box 3 for the human a11y pass; reword T-043
+  and open its tag box; correct the dogfood and fresh-VM pointers.
+- Cite the existing test, run, artifact or commit for every ticked box. If none exists, untick and
+  card it; never invent evidence.
+
+**Acceptance**
+- [x] T-060 is in the status table, W6, reviewer list, phase index and safety-card list
+- [x] T-039/T-040 have human a11y boxes and `blocked-human` status; T-043 no longer claims v1.0 is the only open work
+- [x] Every stale claim named in the 2026-10-28 audit is corrected or carded
+- [ ] Reviewer PASS on the before/after diff
+
+> Evidence: this commit; reviewer PASS pending. The docs guard in T-065 must pass on the fixed tree.
+
+### T-062 · TUI pin-status copy correction
+**Refs** FR-22, 07-cli-tui · **Depends** T-052 · **Effort** S
+
+**Build**
+- `TuiData` carries the configured pins; the Roots `p` key reports the active pin, or the exact
+  `[pins]` line to add, with the config path. It must never claim config-file pins are unread.
+
+**Acceptance**
+- [x] An active pin is shown with the config path
+- [x] The no-pin path shows the exact line to add
+- [x] The regression test asserts the old false claim is gone
+
+> `1c469d2`; `TuiStateTests` 13/13; full local gate 1,395 unit, 33 architecture, 12 goldens, build and
+> format clean. Six-cell build `40633428577` is a rerun after a `setup-dotnet` infra failure on
+> windows-arm64; confirm its conclusion before marking the card done.
+
+### T-063 · Final-candidate evidence archive and machine closure
+**Refs** NFR-03, NFR-05, T-043, 11-testing · **Depends** T-062 · **Effort** M
+
+**Build**
+- Add `scripts/verify-evidence.sh` and `scripts/e2e-scrubbed-path.sh`; fix the NFR label in
+  `scripts/measure-coldstart.sh`.
+- Archive text evidence under `evidence/<version>/`: candidate, run metadata, SHA256SUMS, SIZES,
+  scrubbed-PATH transcript, cold start and NFR-03. Never commit a binary or archive.
+
+**Acceptance**
+- [x] rc.1 baseline: 19/19 checksums, 18 archives + nupkg, six RID rows, no Release
+- [x] rc.1 scrubbed-PATH E2E: version → doctor → scan → plan → apply → restore → audit; plan `pln_b1d928e13a84`, quarantine `2ebdac1cfda06b42`, byte-identical restore
+- [x] NFR-05: FD 78–93 ms, SC 119–127 ms on the shipped binaries; trimming is not enabled and is recorded
+- [ ] rc.2 evidence: repeat after the rc.2 dry run and update `candidate.md`
+- [x] NFR-03: egress canary `Passed` plus the telemetry/network review
+- [x] No binary or archive is committed
+
+> Evidence: this commit; run `40449838956`; transcript in `evidence/v0.4.0-rc.1/`.
+
+### T-064 · Human-gate kits
+**Refs** T-019, T-036, T-038, T-039, T-040, T-043, T-060 · **Depends** T-043 · **Effort** S
+
+**Build**
+- Add `docs/human-gates/README.md`, `screen-reader-checklist.md`, `fresh-vm.md`,
+  `dogfood-report-template.md` and `second-reviewer-brief.md`. Each kit says it does not tick a gate.
+
+**Acceptance**
+- [x] Each kit says it does not tick a gate
+- [x] The screen-reader checklist lists the actual GUI views
+- [x] The fresh-VM kit names the candidate pointer and a transcript template
+- [x] Dogfood distinguishes supporting owner-machine reports from independent reports
+- [x] The reviewer brief names the candidate, scope and the advisory-AI rule
+- [ ] Reviewer PASS
+
+> Evidence: this commit; reviewer PASS pending.
+
+### T-065 · Docs-truth guard
+**Refs** 11-testing, ADR-017 · **Depends** T-061 · **Effort** M
+
+**Build**
+- Add `scripts/check-docs-truth.py`, a `docs-truth` job in `build.yml` and a prepare step in
+  `release.yml`. Check version consistency, AGENDA statuses/card rows, box references, stale claims,
+  added `[x]` evidence tokens and evidence-log dates. Stdlib only; no new package.
+
+**Acceptance**
+- [ ] The script passes on the fixed tree and fails on `3dadb55`
+- [ ] The CI `docs-truth` job is green
+- [ ] The release `prepare` job is green
+- [ ] No new package
+
+> Evidence: pending.
