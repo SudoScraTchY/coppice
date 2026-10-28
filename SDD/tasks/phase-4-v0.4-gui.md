@@ -434,6 +434,10 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > `1c469d2`; `TuiStateTests` 13/13; full local gate 1,395 unit, 33 architecture, 12 goldens, build and
 > format clean. Six-cell build `40633428577` is green after the rerun; the first windows-arm64 attempt
 > failed in `setup-dotnet` with an internal CLR error, not in the code.
+>
+> 2026-10-28 review: `TuiBackend.ScanAsync`/`PrepareApplyAsync` omit `_pins` while `LoadAsync` passes
+> them, so a rescan can resolve a different root than the Roots screen shows. Carded as T-074; T-062
+> itself is PASS.
 
 ### T-063 · Final-candidate evidence archive and machine closure
 **Refs** NFR-03, NFR-05, T-043, 11-testing · **Depends** T-062 · **Effort** M
@@ -487,3 +491,22 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 
 > Evidence: `py -3 scripts/check-docs-truth.py` → OK on the fixed tree; the same script against an
 > extracted `3dadb55` fails with 13 findings. CI and release evidence are pending.
+
+### T-074 · TUI rescan uses config pins
+**Refs** FR-22, T-052, T-062 · **Depends** T-062 · **Effort** S · **Found by** the 2026-10-28 closure review
+
+**Build**
+- `TuiBackend.LoadAsync` passes `_pins` to `DoctorService`, but `ScanAsync` and `PrepareApplyAsync` do
+  not, so a rescan can resolve a different root than the Roots screen displays. Pass the configured
+  pins through every TUI composition root and add a regression test where the pinned path differs from
+  the default root.
+- This is a post-rc.2 finding. The owner decides before the tag whether to fix it in a new candidate
+  or accept it for 0.4.1.
+
+**Acceptance**
+- [ ] A pinned root wins during `ScanAsync` (test with a pin whose path differs from the default)
+- [ ] The plan uses the same root the Roots screen shows
+- [ ] B/T/F green; no package
+
+> 2026-10-28 review finding. T-062 fixed the pin copy; this is the separate rescan wiring. The
+> second-reviewer brief names it as a known open item.

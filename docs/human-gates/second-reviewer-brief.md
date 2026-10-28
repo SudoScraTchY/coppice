@@ -44,6 +44,10 @@ review the source plus the published artifact's file list instead; do not silent
 The commit field is the full 40-character SHA; a branch name, `main`, or a seven-character prefix is
 not a candidate identity.
 
+> **Known 2026-10-28 closure-review finding:** T-074 (the TUI rescan omits config pins). It is not a
+> T-060 blocker. Treat it as open unless the owner fixes it in a new candidate before the tag; if the
+> owner accepts it for 0.4.1, record that decision in the review.
+
 ## Scope
 
 The review is source-first. Read every file below at the candidate commit. Tests are supporting

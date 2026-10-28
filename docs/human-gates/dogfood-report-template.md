@@ -15,15 +15,15 @@ is not a report until a person fills it in and dates it.
 - Every finding mapped to a card ID. A finding without a card is an open task, not a closed report.
 - A dated signature and an explicit independence statement.
 
-At the time this template was written T-019 is at **2/5**, and both existing reports are
-**owner-machine automated** runs. They are supporting evidence only:
+Two supporting **owner-machine automated** reports exist. They are **not** part of the five
+independent reports:
 
-- report 1/5: the owner's real .NET cache, rc.1 self-contained binary, 46 Referenced / 3,106 Unknown
-  / 0 Unreferenced, a plan with 0 candidates; finding T-058. The report itself says it is scoped to
-  the owner's machine, not an independent user.
-- report 2/5: a scratch Go project referencing `github.com/fatih/structtag v1.2.0`, 3,179 items,
-  1 Referenced / 25 Unreferenced Go, a read-only 25-step plan (340,140,377 B) that was not applied;
-  the caveat is that the project root was the scratch project only.
+- supporting report 1/2: the owner's real .NET cache, rc.1 self-contained binary, 46 Referenced /
+  3,106 Unknown / 0 Unreferenced, a plan with 0 candidates; finding T-058. The report itself says it
+  is scoped to the owner's machine, not an independent user.
+- supporting report 2/2: a scratch Go project referencing `github.com/fatih/structtag v1.2.0`, 3,179
+  items, 1 Referenced / 25 Unreferenced Go, a read-only 25-step plan (340,140,377 B) that was not
+  applied; the caveat is that the project root was the scratch project only.
 
 Neither is an independent dogfood report; both are supporting evidence only. Automated runs on the
 maintainer's machine can support a release note, but they do not count toward the five.

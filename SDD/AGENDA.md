@@ -78,6 +78,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-063 evidence archive | `in-progress` | `scripts/verify-evidence.sh`, `scripts/e2e-scrubbed-path.sh`; rc.1 19/19 and E2E `pln_b1d928e13a84`; rc.2 evidence pending |
 | T-064 human-gate kits | `in-progress` | `docs/human-gates/**`; reviewer pending |
 | T-065 docs-truth guard | `in-progress` | `scripts/check-docs-truth.py`; local pass, 13 findings on `3dadb55`; CI/release pending |
+| T-074 TUI rescan pin wiring | `not-started` | 2026-10-28 reviewer finding; owner decision before the tag (fix in a new candidate or accept for 0.4.1) |
 
 ### v1.0 planning (no code before v0.4.0 + 30 days)
 
@@ -163,11 +164,13 @@ none of them can be automated or self-certified.
    `docs/human-gates/second-reviewer-brief.md`.
 5. **Tag.** Add the dated rows to the evidence log, then make the release-identity edit in one commit:
    `<Version>0.4.0</Version>`, the CHANGELOG heading, the release-notes title and candidate paragraphs,
-   the README status/install/caption wording, and the quickstart/commands version strings — the dated
-   evidence rows keep their historical `rc.1`/`rc.2` references. Push, wait for a green `build.yml` on
-   that commit (six cells, egress Passed, license, docs-truth), then
-   `git tag -a v0.4.0 -m "v0.4.0" && git push origin v0.4.0`. `release.yml` refuses the tag if the
-   version disagrees or the commit has no green six-cell run.
+   the README status/install/caption wording, the quickstart/commands version strings, and the active
+   version lines in `SDD/AGENDA.md`, `SDD/08-gui.md`, `SDD/12-roadmap.md`, `docs/safety.md` and
+   `docs/human-gates/README.md` — the dated evidence rows keep their historical `rc.1`/`rc.2`
+   references. Resolve T-074 (fix it in a new candidate or explicitly accept it for 0.4.1) before the
+   tag. Push, wait for a green `build.yml` on that commit (six cells, egress Passed, license,
+   docs-truth), then `git tag -a v0.4.0 -m "v0.4.0" && git push origin v0.4.0`. `release.yml` refuses
+   the tag if the version disagrees or the commit has no green six-cell run.
 
 A gate is signed by a dated row in the evidence log. "I ran it" without a transcript is not evidence.
 

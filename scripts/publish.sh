@@ -37,7 +37,7 @@ common=(
 )
 
 if [[ "$self_contained" == "1" ]]; then
-  # Compression matters here and is the difference between 70 MB and 37 MB.
+  # Compression matters here and is the difference between 70 MB and 38 MB.
   common+=(--self-contained true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true)
 else
   common+=(--self-contained false)

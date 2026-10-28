@@ -7,6 +7,7 @@ set -euo pipefail
 
 run_id="${1:?usage: verify-evidence.sh <run-id> [bundle-dir]}"
 bundle="${2:-artifacts/ci-$run_id}"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if [[ ! -f "$bundle/SHA256SUMS.txt" ]]; then
   echo "downloading release-bundle from run $run_id -> $bundle"
@@ -35,7 +36,7 @@ echo "== sizes =="
 cat SIZES.txt
 
 echo "== releases =="
-if gh release list --limit 1 | grep -q '[^[:space:]]'; then
+if ( cd "$repo_root" && gh release list --limit 1 ) | grep -q '[^[:space:]]'; then
   echo "error: a GitHub Release exists; the v0.4.0 tag is supposed to be withheld" >&2
   gh release list
   exit 1

@@ -16,6 +16,9 @@ incident window are both satisfied.
   amendment and an explicit egress-test exception; T-072 decides. The default is to reject it.
 - **`01` non-goals:** no project-artifact mutation, no Docker mutation, no elevation. T-069 allows
   report-only/recommendation integration only.
+- **OQ-05 is resolved:** quarantine retention is manual-only by default, with a 30-day floor when the
+  config is 0 (T-052).
+- **OQ-08 is resolved:** user manifests are opt-in via `[ecosystems] trust_user_manifests` (T-057).
 - **ADR-012:** installer-owned items are report-only; OQ-06 is resolved as a permanent delegate.
 - **ADR-016:** the trademark/collision screen is a prerequisite for any package publication (T-068).
 

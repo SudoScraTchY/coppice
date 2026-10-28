@@ -1,13 +1,13 @@
 # Human-gate kits
 
-Coppice is at release candidate `0.4.0-rc.1`. The machine evidence is complete, but there is no
+Coppice is at release candidate `0.4.0-rc.2`. The machine evidence is complete, but there is no
 `v0.4.0` tag and there will not be one until four human gates are signed. These kits make each human
 pass precise and repeatable. They are instructions and templates, not evidence.
 
-The fresh-VM and reviewer kits read the final-candidate manifest at
-`evidence/v0.4.0-rc.2/candidate.md`, which is created when that candidate is cut. Until the manifest
-exists, those two passes have not started. Every kit records the exact artifact it used, so no
-record can silently drift to another build.
+The fresh-VM and reviewer kits read the current-candidate manifest at
+`evidence/v0.4.0-rc.2/candidate.md`, which names the run, commit and SHA256. If the manifest is absent,
+those two passes have not started. Every kit records the exact artifact it used, so no record can
+silently drift to another build.
 
 > **This kit does not tick a gate.** Only a dated transcript or a dated sign-off, recorded in the
 > `SDD/AGENDA.md` evidence log, closes a gate. A filled-in template without that record is a draft.
@@ -84,5 +84,5 @@ orchestrator's card update.
 - They do not replace the fresh-VM gate with a scrubbed-`PATH` run, the dogfood gate with an
   automated owner-machine report, or the reviewer gate with an AI pre-review.
 - They do not claim a candidate exists. The fresh-VM and reviewer kits read
-  `evidence/v0.4.0-rc.2/candidate.md`, which is created when that candidate is cut; if the file is
-  absent, the pass has not started.
+  `evidence/v0.4.0-rc.2/candidate.md`, which names the run, commit and SHA256; if the file is absent,
+  the pass has not started.
