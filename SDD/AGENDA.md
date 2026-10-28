@@ -77,7 +77,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-062 TUI pin copy | `in-progress` | `1c469d2`; local B/T/F green (1,395 unit, 33 architecture, 12 goldens); six-cell rerun `40633428577` pending confirmation |
 | T-063 evidence archive | `in-progress` | `scripts/verify-evidence.sh`, `scripts/e2e-scrubbed-path.sh`; rc.1 19/19 and E2E `pln_b1d928e13a84`; rc.2 evidence pending |
 | T-064 human-gate kits | `in-progress` | `docs/human-gates/**`; reviewer pending |
-| T-065 docs-truth guard | `not-started` | script + CI job pending |
+| T-065 docs-truth guard | `in-progress` | `scripts/check-docs-truth.py`; local pass, 13 findings on `3dadb55`; CI/release pending |
 
 ## Human-only gates
 
@@ -231,6 +231,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-28 | rc.2 identity committed | `14321d0`; version strings, CHANGELOG, README, quickstart, commands, release notes, AGENDA |
 | 2026-10-28 | T-061 truth pass | this commit; AGENDA/cards/docs corrected; T-060 and the closure cards added |
 | 2026-10-28 | T-063 rc.1 evidence archived | run `40449838956`; 19/19 checksums; E2E plan `pln_b1d928e13a84`, quarantine `2ebdac1cfda06b42`; FD 78–93 ms, SC 119–127 ms; egress canary `Passed`; `evidence/v0.4.0-rc.1/` |
+| 2026-10-28 | T-065 docs-truth guard | script passes locally, fails on `3dadb55` with 13 findings; wired into `build.yml` and `release.yml`; CI pending |
 
 ## Updating this file
 

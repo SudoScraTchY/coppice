@@ -42,6 +42,11 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      - name: Check the docs' state claims
+        run: python3 scripts/check-docs-truth.py --base HEAD^
 
       - name: Read the version and require the tag to match it
         id: version

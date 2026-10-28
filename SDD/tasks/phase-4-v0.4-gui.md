@@ -480,9 +480,10 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
   added `[x]` evidence tokens and evidence-log dates. Stdlib only; no new package.
 
 **Acceptance**
-- [ ] The script passes on the fixed tree and fails on `3dadb55`
+- [x] The script passes on the fixed tree and fails on `3dadb55` (13 findings)
 - [ ] The CI `docs-truth` job is green
 - [ ] The release `prepare` job is green
-- [ ] No new package
+- [x] No new package (stdlib only)
 
-> Evidence: pending.
+> Evidence: `py -3 scripts/check-docs-truth.py` → OK on the fixed tree; the same script against an
+> extracted `3dadb55` fails with 13 findings. CI and release evidence are pending.

@@ -280,3 +280,17 @@ jobs:
           echo "$nuspec" | grep -q '<license type="expression">Apache-2.0</license>' \
             || { echo "::error::missing or wrong PackageLicenseExpression"; exit 1; }
           echo "Apache-2.0 license metadata present"
+
+  docs-truth:
+    # A green build is not evidence for the docs. This fails on a stale claim, a missing card, a
+    # phantom box reference, a non-chronological evidence log, or a newly ticked box with no evidence.
+    name: docs truth
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      - name: Check the docs' state claims
+        run: python3 scripts/check-docs-truth.py --base HEAD^
