@@ -75,7 +75,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-060 Safety pre-review fixes | `blocked-human` | fixes `3ef126a` and `ba63550`; build `40447602900`; box 8 awaits the second safety reviewer |
 | T-061 v0.4 truth pass | `in-progress` | this commit; reviewer pending |
 | T-062 TUI pin copy | `in-progress` | `1c469d2`; local B/T/F green (1,395 unit, 33 architecture, 12 goldens); six-cell rerun `40633428577` pending confirmation |
-| T-063 evidence archive | `in-progress` | harness + rc.1 baseline; rc.2 evidence pending |
+| T-063 evidence archive | `in-progress` | `scripts/verify-evidence.sh`, `scripts/e2e-scrubbed-path.sh`; rc.1 19/19 and E2E `pln_b1d928e13a84`; rc.2 evidence pending |
 | T-064 human-gate kits | `in-progress` | `docs/human-gates/**`; reviewer pending |
 | T-065 docs-truth guard | `not-started` | script + CI job pending |
 
@@ -230,6 +230,8 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-28 | T-062 TUI pin copy fixed | `1c469d2`; `TuiStateTests` 13/13; six-cell rerun `40633428577` pending confirmation after a `setup-dotnet` infra failure on windows-arm64 |
 | 2026-10-28 | rc.2 identity committed | `14321d0`; version strings, CHANGELOG, README, quickstart, commands, release notes, AGENDA |
 | 2026-10-28 | T-061 truth pass | this commit; AGENDA/cards/docs corrected; T-060 and the closure cards added |
+| 2026-10-28 | T-063 rc.1 evidence archived | run `40449838956`; 19/19 checksums; E2E plan `pln_b1d928e13a84`, quarantine `2ebdac1cfda06b42`; FD 78–93 ms, SC 119–127 ms; egress canary `Passed`; `evidence/v0.4.0-rc.1/` |
+
 ## Updating this file
 
 1. The orchestrator moves a card's status only after the reviewer returns PASS and the gate

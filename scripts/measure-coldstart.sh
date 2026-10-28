@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Measure coppice cold start for one published binary (NFR-11: < 300 ms).
+# Measure coppice cold start for one published binary (NFR-05: < 300 ms).
 #
 # Measured from the shell rather than from inside the process, because "cold start" as a user
 # experiences it INCLUDES process creation — a tool that self-extracts a 37 MB payload and JITs its
