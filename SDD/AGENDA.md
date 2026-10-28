@@ -259,6 +259,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-28 | T-063 rc.2 evidence archived | FD cached 80–164 ms (steady 80–86), SC steady 125–136 ms; egress canary Passed; 19/19 checksums |
 | 2026-10-28 | T-065 CI and release guard green | docs truth OK in build `40640888478` and release prepare `40641671804` |
 | 2026-10-28 | Closure re-review PASS | T-061/T-064/T-066 blockers resolved; T-062/T-063/T-065 confirmed; T-074 remains open |
+| 2026-10-28 | Final docs/reviewer build | run `40685438262` on `2581910`: six cells, egress, license, docs truth green |
 
 ## Updating this file
 
