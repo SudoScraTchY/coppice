@@ -89,6 +89,28 @@ public sealed class TuiStateTests
     }
 
     [Fact]
+    public void P_reports_the_active_pin_or_the_exact_line_to_add_one()
+    {
+        TuiState state = TuiFixtures.State();
+        state.HandleKey(TuiFixtures.Tab());
+        Assert.Equal(TuiScreen.Roots, state.Screen);
+
+        state.HandleKey(TuiFixtures.Letter('p'));
+        string pinned = state.Frame().Status;
+        Assert.Contains(@"pin: nuget-packages is pinned to C:\cache in", pinned, StringComparison.Ordinal);
+        Assert.Contains(@"C:\Users\dev\AppData\Roaming\coppice\config.toml", pinned, StringComparison.Ordinal);
+        Assert.DoesNotContain("does not read", pinned, StringComparison.OrdinalIgnoreCase);
+
+        state.HandleKey(TuiFixtures.Down());
+        state.HandleKey(TuiFixtures.Letter('p'));
+        string unpinned = state.Frame().Status;
+        Assert.Equal(
+            @"pin: add dotnet-tools = ""C:\Program Files\dotnet\tools"" under [pins] in C:\Users\dev\AppData\Roaming\coppice\config.toml.",
+            unpinned);
+        Assert.DoesNotContain("does not read", unpinned, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Items_filter_and_sort_are_deterministic()
     {
         TuiState state = TuiFixtures.State();

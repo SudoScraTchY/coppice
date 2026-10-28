@@ -91,7 +91,11 @@ internal static class TuiFixtures
         [new TuiProblem("error", "roots", "denied", "dotnet-tools: denied", @"C:\Program Files\dotnet\tools", "on the denylist")],
         [Quarantined()],
         @"C:\Users\dev",
-        @"C:\Users\dev\AppData\Roaming\coppice\config.toml");
+        @"C:\Users\dev\AppData\Roaming\coppice\config.toml",
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["nuget-packages"] = Root,
+        });
 
     public static Plan PreviewPlan() => PlanPreviewService.Preview(Snapshot(), Policy.Default).Plan!;
 

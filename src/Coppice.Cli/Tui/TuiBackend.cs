@@ -91,7 +91,8 @@ public sealed class TuiBackend : ITuiBackend
             BuildProblems(roots, snapshot, latest),
             quarantine,
             _env.HomeDirectory,
-            ConfigPathFor(_env));
+            ConfigPathFor(_env),
+            _pins);
     }
 
     public async Task<TuiData> ScanAsync()

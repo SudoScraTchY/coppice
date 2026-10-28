@@ -48,7 +48,8 @@ public sealed record TuiData(
     IReadOnlyList<TuiProblem> Problems,
     IReadOnlyList<QuarantineEntry> Quarantine,
     string? HomeDirectory,
-    string ConfigPath);
+    string ConfigPath,
+    IReadOnlyDictionary<string, string> Pins);
 
 public enum ItemFilter
 {
@@ -257,10 +258,13 @@ public sealed class TuiState
         if (IsChar(key, 'p'))
         {
             RootReport? root = SelectedRoot;
-            _status = root is null
-                ? "No root selected."
-                : $"pin: this build does not read config-file pins yet. The line for a future config is "
-                    + $"`{root.LocationId} = \"{root.Root.RealPath}\"` under [pins] in {_data.ConfigPath}.";
+            _status = root switch
+            {
+                null => "No root selected.",
+                _ when _data.Pins.TryGetValue(root.LocationId, out string? pinned) =>
+                    $"pin: {root.LocationId} is pinned to {pinned} in {_data.ConfigPath}.",
+                _ => $"pin: add {root.LocationId} = \"{root.Root.RealPath}\" under [pins] in {_data.ConfigPath}.",
+            };
         }
 
         return TuiIntent.None;
