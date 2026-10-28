@@ -98,28 +98,29 @@ to publish if the tag disagrees with `<Version>` in `Directory.Build.props` or i
 no green six-cell `build.yml` run. The current candidate has no GitHub Release; the commands above are
 the source path.
 
-## Measured artifacts (win-x64, final rc.1 candidate 40449838956)
+## Measured artifacts (win-x64, current rc.2 T-074 rebuild 40698827006)
 
 | Artifact | Exact bytes | Cold start |
 |---|---:|---|
-| `coppice.exe` framework-dependent | 2,317,585 | 78–93 ms |
-| `coppice.exe` self-contained | 38,526,352 | 119–127 ms (warm; first run extracts) |
-| `coppice-gui.exe` self-contained | 50,039,274 | not measured (opens a window) |
+| `coppice.exe` framework-dependent | 2,317,585 | 82–218 ms (median 86.5) |
+| `coppice.exe` self-contained | 38,526,503 | 126–136 ms |
+| `coppice-gui.exe` self-contained | 50,039,275 | not measured (opens a window) |
 
-The GUI has no size budget; 50.04 MB is the recorded rc.1 candidate. The CLI budgets (5 MB
+The GUI has no size budget; 50.04 MB is the recorded rc.2 candidate. The CLI budgets (5 MB
 framework-dependent, 50 MB self-contained) are enforced by `scripts/publish.sh`. Trimming is not
-enabled; cold start is measured on the shipped binaries. The rc.2 candidate reruns the same matrix;
+enabled; cold start is measured on the shipped binaries. The current candidate is run `40698827006`;
 its exact bytes are recorded in `evidence/v0.4.0-rc.2/candidate.md`.
 
-The final rc.1 strict dry run (run `40449838956` on `ba63550`) built every variant on all six RIDs, ran
-the published linux-x64 self-contained archive through scan→plan→apply→restore→audit with no .NET on
-`PATH`, verified 19/19 checksums, and refused to create a Release off-tag. Ranges across those cells:
+The current rc.2 T-074 rebuild strict dry run (run `40698827006` on `e738b52`) built every variant on
+all six RIDs, ran the published linux-x64 self-contained archive through scan→plan→apply→restore→audit
+with no .NET on `PATH`, verified 19/19 checksums, and refused to create a Release off-tag. Ranges
+across those cells:
 
 | Variant | Bytes | Size |
 |---|---:|---:|
-| CLI framework-dependent | 2,205,499–2,317,585 | 2.10–2.21 MB |
-| CLI self-contained | 37,315,816–40,207,825 | 35.59–38.34 MB |
-| GUI self-contained | 47,278,816–52,049,692 | 45.09–49.64 MB |
+| CLI framework-dependent | 2,206,011–2,317,585 | 2.10–2.21 MB |
+| CLI self-contained | 37,315,960–40,207,977 | 35.59–38.34 MB |
+| GUI self-contained | 47,278,817–52,049,692 | 45.09–49.64 MB |
 
 ## Known limits and open human gates
 
@@ -150,16 +151,16 @@ the published linux-x64 self-contained archive through scan→plan→apply→res
 - 1,396 unit tests + 33 architecture tests (local; the network canary is the 1,397th and only runs in the
   egress job)
 - 12 golden reports, `dotnet format --verify-no-changes`, the 100k-case escape suite
-- Six-cell GitHub Actions run per code card; the rc.1 final build is `40449319990` on `ba63550`; the
-  rc.2 build and dry run are recorded in `evidence/v0.4.0-rc.2/`
+- Six-cell GitHub Actions run per code card; the current rc.2 build is `40696943889` on `e738b52`, and
+  the strict dry run is `40698827006`; the evidence is in `evidence/v0.4.0-rc.2/`
 - Strict release dry run `40449838956` on `ba63550`: exact 18 archive names plus the `dotnet tool`
   package and checksums (all 19 verified with `sha256sum -c`), both CLI variants version-checked,
   screenshots inside the SC and GUI archives, the linux-x64 install smoke green, and no Release
   created off-tag
-- Final size table (framework-dependent / self-contained / GUI bytes): linux-x64 2,205,499 /
-  40,207,825 / 49,710,472; linux-arm64 2,231,359 / 38,071,220 / 47,278,816; win-x64 2,317,585 /
-  38,526,352 / 50,039,274; win-arm64 2,297,109 / 37,827,014 / 48,789,026; osx-x64 2,231,928 /
-  39,593,224 / 52,049,692; osx-arm64 2,298,552 / 37,315,816 / 49,775,244
+- Final size table (framework-dependent / self-contained / GUI bytes): linux-x64 2,206,011 /
+  40,207,977 / 49,710,473; linux-arm64 2,231,359 / 38,071,370 / 47,278,817; win-x64 2,317,585 /
+  38,526,503 / 50,039,275; win-arm64 2,297,109 / 37,827,165 / 48,789,027; osx-x64 2,232,440 /
+  39,593,384 / 52,049,692; osx-arm64 2,298,552 / 37,315,960 / 49,775,244
 - Linux install smoke: the published linux-x64 self-contained archive ran scan→plan→apply→restore→audit
   with no .NET on `PATH`; the publish job depends on it
 - Release-artifact tamper checks: corrupted quarantine refused with `ContentAltered`; edited or
@@ -171,7 +172,9 @@ the published linux-x64 self-contained archive through scan→plan→apply→res
   completed the full read → plan → move → restore → audit path; repeated against the final archive
   from `40449838956` (plan `pln_0f7580ff1171`, quarantine `7ac2c0c0353574a8`, byte-identical restore).
   A 2026-10-28 re-run with the archived harness produced plan `pln_b1d928e13a84` and quarantine
-  `2ebdac1cfda06b42`, also byte-identical; see `evidence/v0.4.0-rc.1/e2e-scrubbed-path.md`.
+  `2ebdac1cfda06b42`, also byte-identical; see `evidence/v0.4.0-rc.1/e2e-scrubbed-path.md`. The T-074
+  rebuild from `40698827006` produced plan `pln_20c055636739` and quarantine `f0c8bc0424ae4cbe`, also
+  byte-identical; see `evidence/v0.4.0-rc.2/e2e-scrubbed-path.md`.
 - The final GUI archive was extracted and launched: `coppice-gui.exe` opened a window titled
   "Coppice - harvest what regrows"; the egress job logs `egress canary ran and passed` under the
   Passed-only assertion

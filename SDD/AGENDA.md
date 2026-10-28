@@ -62,7 +62,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-039 Avalonia shell | `blocked-human` | boxes 1–3 closed by T-050; box 4 is the human screen-reader pass |
 | T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
 | T-040 GUI pin editor | `blocked-human` | `110dc84`; run `40311141426` green on all six cells; box 3 is the human screen-reader pass |
-| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.2` rebuild on `d4036f2` (T-074 pin pass-through); the previous rc.2 run `40641671804` on `bd1b67e` is historical (18 archives + nupkg, 19/19 checksums, linux-x64 smoke, no Release; `gh release create` is tag-only and unexercised); new dry run pending; rc.1 evidence historical; tag withheld until the human gates |
+| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.2` T-074 rebuild on `e738b52`: build `40696943889`, strict dry run `40698827006` (18 archives + nupkg, 19/19 checksums, linux-x64 smoke, no Release; `gh release create` is tag-only and unexercised); win-x64 FD 2,317,585 / SC 38,526,503 / GUI 50,039,275; rc.1 and the pre-T-074 rc.2 run are historical; tag withheld until the human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
 | T-058 real-volume scan perf | `done` | ReferenceIndex fix: 190.6 s → 15.6–17.7 s on 3,152/19.4 GB; 30k/30 GB real-filesystem fixture 9.965 s; regression test; NFR-04 met |
@@ -75,9 +75,9 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-060 Safety pre-review fixes | `blocked-human` | fixes `3ef126a` and `ba63550`; build `40447602900`; box 8 awaits the second safety reviewer |
 | T-061 v0.4 truth pass | `done` | `4c6f849` + `7f4ea3d`; independent re-review PASS; docs guard green |
 | T-062 TUI pin copy | `done` | `1c469d2`; local B/T/F green; six-cell build `40633428577` green after the infra rerun |
-| T-063 evidence archive | `done` | `scripts/verify-evidence.sh`, `scripts/e2e-scrubbed-path.sh`; rc.1 19/19 + E2E `pln_b1d928e13a84`; rc.2 19/19 (run `40641671804`) + E2E `pln_2d7dcab9ad4c` |
+| T-063 evidence archive | `done` | `scripts/verify-evidence.sh`, `scripts/e2e-scrubbed-path.sh`; rc.1 19/19 + E2E `pln_b1d928e13a84`; rc.2 T-074 rebuild 19/19 (run `40698827006`) + E2E `pln_20c055636739` |
 | T-064 human-gate kits | `done` | `6328678` + `7f4ea3d`; independent re-review PASS |
-| T-065 docs-truth guard | `done` | `scripts/check-docs-truth.py`; local pass, 13 findings on `3dadb55`; build `40640888478` docs truth OK; release `40641671804` prepare OK |
+| T-065 docs-truth guard | `done` | `scripts/check-docs-truth.py`; local pass, 13 findings on `3dadb55`; build `40696943889` docs truth OK; release `40698827006` prepare OK |
 | T-074 TUI rescan pin wiring | `done` | `d4036f2`; `TuiBackendTests` proves the pinned cache is scanned instead of the environment default; 1,396 unit, 33 architecture, 12 goldens, format clean |
 
 ### v1.0 planning (no code before v0.4.0 + 30 days)
@@ -137,8 +137,12 @@ and the transcript is `evidence/v0.4.0-rc.1/e2e-scrubbed-path.md`: plan `pln_b1d
 quarantine `2ebdac1cfda06b42`, audit 2 records, byte-identical restore. This is the same supporting
 machine evidence, not a fresh VM.
 
-2026-10-28: the rc.2 self-contained archive from run `40641671804` passed the same harness: plan
+2026-10-28: the pre-T-074 rc.2 archive from run `40641671804` passed the same harness: plan
 `pln_2d7dcab9ad4c`, quarantine `2a6e25488758d6b1`, audit 2 records, byte-identical restore; transcript
+`evidence/v0.4.0-rc.2/40641671804/e2e-scrubbed-path.md`.
+
+2026-10-28: the T-074 rebuild archive from run `40698827006` passed the harness: plan
+`pln_20c055636739`, quarantine `f0c8bc0424ae4cbe`, audit 2 records, byte-identical restore; transcript
 `evidence/v0.4.0-rc.2/e2e-scrubbed-path.md`.
 
 ## Release sign-off procedure (human)
@@ -261,6 +265,11 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-28 | Closure re-review PASS | T-061/T-064/T-066 blockers resolved; T-062/T-063/T-065 confirmed; T-074 remains open |
 | 2026-10-28 | T-074 fixed | `d4036f2`; `ScanAsync`/`PrepareApplyAsync` pass `_pins`; `TuiBackendTests`; 1,396 unit, 33 architecture, 12 goldens, format clean |
 | 2026-10-28 | Final docs/reviewer build | run `40685438262` on `2581910`: six cells, egress, license, docs truth green |
+| 2026-10-28 | rc.2 T-074 rebuild build | run `40696943889` on `e738b52`: six cells, egress Passed, license, docs truth; 1,396 unit |
+| 2026-10-28 | rc.2 T-074 rebuild dry run | run `40698827006` on `e738b52`: 18 archives + nupkg, 19/19 checksums, linux-x64 smoke, no Release |
+| 2026-10-28 | rc.2 T-074 rebuild E2E | plan `pln_20c055636739`, quarantine `f0c8bc0424ae4cbe`; byte-identical restore; audit 2 records; `evidence/v0.4.0-rc.2/` |
+| 2026-10-28 | T-063 rebuilt evidence archived | 19/19; FD 82–218 ms, SC 126–136; egress canary Passed |
+| 2026-10-28 | T-065 rebuilt CI/release guard | docs truth OK in `40696943889` and `40698827006` |
 
 ## Updating this file
 
