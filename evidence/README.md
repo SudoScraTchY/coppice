@@ -30,8 +30,8 @@ evidence/
 ## Reproduce
 
 ```bash
-bash scripts/verify-evidence.sh 40449838956
-bash scripts/e2e-scrubbed-path.sh artifacts/ci-40449838956/coppice-0.4.0-rc.1-win-x64-self-contained.zip 0.4.0-rc.1
+bash scripts/verify-evidence.sh 40641671804
+bash scripts/e2e-scrubbed-path.sh artifacts/ci-40641671804/coppice-0.4.0-rc.2-win-x64-self-contained.zip 0.4.0-rc.2
 ```
 
 The release bundle expires after 30 days. If it is gone, run `release.yml` again on the candidate

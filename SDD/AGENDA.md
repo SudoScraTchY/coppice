@@ -62,7 +62,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-039 Avalonia shell | `blocked-human` | boxes 1–3 closed by T-050; box 4 is the human screen-reader pass |
 | T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
 | T-040 GUI pin editor | `blocked-human` | `110dc84`; run `40311141426` green on all six cells; box 3 is the human screen-reader pass |
-| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.2` re-candidate after T-062; rc.1 evidence is historical (`ba63550`, build `40449319990`, dry run `40449838956`: exact 18 archives + nupkg, 19/19 checksums, linux-x64 install smoke, no Release; `gh release create` is tag-only and unexercised); rc.1 win-x64 exact bytes FD 2,317,585 / SC 38,526,352 / GUI 50,039,274; tag withheld until the human gates |
+| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.2` candidate on `bd1b67e`: build `40640888478`, strict dry run `40641671804` (18 archives + nupkg, 19/19 checksums, linux-x64 smoke, no Release; `gh release create` is tag-only and unexercised); rc.2 win-x64 exact bytes FD 2,317,585 / SC 38,526,505 / GUI 50,039,269; rc.1 evidence is historical; tag withheld until the human gates and the T-074 decision |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
 | T-058 real-volume scan perf | `done` | ReferenceIndex fix: 190.6 s → 15.6–17.7 s on 3,152/19.4 GB; 30k/30 GB real-filesystem fixture 9.965 s; regression test; NFR-04 met |
@@ -75,9 +75,9 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-060 Safety pre-review fixes | `blocked-human` | fixes `3ef126a` and `ba63550`; build `40447602900`; box 8 awaits the second safety reviewer |
 | T-061 v0.4 truth pass | `in-progress` | this commit; reviewer pending |
 | T-062 TUI pin copy | `done` | `1c469d2`; local B/T/F green; six-cell build `40633428577` green after the infra rerun |
-| T-063 evidence archive | `in-progress` | `scripts/verify-evidence.sh`, `scripts/e2e-scrubbed-path.sh`; rc.1 19/19 and E2E `pln_b1d928e13a84`; rc.2 evidence pending |
+| T-063 evidence archive | `done` | `scripts/verify-evidence.sh`, `scripts/e2e-scrubbed-path.sh`; rc.1 19/19 + E2E `pln_b1d928e13a84`; rc.2 19/19 (run `40641671804`) + E2E `pln_2d7dcab9ad4c` |
 | T-064 human-gate kits | `in-progress` | `docs/human-gates/**`; reviewer pending |
-| T-065 docs-truth guard | `in-progress` | `scripts/check-docs-truth.py`; local pass, 13 findings on `3dadb55`; CI/release pending |
+| T-065 docs-truth guard | `done` | `scripts/check-docs-truth.py`; local pass, 13 findings on `3dadb55`; build `40640888478` docs truth OK; release `40641671804` prepare OK |
 | T-074 TUI rescan pin wiring | `not-started` | 2026-10-28 reviewer finding; owner decision before the tag (fix in a new candidate or accept for 0.4.1) |
 
 ### v1.0 planning (no code before v0.4.0 + 30 days)
@@ -136,6 +136,10 @@ archive on every release run (run `40449838956`).
 and the transcript is `evidence/v0.4.0-rc.1/e2e-scrubbed-path.md`: plan `pln_b1d928e13a84`,
 quarantine `2ebdac1cfda06b42`, audit 2 records, byte-identical restore. This is the same supporting
 machine evidence, not a fresh VM.
+
+2026-10-28: the rc.2 self-contained archive from run `40641671804` passed the same harness: plan
+`pln_2d7dcab9ad4c`, quarantine `2a6e25488758d6b1`, audit 2 records, byte-identical restore; transcript
+`evidence/v0.4.0-rc.2/e2e-scrubbed-path.md`.
 
 ## Release sign-off procedure (human)
 
@@ -249,6 +253,11 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-28 | T-063 rc.1 evidence archived | run `40449838956`; 19/19 checksums; E2E plan `pln_b1d928e13a84`, quarantine `2ebdac1cfda06b42`; FD 78–93 ms, SC 119–127 ms; egress canary `Passed`; `evidence/v0.4.0-rc.1/` |
 | 2026-10-28 | T-065 docs-truth guard | script passes locally, fails on `3dadb55` with 13 findings; wired into `build.yml` and `release.yml`; CI pending |
 | 2026-10-28 | T-066 v1.0 planning surface | `SDD/tasks/phase-5-v1.0-planning.md`; conflict register, ADR index and OQ statuses reconciled; reviewer pending |
+| 2026-10-28 | rc.2 candidate build | run `40640888478` on `bd1b67e`: six cells, egress Passed, license, docs truth |
+| 2026-10-28 | rc.2 strict dry run | run `40641671804` on `bd1b67e`: 18 archives + nupkg, 19/19 checksums, linux-x64 smoke, no Release |
+| 2026-10-28 | rc.2 clean E2E | SC zip from `40641671804`; plan `pln_2d7dcab9ad4c`, quarantine `2a6e25488758d6b1`; byte-identical restore; audit 2 records; `evidence/v0.4.0-rc.2/` |
+| 2026-10-28 | T-063 rc.2 evidence archived | FD cached 80–164 ms (steady 80–86), SC steady 125–136 ms; egress canary Passed; 19/19 checksums |
+| 2026-10-28 | T-065 CI and release guard green | docs truth OK in build `40640888478` and release prepare `40641671804` |
 
 ## Updating this file
 

@@ -87,7 +87,7 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
   same bundle, no Release off-tag.
 
 **Acceptance**
-- [x] GUI release artifact self-contained and < reasonable size (record actual) — final rc.1 candidate 50,039,274 bytes; the rc.2 re-candidate is recorded in `evidence/v0.4.0-rc.2/candidate.md`
+- [x] GUI release artifact self-contained and < reasonable size (record actual) — rc.2 win-x64 50,039,269 bytes; rc.1 50,039,274 is historical; see `evidence/v0.4.0-rc.2/candidate.md`
 - [ ] Roadmap updated and the v1.0 planning surface created (T-066)
 - [x] A release dry run produces 18 archives + the package, with no Release created off-tag — run `40449838956`; `gh release list` stayed empty
 - [x] GUI screenshots in README, taken from the running shell — `docs/images/gui-{dashboard,items,history}.png` from the rc.1 binary; the GUI is unchanged in rc.2
@@ -118,6 +118,10 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 > 2026-10-28: T-062 changes shipped code (the TUI pin-status copy), so the candidate is now
 > `0.4.0-rc.2`. The rc.1 run `40449838956` remains historical; the rc.2 run and checksums are recorded
 > in `evidence/` before the human gates.
+>
+> The rc.2 candidate is run `40641671804` on `bd1b67e`: 19/19 checksums, 18 archives + nupkg, no
+> Release; win-x64 FD 2,317,585 / SC 38,526,505 / GUI 50,039,269; E2E plan `pln_2d7dcab9ad4c`,
+> quarantine `2a6e25488758d6b1`.
 
 ### T-050 · Finish the parked Avalonia shell
 **Refs** 08-gui · **Depends** T-039, T-048 · **Effort** L
@@ -451,12 +455,14 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 **Acceptance**
 - [x] rc.1 baseline: 19/19 checksums, 18 archives + nupkg, six RID rows, no Release
 - [x] rc.1 scrubbed-PATH E2E: version → doctor → scan → plan → apply → restore → audit; plan `pln_b1d928e13a84`, quarantine `2ebdac1cfda06b42`, byte-identical restore
-- [x] NFR-05: FD 78–93 ms, SC 119–127 ms on the shipped binaries; trimming is not enabled and is recorded
-- [ ] rc.2 evidence: repeat after the rc.2 dry run and update `candidate.md`
+- [x] NFR-05: FD cached 80–164 ms (steady 80–86), SC steady 125–136 ms; trimming is not enabled and is recorded
+- [x] rc.2 evidence: run `40641671804`; 19/19 checksums; E2E plan `pln_2d7dcab9ad4c`, quarantine `2a6e25488758d6b1`; `candidate.md` updated
 - [x] NFR-03: egress canary `Passed` plus the telemetry/network review
 - [x] No binary or archive is committed
 
-> Evidence: this commit; run `40449838956`; transcript in `evidence/v0.4.0-rc.1/`.
+> Evidence: rc.1 run `40449838956` and rc.2 run `40641671804`; 19/19 checksums, 18 archives + nupkg,
+> no Release; E2E plan `pln_2d7dcab9ad4c`, quarantine `2a6e25488758d6b1`; transcripts in
+> `evidence/v0.4.0-rc.1/` and `evidence/v0.4.0-rc.2/`.
 
 ### T-064 · Human-gate kits
 **Refs** T-019, T-036, T-038, T-039, T-040, T-043, T-060 · **Depends** T-043 · **Effort** S
@@ -485,12 +491,13 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 
 **Acceptance**
 - [x] The script passes on the fixed tree and fails on `3dadb55` (13 findings)
-- [ ] The CI `docs-truth` job is green
-- [ ] The release `prepare` job is green
+- [x] The CI `docs-truth` job is green — build `40640888478`, log `docs truth: OK (version 0.4.0-rc.2)`
+- [x] The release `prepare` job is green — run `40641671804`, log `docs truth: OK (version 0.4.0-rc.2)`
 - [x] No new package (stdlib only)
 
 > Evidence: `py -3 scripts/check-docs-truth.py` → OK on the fixed tree; the same script against an
-> extracted `3dadb55` fails with 13 findings. CI and release evidence are pending.
+> extracted `3dadb55` fails with 13 findings. CI: build `40640888478`; release prepare `40641671804`;
+> both logs read `docs truth: OK (version 0.4.0-rc.2)`.
 
 ### T-074 · TUI rescan uses config pins
 **Refs** FR-22, T-052, T-062 · **Depends** T-062 · **Effort** S · **Found by** the 2026-10-28 closure review
