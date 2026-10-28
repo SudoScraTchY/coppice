@@ -44,9 +44,9 @@ review the source plus the published artifact's file list instead; do not silent
 The commit field is the full 40-character SHA; a branch name, `main`, or a seven-character prefix is
 not a candidate identity.
 
-> **Known 2026-10-28 closure-review finding:** T-074 (the TUI rescan omits config pins). It is not a
-> T-060 blocker. Treat it as open unless the owner fixes it in a new candidate before the tag; if the
-> owner accepts it for 0.4.1, record that decision in the review.
+> **T-074 (2026-10-28 closure review):** the TUI rescan omitted config pins. It was fixed after the
+> review in `d4036f2`; verify the pin pass-through in `TuiBackend.ScanAsync`/`PrepareApplyAsync` and
+> the `TuiBackendTests` regression. It is not a T-060 blocker.
 
 ## Scope
 

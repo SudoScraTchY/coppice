@@ -508,13 +508,13 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
   not, so a rescan can resolve a different root than the Roots screen displays. Pass the configured
   pins through every TUI composition root and add a regression test where the pinned path differs from
   the default root.
-- This is a post-rc.2 finding. The owner decides before the tag whether to fix it in a new candidate
-  or accept it for 0.4.1.
+- The owner chose to fix it; the rc.2 candidate is rebuilt on `d4036f2`.
 
 **Acceptance**
-- [ ] A pinned root wins during `ScanAsync` (test with a pin whose path differs from the default)
-- [ ] The plan uses the same root the Roots screen shows
-- [ ] B/T/F green; no package
+- [x] A pinned root wins during `ScanAsync` (test with a pin whose path differs from the default)
+- [x] The plan uses the same root the Roots screen shows
+- [x] B/T/F green; no package
 
-> 2026-10-28 review finding. T-062 fixed the pin copy; this is the separate rescan wiring. The
-> second-reviewer brief names it as a known open item.
+> `d4036f2`: `ScanAsync`/`PrepareApplyAsync` pass `_pins`; `TuiBackendTests` proves the pinned cache
+> is scanned instead of the `NUGET_PACKAGES` default. Local gate: 1,396 unit, 33 architecture,
+> 12 goldens, format clean. The second-reviewer brief asks for verification.

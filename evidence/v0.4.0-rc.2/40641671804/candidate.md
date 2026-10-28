@@ -1,6 +1,6 @@
-# Candidate — 0.4.0-rc.2
+# Candidate — 0.4.0-rc.2 (run 40641671804, historical)
 
-- **Status:** current candidate for the human gates; no tag and no GitHub Release.
+- **Status:** historical rc.2 run before the T-074 rebuild; superseded by the new top-level candidate.
 - **Code and docs commit:** `bd1b67e`
 - **Build run:** `40640888478` (six cells, egress, license, docs truth)
 - **Strict dry run:** `40641671804` (`workflow_dispatch`)
@@ -13,5 +13,7 @@
 - **NFR-03:** egress canary `Passed` (run `40640888478`, artifact `12795940982`)
 - **Open review finding:** T-074 (TUI rescan omits `_pins`); the owner decides before the tag
 - **Human gates:** none signed
+
+This run predates the T-074 pin pass-through; it is kept for history.
 
 The local E2E is clean-environment evidence, not the fresh-VM gate: the host is not fresh.

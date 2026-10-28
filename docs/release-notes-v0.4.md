@@ -57,6 +57,8 @@ confirmed `quarantine prune`. Every mutation is appended to a hash-chained audit
 - The pin editor previews a candidate through the same denylist/fingerprint path a scan uses before
   writing one `[pins]` entry. The Roots screen shows provenance, owner, size and the never-elevate
   guidance for every candidate.
+- The TUI rescan and apply preparation pass the configured pins through the same doctor resolution as
+  the Roots screen (T-074), so a pinned root is respected after a rescan.
 - Doctor probes share a 4 s total budget and report budget-exhausted probes; a blocked-probe test
   returns in 105 ms against a 100 ms test budget.
 - CI runs six real cells (Windows/Linux/macOS × x64/arm64), publishes a RID artifact per cell, and proves
@@ -145,7 +147,7 @@ the published linux-x64 self-contained archive through scan→plan→apply→res
 ## Verification
 
 - `dotnet build -warnaserror -c Release`
-- 1,395 unit tests + 33 architecture tests (local; the network canary is the 1,396th and only runs in the
+- 1,396 unit tests + 33 architecture tests (local; the network canary is the 1,397th and only runs in the
   egress job)
 - 12 golden reports, `dotnet format --verify-no-changes`, the 100k-case escape suite
 - Six-cell GitHub Actions run per code card; the rc.1 final build is `40449319990` on `ba63550`; the

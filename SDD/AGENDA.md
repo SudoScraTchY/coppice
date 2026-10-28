@@ -62,7 +62,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-039 Avalonia shell | `blocked-human` | boxes 1–3 closed by T-050; box 4 is the human screen-reader pass |
 | T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
 | T-040 GUI pin editor | `blocked-human` | `110dc84`; run `40311141426` green on all six cells; box 3 is the human screen-reader pass |
-| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.2` candidate on `bd1b67e`: build `40640888478`, strict dry run `40641671804` (18 archives + nupkg, 19/19 checksums, linux-x64 smoke, no Release; `gh release create` is tag-only and unexercised); rc.2 win-x64 exact bytes FD 2,317,585 / SC 38,526,505 / GUI 50,039,269; rc.1 evidence is historical; tag withheld until the human gates and the T-074 decision |
+| T-043 v0.4 release | `blocked-human` | `0.4.0-rc.2` rebuild on `d4036f2` (T-074 pin pass-through); the previous rc.2 run `40641671804` on `bd1b67e` is historical (18 archives + nupkg, 19/19 checksums, linux-x64 smoke, no Release; `gh release create` is tag-only and unexercised); new dry run pending; rc.1 evidence historical; tag withheld until the human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
 | T-053 NFR-04 perf | `done` | `4faf9e9`; run `40306786443` green; 30k/31.4 GB fake scan 1.379 s; doctor budget 4 s |
 | T-058 real-volume scan perf | `done` | ReferenceIndex fix: 190.6 s → 15.6–17.7 s on 3,152/19.4 GB; 30k/30 GB real-filesystem fixture 9.965 s; regression test; NFR-04 met |
@@ -78,7 +78,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-063 evidence archive | `done` | `scripts/verify-evidence.sh`, `scripts/e2e-scrubbed-path.sh`; rc.1 19/19 + E2E `pln_b1d928e13a84`; rc.2 19/19 (run `40641671804`) + E2E `pln_2d7dcab9ad4c` |
 | T-064 human-gate kits | `done` | `6328678` + `7f4ea3d`; independent re-review PASS |
 | T-065 docs-truth guard | `done` | `scripts/check-docs-truth.py`; local pass, 13 findings on `3dadb55`; build `40640888478` docs truth OK; release `40641671804` prepare OK |
-| T-074 TUI rescan pin wiring | `not-started` | 2026-10-28 reviewer finding; owner decision before the tag (fix in a new candidate or accept for 0.4.1) |
+| T-074 TUI rescan pin wiring | `done` | `d4036f2`; `TuiBackendTests` proves the pinned cache is scanned instead of the environment default; 1,396 unit, 33 architecture, 12 goldens, format clean |
 
 ### v1.0 planning (no code before v0.4.0 + 30 days)
 
@@ -171,10 +171,10 @@ none of them can be automated or self-certified.
    the README status/install/caption wording, the quickstart/commands version strings, and the active
    version lines in `SDD/AGENDA.md`, `SDD/08-gui.md`, `SDD/12-roadmap.md`, `docs/safety.md` and
    `docs/human-gates/README.md` — the dated evidence rows keep their historical `rc.1`/`rc.2`
-   references. Resolve T-074 (fix it in a new candidate or explicitly accept it for 0.4.1) before the
-   tag. Push, wait for a green `build.yml` on that commit (six cells, egress Passed, license,
-   docs-truth), then `git tag -a v0.4.0 -m "v0.4.0" && git push origin v0.4.0`. `release.yml` refuses
-   the tag if the version disagrees or the commit has no green six-cell run.
+   references. T-074 is fixed in `d4036f2`; the second reviewer verifies the pin pass-through. Push,
+   wait for a green `build.yml` on that commit (six cells, egress Passed, license, docs-truth), then
+   `git tag -a v0.4.0 -m "v0.4.0" && git push origin v0.4.0`. `release.yml` refuses the tag if the
+   version disagrees or the commit has no green six-cell run.
 
 A gate is signed by a dated row in the evidence log. "I ran it" without a transcript is not evidence.
 
@@ -259,6 +259,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-28 | T-063 rc.2 evidence archived | FD cached 80–164 ms (steady 80–86), SC steady 125–136 ms; egress canary Passed; 19/19 checksums |
 | 2026-10-28 | T-065 CI and release guard green | docs truth OK in build `40640888478` and release prepare `40641671804` |
 | 2026-10-28 | Closure re-review PASS | T-061/T-064/T-066 blockers resolved; T-062/T-063/T-065 confirmed; T-074 remains open |
+| 2026-10-28 | T-074 fixed | `d4036f2`; `ScanAsync`/`PrepareApplyAsync` pass `_pins`; `TuiBackendTests`; 1,396 unit, 33 architecture, 12 goldens, format clean |
 | 2026-10-28 | Final docs/reviewer build | run `40685438262` on `2581910`: six cells, egress, license, docs truth green |
 
 ## Updating this file

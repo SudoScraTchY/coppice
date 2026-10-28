@@ -8,9 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 The rc.2 candidate fixes a user-facing TUI status message. The Roots screen now reports the active
 config pin, or the exact `[pins]` line to add, instead of claiming config-file pins are unread. T-052
-had already wired pins, so the old message was false. Because the fix changes shipped code, rc.1 is
-historical and the human gates use the rc.2 candidate. No tag exists; the human gates in
-`SDD/AGENDA.md` remain open.
+had already wired pins, so the old message was false. The TUI rescan and apply preparation now pass
+the configured pins through the same `DoctorService` resolution the Roots screen uses (T-074), so a
+pinned root is respected after a rescan. Because these fixes change shipped code, rc.1 is historical
+and the human gates use the rc.2 candidate. No tag exists; the human gates in `SDD/AGENDA.md` remain
+open.
 
 ## [0.4.0-rc.1] — release candidate
 

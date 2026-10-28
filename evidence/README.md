@@ -14,7 +14,9 @@ evidence/
     cold-start.md             NFR-05 measurement
     nfr-03.md                 egress canary + code-review record
   v0.4.0-rc.2/
-    ...                       same shape for the re-candidate
+    40641671804/              historical pre-T-074 run
+    candidate.md              current candidate
+    ...                       same shape for the current run
 ```
 
 ## Rules
