@@ -432,8 +432,8 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - [x] The regression test asserts the old false claim is gone
 
 > `1c469d2`; `TuiStateTests` 13/13; full local gate 1,395 unit, 33 architecture, 12 goldens, build and
-> format clean. Six-cell build `40633428577` is a rerun after a `setup-dotnet` infra failure on
-> windows-arm64; confirm its conclusion before marking the card done.
+> format clean. Six-cell build `40633428577` is green after the rerun; the first windows-arm64 attempt
+> failed in `setup-dotnet` with an internal CLR error, not in the code.
 
 ### T-063 · Final-candidate evidence archive and machine closure
 **Refs** NFR-03, NFR-05, T-043, 11-testing · **Depends** T-062 · **Effort** M

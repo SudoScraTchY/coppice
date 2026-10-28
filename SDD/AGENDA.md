@@ -74,7 +74,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-013 .NET health checks | `done` | `0e34bc4`; boxes ticked with `NetHealthCheckerTests` (30 cases) and `ReadOnlyAuditTests` |
 | T-060 Safety pre-review fixes | `blocked-human` | fixes `3ef126a` and `ba63550`; build `40447602900`; box 8 awaits the second safety reviewer |
 | T-061 v0.4 truth pass | `in-progress` | this commit; reviewer pending |
-| T-062 TUI pin copy | `in-progress` | `1c469d2`; local B/T/F green (1,395 unit, 33 architecture, 12 goldens); six-cell rerun `40633428577` pending confirmation |
+| T-062 TUI pin copy | `done` | `1c469d2`; local B/T/F green; six-cell build `40633428577` green after the infra rerun |
 | T-063 evidence archive | `in-progress` | `scripts/verify-evidence.sh`, `scripts/e2e-scrubbed-path.sh`; rc.1 19/19 and E2E `pln_b1d928e13a84`; rc.2 evidence pending |
 | T-064 human-gate kits | `in-progress` | `docs/human-gates/**`; reviewer pending |
 | T-065 docs-truth guard | `in-progress` | `scripts/check-docs-truth.py`; local pass, 13 findings on `3dadb55`; CI/release pending |
@@ -240,7 +240,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-27 | Safety-build real scans | Go scratch: 1 Referenced / 25 Unreferenced in 12.1 s; owner cache: 3,179 items (3,152 .NET, 26 Go, 1 npm), 47 Referenced / 3,132 Unknown in 16.6 s; no apply |
 | 2026-10-27 | CI TRX split | `build.yml` and `release.yml` run unit and architecture tests as separate steps with `unit.trx`/`architecture.trx`; the solution-wide step overwrote the first TRX, hiding the failed unit result on run `40432055888` |
 | 2026-10-27 | Dogfood report 1/5 (owner machine, automated) | scoped to the owner's machine, not an independent user: rc.1 SC binary; 46 Referenced, 3,106 Unknown, 0 Unreferenced; `plan` correctly proposes nothing (0 candidates); finding T-058 |
-| 2026-10-28 | T-062 TUI pin copy fixed | `1c469d2`; `TuiStateTests` 13/13; six-cell rerun `40633428577` pending confirmation after a `setup-dotnet` infra failure on windows-arm64 |
+| 2026-10-28 | T-062 TUI pin copy fixed | `1c469d2`; `TuiStateTests` 13/13; six-cell build `40633428577` green after a `setup-dotnet` infra failure on windows-arm64 |
 | 2026-10-28 | rc.2 identity committed | `14321d0`; version strings, CHANGELOG, README, quickstart, commands, release notes, AGENDA |
 | 2026-10-28 | T-061 truth pass | this commit; AGENDA/cards/docs corrected; T-060 and the closure cards added |
 | 2026-10-28 | T-063 rc.1 evidence archived | run `40449838956`; 19/19 checksums; E2E plan `pln_b1d928e13a84`, quarantine `2ebdac1cfda06b42`; FD 78–93 ms, SC 119–127 ms; egress canary `Passed`; `evidence/v0.4.0-rc.1/` |
