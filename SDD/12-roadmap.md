@@ -6,7 +6,7 @@
 | **v0.2 — manifests prove the design** | Manifest loader + resolver parsers; go/rust/node profiles; policy/retention engine + presets; plan builder + plan JSON; CSV/MD reports; config file (pins/exclusions); escape suite E-1…E-9, E-11 | Zero **contract** changes for go/rust/node; Rust needed a domain addition, and ADR-011 corrects the earlier "zero core changes" claim; **API freeze checkpoint** (ADR-011) |
 | **v0.3 — apply, safely** | Gateway executor (TOCTOU, locks); quarantine + restore; native runner; `apply` with crash-safety/resume; audit + `audit verify`; full TUI; `--ci` mode + exit codes | Escape suite green on all OS; kill-and-resume test green; quarantine round-trip green. The 0.3.0 release claim is withdrawn until the evidence bundle exists (ADR-017). |
 | **v0.4 — GUI & time** | Avalonia GUI (thin); history/trends from snapshots; shell completions; HTML report; requirement-evidence closure (FR-01/FR-02/FR-22/FR-23, E-7, NFR-04) | GUI performs the full read→plan→apply flow with pin editor; six-cell CI and the egress canary are green; performance numbers are recorded; the real-volume NFR-04 gap is fixed (T-058) |
-| **v1.0 — stability & reach** | Docs site; distribution (winget/scoop/brew); decide kondo/project-artifact integration; decide out-of-process plugin model | 30 days no safety incidents in the wild; published via two package managers |
+| **v1.0 — stability & reach** | Docs site (T-067); distribution through two of winget/scoop/brew (T-068); decide kondo/project-artifact and Docker report-only integration (T-069); decide whether to reopen the out-of-process plugin model (T-070); plan FR-10 polyglot health checks (T-071), the network policy (T-072) and per-project override roots (T-073) | 30 days no safety incidents in the wild; published via two package managers |
 
 ## Status (2026-10-28)
 
@@ -29,7 +29,8 @@
   the candidate and the rc.1 build is historical. The tag is withheld only for the human gates
   (screen reader, fresh VM, dogfood, second safety reviewer). The v1.0 cards are the only new planning
   surface; the v0.4 human gates remain the release blockers.
-- **v1.0** — planning only. No distribution, docs-site or packaging work is in this goal.
+- **v1.0** — planning only. No distribution, docs-site or packaging work is in this goal; the planning
+  cards are T-066–T-073 and no code starts before the v0.4.0 tag and 30 incident-free days.
 
 ## Risks
 

@@ -16,3 +16,6 @@
 | 012 | Installer-owned items report-only in v1, with routing guidance | Removal goes through the owner's mechanism or not at all |
 | 013 | Name: `coppice` | Project owner's selection over staff pick `winnow` (recorded honestly). Metaphor: periodic harvest of regrowth; the root system (referenced/pinned items) is never touched. Tradeoff accepted: obscure word — mitigations in naming-and-brand.md. Collisions disclosed: "Coppice" macOS notes app (different market/channel); verification checklist still executed in T-000 before public launch. |
 | 014 | License: Apache-2.0 | Patent grant + §5 contribution terms + §6 trademark non-grant + §4 notices fit self-contained redistribution. No CLA; inbound=outbound. SECURITY.md mandatory for a deleter. |
+
+ADR-011, ADR-015, ADR-016 and ADR-017 have full texts in `docs/adr/`; this log records the decision and
+its context. The index is `docs/adr/README.md`.

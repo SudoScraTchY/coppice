@@ -26,6 +26,10 @@ notes why it's wanted, the cost/risk, and the trigger to revisit.
 | 19 | Opt-in update check (`coppice update check`, manual) | Must not violate "no network by default" | v1.0 |
 | 20 | NativeAOT single binary | Startup + footprint; Spectre/Avalonia AOT feasibility unproven | OQ-03 |
 
+v1.0 items #1 and #2 are carded as T-069 (kondo/project-artifact and Docker report-only), #19 as
+T-072 (network policy), and #7 as T-070 (out-of-process decision). The revisit-when column remains
+the trigger.
+
 ## Worth calling out
 
 **Project artifacts (1).** The temptation is scope creep; the honest answer

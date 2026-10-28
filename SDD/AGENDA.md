@@ -79,6 +79,19 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-064 human-gate kits | `in-progress` | `docs/human-gates/**`; reviewer pending |
 | T-065 docs-truth guard | `in-progress` | `scripts/check-docs-truth.py`; local pass, 13 findings on `3dadb55`; CI/release pending |
 
+### v1.0 planning (no code before v0.4.0 + 30 days)
+
+| Card | Status | Evidence / location |
+|---|---|---|
+| T-066 planning surface | `in-progress` | `SDD/tasks/phase-5-v1.0-planning.md`; reviewer pending |
+| T-067 docs site | `not-started` | planning only |
+| T-068 distribution | `not-started` | planning only |
+| T-069 kondo/Docker report-only | `not-started` | planning only |
+| T-070 out-of-process decision | `not-started` | planning only |
+| T-071 FR-10 polyglot health checks | `not-started` | planning only |
+| T-072 network-policy decision | `not-started` | planning only |
+| T-073 per-project override roots | `not-started` | planning only |
+
 ## Human-only gates
 
 | Gate | Cards | Evidence | Status |
@@ -232,6 +245,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-28 | T-061 truth pass | this commit; AGENDA/cards/docs corrected; T-060 and the closure cards added |
 | 2026-10-28 | T-063 rc.1 evidence archived | run `40449838956`; 19/19 checksums; E2E plan `pln_b1d928e13a84`, quarantine `2ebdac1cfda06b42`; FD 78–93 ms, SC 119–127 ms; egress canary `Passed`; `evidence/v0.4.0-rc.1/` |
 | 2026-10-28 | T-065 docs-truth guard | script passes locally, fails on `3dadb55` with 13 findings; wired into `build.yml` and `release.yml`; CI pending |
+| 2026-10-28 | T-066 v1.0 planning surface | `SDD/tasks/phase-5-v1.0-planning.md`; conflict register, ADR index and OQ statuses reconciled; reviewer pending |
 
 ## Updating this file
 
