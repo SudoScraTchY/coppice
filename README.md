@@ -9,7 +9,7 @@ A native, plugin-based toolchain and cache cleaner for polyglot developers.
 | | |
 |---|---|
 | **License** | Apache-2.0 |
-| **Status** | v0.4.0-rc.1 — release candidate (human gates open; 0.3.0 was never tagged — see ADR-017) |
+| **Status** | v0.4.0-rc.2 — release candidate (human gates open; 0.3.0 was never tagged — see ADR-017) |
 | **Platforms** | Windows, Linux, macOS (x64/arm64) |
 | **Runtime** | .NET 10. No container runtime, daemon, service or middleman |
 
@@ -50,7 +50,7 @@ SELF_CONTAINED=1 bash scripts/publish.sh win-x64
 
 ```bash
 dotnet pack src/Coppice.Cli/Coppice.Cli.csproj -c Release -o artifacts/packages
-dotnet tool install --global --add-source ./artifacts/packages coppice --version 0.4.0-rc.1
+dotnet tool install --global --add-source ./artifacts/packages coppice --version 0.4.0-rc.2
 ```
 
 **Release downloads.** A tag builds all six RIDs through
@@ -59,7 +59,7 @@ self-contained CLI archives, a self-contained GUI archive, the `dotnet tool` pac
 `SHA256SUMS.txt` and `SIZES.txt`. The workflow refuses to publish unless the tag matches `<Version>`
 and the tagged commit already has a green six-cell `build.yml` run; it also smoke-tests the linux-x64
 self-contained archive on a scratch cache with no .NET on `PATH` before publishing. No `v0.4.0` tag
-exists yet; `0.4.0-rc.1` is the candidate, so build from a checkout with the commands above.
+exists yet; `0.4.0-rc.2` is the candidate, so build from a checkout with the commands above.
 
 The publish directory contains the binary, `README.md`, `CHANGELOG.md`, `LICENSE`, `NOTICE` and
 `docs/`. See [docs/quickstart.md](./docs/quickstart.md) for every install path and the PowerShell
@@ -113,7 +113,7 @@ dotnet run --project src/Coppice.Gui
 bash scripts/publish-gui.sh win-x64
 ```
 
-Screenshots from the 0.4.0-rc.1 shell on Windows:
+Screenshots from the running shell on Windows (rc.1; the GUI is unchanged in rc.2):
 
 ![Dashboard: project roots, retention policy and the loaded scan](docs/images/gui-dashboard.png)
 
@@ -170,7 +170,7 @@ and [SDD/06-safety-model.md](./SDD/06-safety-model.md).
 - **Clean-machine evidence is partial.** The self-contained rc.1 artifact completes
   version → doctor → scan → plan → apply → restore → audit verify with no .NET on `PATH` and isolated
   state (2026-10-26). A true fresh-VM install → apply transcript and the dogfood reports remain human
-  gates recorded in `SDD/AGENDA.md`; this is why the release is `0.4.0-rc.1`, not a tag.
+  gates recorded in `SDD/AGENDA.md`; this is why the release is `0.4.0-rc.2`, not a tag.
 - **Scan performance:** NFR-04 is met on a real fixture: 30,000 items / 31,457,280,000 bytes in
   9.965 s; the real 3,152-package / 19.4 GB cache is 15.6–17.7 s after the T-058 reference-index fix.
   A real all-ecosystem scan of 3,179 items (3,152 .NET, 26 Go, 1 npm) takes 16.6–21.0 s.

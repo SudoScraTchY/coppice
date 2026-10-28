@@ -10,7 +10,7 @@ name: release
 # CLI and the GUI on all six RIDs, a version check of both CLI variants, a measured size table, and the
 # release assets themselves.
 #
-# The tag must equal <Version> in Directory.Build.props. `v0.4.0` cannot publish a 0.4.0-rc.1 binary.
+# The tag must equal <Version> in Directory.Build.props. `v0.4.0` cannot publish a 0.4.0-rc.2 binary.
 #
 # workflow_dispatch runs the same matrix and uploads the bundle as a workflow artifact but creates no
 # GitHub Release (set publish_release only for a tag ref). That is how the tag path is validated

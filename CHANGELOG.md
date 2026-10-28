@@ -4,6 +4,14 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0-rc.2] — release candidate
+
+The rc.2 candidate fixes a user-facing TUI status message. The Roots screen now reports the active
+config pin, or the exact `[pins]` line to add, instead of claiming config-file pins are unread. T-052
+had already wired pins, so the old message was false. Because the fix changes shipped code, rc.1 is
+historical and the human gates use the rc.2 candidate. No tag exists; the human gates in
+`SDD/AGENDA.md` remain open.
+
 ## [0.4.0-rc.1] — release candidate
 
 This is a release candidate, not a tagged release. The implementation and six-cell CI evidence are

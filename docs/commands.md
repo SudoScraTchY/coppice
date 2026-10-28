@@ -178,7 +178,7 @@ coppice version
 coppice help
 ```
 
-`version` prints the assembly version (the release candidate is `0.4.0-rc.1`; 0.3.0 was never tagged).
+`version` prints the assembly version (the release candidate is `0.4.0-rc.2`; 0.3.0 was never tagged).
 
 ## Not available yet
 

@@ -19,7 +19,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 
 ## Decisions in force
 
-- **Release identity:** 0.3.0 is withdrawn and untagged; `0.4.0-rc.1` is the release candidate, and
+- **Release identity:** 0.3.0 is withdrawn and untagged; `0.4.0-rc.2` is the release candidate, and
   the `v0.4.0` tag waits for the human gates. See `docs/adr/ADR-017-release-truth-and-size-budget.md`.
 - **NFR-11:** framework-dependent < 5 MB (primary), self-contained < 50 MB (optional);
   NativeAOT remains OQ-03.

@@ -1,6 +1,6 @@
 # Quickstart
 
-Coppice is a cross-platform cache cleaner. The current release candidate is `0.4.0-rc.1`; 0.3.0 was
+Coppice is a cross-platform cache cleaner. The current release candidate is `0.4.0-rc.2`; 0.3.0 was
 never tagged (see [ADR-017](adr/ADR-017-release-truth-and-size-budget.md)). It scans, proposes a
 plan, asks for confirmation, and moves approved items into a quarantine you can restore from.
 
@@ -44,7 +44,7 @@ For the self-contained variant, use `--self-contained true` and add
 The desktop shell is a separate, self-contained artifact:
 
 ```bash
-bash scripts/publish-gui.sh win-x64   # ~47.7 MB, includes the .NET runtime and Avalonia
+bash scripts/publish-gui.sh win-x64   # ~50 MB, includes the .NET runtime and Avalonia
 ```
 
 ### dotnet tool
@@ -53,7 +53,7 @@ Pack it from a checkout and install the package:
 
 ```bash
 dotnet pack src/Coppice.Cli/Coppice.Cli.csproj -c Release -o artifacts/packages
-dotnet tool install --global --add-source ./artifacts/packages coppice --version 0.4.0-rc.1
+dotnet tool install --global --add-source ./artifacts/packages coppice --version 0.4.0-rc.2
 coppice --version
 ```
 

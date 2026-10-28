@@ -17,7 +17,7 @@
 - **v0.3** — code complete. The 0.3.0 release claim is withdrawn (ADR-017); T-048/T-049 are landed in
   0.4.0. The kill/resume and quarantine evidence exists in the suite; six-cell CI evidence is green
   (run `40282093437`).
-- **v0.4** — **release candidate `0.4.0-rc.1`**. T-040–T-043 code and machine evidence are complete:
+- **v0.4** — **release candidate `0.4.0-rc.2`**. T-040–T-043 code and machine evidence are complete:
   the GUI read→plan→apply flow with pin editor, history/completions, six-cell CI and recorded sizes.
   T-058 real-volume scan performance is fixed: the reference-index change takes the real 3,152-package /
   19.4 GB cache from 190.6 s to 15.6–17.7 s and a 30,000-item / 30 GB real-filesystem fixture to

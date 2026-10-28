@@ -1,4 +1,4 @@
-# Coppice 0.4.0-rc.1 — GUI & time (release candidate)
+# Coppice 0.4.0-rc.2 — GUI & time (release candidate)
 
 This is a **release candidate**, not a tagged release. The implementation and six-cell CI evidence are
 complete; the human gates listed below are still open, so `v0.4.0` is deliberately not tagged.
@@ -96,7 +96,7 @@ to publish if the tag disagrees with `<Version>` in `Directory.Build.props` or i
 no green six-cell `build.yml` run. The current candidate has no GitHub Release; the commands above are
 the source path.
 
-## Measured artifacts (win-x64 local build, 0.4.0-rc.1, post-fix)
+## Measured artifacts (win-x64 local build, 0.4.0-rc.2, post-fix)
 
 | Artifact | Exact bytes | Cold start |
 |---|---:|---|
