@@ -38,9 +38,10 @@ incident window are both satisfied.
       OQ-05/06/08 and ADR-016
 - [x] Every v1.0 card says planning only; no code before v0.4.0 + 30 days
 - [x] The ADR index lists 001–017 with the decision-log pointers
-- [ ] Reviewer PASS
+- [x] Reviewer PASS
 
-> Evidence: this commit; reviewer PASS pending.
+> Evidence: `b083950` plus the `7f4ea3d` fixes; the independent re-review returns PASS. No v1.0 code
+> has started.
 
 ### T-067 · v1.0 docs site
 **Refs** 12-roadmap, ADR-016 · **Depends** T-066 · **Effort** S (planning)

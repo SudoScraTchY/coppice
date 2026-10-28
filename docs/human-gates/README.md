@@ -28,9 +28,9 @@ the orchestrator to open a card and link it to the gate.
 T-043 is the release card and appears under more than one gate because it needs all of them; no
 single kit closes it. The other cards close when their own gate's evidence is recorded.
 
-At the time these kits were written all four gates are open. The dogfood gate is at 2/5, and both
-existing reports are owner-machine automated runs. Current status is tracked only in
-`SDD/AGENDA.md`; do not copy a status into a kit.
+At the time these kits were written all four gates are open. The dogfood gate has two supporting
+owner-machine automated reports; neither is one of the five independent reports. Current status is
+tracked only in `SDD/AGENDA.md`; do not copy a status into a kit.
 
 ## The evidence rule
 

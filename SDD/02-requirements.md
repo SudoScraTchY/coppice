@@ -146,7 +146,7 @@ Windows, Linux, macOS; x64 + arm64.
 | NFR-02 | No network calls, ever | CI job with blocked egress |
 | NFR-03 | No telemetry | Code review + egress test |
 | NFR-04 | Scan 30k items / ~30 GB < 60 s warm; `doctor` < 5 s | Perf smoke on reference laptop |
-| NFR-05 | CLI cold start < 300 ms (shipped framework-dependent single file) | Perf smoke; see `evidence/v0.4.0-rc.1/cold-start.md` (78–93 ms; trimming is not enabled) |
+| NFR-05 | CLI cold start < 300 ms (shipped framework-dependent single file) | Perf smoke; see `evidence/v0.4.0-rc.2/cold-start.md` (FD cached 80–164 ms, steady 80–86; trimming is not enabled) |
 | NFR-06 | Deterministic output: same input → byte-identical JSON | Golden tests |
 | NFR-07 | No hangs: all external tool calls time out | Tests with fake hanging tools |
 | NFR-08 | OS-specific code isolated to adapters; no direct `System.IO` in core/plugins | Architecture tests |
@@ -156,7 +156,7 @@ Windows, Linux, macOS; x64 + arm64.
 | NFR-12 | Versioned schemas (config, manifest, plan, snapshot) with migration policy | Schema tests |
 
 Evidence pointers for the release candidate: NFR-03 — `evidence/v0.4.0-rc.1/nfr-03.md` (egress canary
-`Passed`; no telemetry/network references in `src`); NFR-05 — `evidence/v0.4.0-rc.1/cold-start.md`
-(FD 78–93 ms, SC 119–127 ms; trimming is not enabled, so the earlier "(trimmed)" method claim was
-removed); NFR-09 — CLI plain mode is tested, and the GUI
+`Passed`; no telemetry/network references in `src`); NFR-05 — `evidence/v0.4.0-rc.2/cold-start.md`
+(FD cached 80–164 ms, steady 80–86; SC steady 125–136; trimming is not enabled, so the earlier
+"(trimmed)" method claim was removed); NFR-09 — CLI plain mode is tested, and the GUI
 keyboard/a11y pass is the human screen-reader gate (T-036 box 4, T-039 box 4, T-040 box 3).

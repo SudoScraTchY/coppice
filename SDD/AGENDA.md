@@ -73,10 +73,10 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-019 v0.1 release + dogfood | `blocked-human` | 2 supporting owner-machine automated reports (2026-10-27: .NET; Go scratch project); 5 independent reports still required |
 | T-013 .NET health checks | `done` | `0e34bc4`; boxes ticked with `NetHealthCheckerTests` (30 cases) and `ReadOnlyAuditTests` |
 | T-060 Safety pre-review fixes | `blocked-human` | fixes `3ef126a` and `ba63550`; build `40447602900`; box 8 awaits the second safety reviewer |
-| T-061 v0.4 truth pass | `in-progress` | this commit; reviewer pending |
+| T-061 v0.4 truth pass | `done` | `4c6f849` + `7f4ea3d`; independent re-review PASS; docs guard green |
 | T-062 TUI pin copy | `done` | `1c469d2`; local B/T/F green; six-cell build `40633428577` green after the infra rerun |
 | T-063 evidence archive | `done` | `scripts/verify-evidence.sh`, `scripts/e2e-scrubbed-path.sh`; rc.1 19/19 + E2E `pln_b1d928e13a84`; rc.2 19/19 (run `40641671804`) + E2E `pln_2d7dcab9ad4c` |
-| T-064 human-gate kits | `in-progress` | `docs/human-gates/**`; reviewer pending |
+| T-064 human-gate kits | `done` | `6328678` + `7f4ea3d`; independent re-review PASS |
 | T-065 docs-truth guard | `done` | `scripts/check-docs-truth.py`; local pass, 13 findings on `3dadb55`; build `40640888478` docs truth OK; release `40641671804` prepare OK |
 | T-074 TUI rescan pin wiring | `not-started` | 2026-10-28 reviewer finding; owner decision before the tag (fix in a new candidate or accept for 0.4.1) |
 
@@ -84,7 +84,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 
 | Card | Status | Evidence / location |
 |---|---|---|
-| T-066 planning surface | `in-progress` | `SDD/tasks/phase-5-v1.0-planning.md`; reviewer pending |
+| T-066 planning surface | `done` | `b083950` + `7f4ea3d`; independent re-review PASS; planning-only |
 | T-067 docs site | `not-started` | planning only |
 | T-068 distribution | `not-started` | planning only |
 | T-069 kondo/Docker report-only | `not-started` | planning only |
@@ -258,6 +258,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-28 | rc.2 clean E2E | SC zip from `40641671804`; plan `pln_2d7dcab9ad4c`, quarantine `2a6e25488758d6b1`; byte-identical restore; audit 2 records; `evidence/v0.4.0-rc.2/` |
 | 2026-10-28 | T-063 rc.2 evidence archived | FD cached 80–164 ms (steady 80–86), SC steady 125–136 ms; egress canary Passed; 19/19 checksums |
 | 2026-10-28 | T-065 CI and release guard green | docs truth OK in build `40640888478` and release prepare `40641671804` |
+| 2026-10-28 | Closure re-review PASS | T-061/T-064/T-066 blockers resolved; T-062/T-063/T-065 confirmed; T-074 remains open |
 
 ## Updating this file
 

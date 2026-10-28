@@ -419,9 +419,10 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - [x] T-060 is in the status table, W6, reviewer list, phase index and safety-card list
 - [x] T-039/T-040 have human a11y boxes and `blocked-human` status; T-043 no longer claims v1.0 is the only open work
 - [x] Every stale claim named in the 2026-10-28 audit is corrected or carded
-- [ ] Reviewer PASS on the before/after diff
+- [x] Reviewer PASS on the before/after diff
 
-> Evidence: this commit; reviewer PASS pending. The docs guard in T-065 must pass on the fixed tree.
+> Evidence: `4c6f849` plus the `7f4ea3d` fixes; the independent re-review returns PASS; the docs guard
+> passes on the fixed tree. The rc.2 evidence is in `evidence/v0.4.0-rc.2/`.
 
 ### T-062 · TUI pin-status copy correction
 **Refs** FR-22, 07-cli-tui · **Depends** T-052 · **Effort** S
@@ -477,9 +478,9 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 - [x] The fresh-VM kit names the candidate pointer and a transcript template
 - [x] Dogfood distinguishes supporting owner-machine reports from independent reports
 - [x] The reviewer brief names the candidate, scope and the advisory-AI rule
-- [ ] Reviewer PASS
+- [x] Reviewer PASS
 
-> Evidence: this commit; reviewer PASS pending.
+> Evidence: `6328678` plus the `7f4ea3d` fixes; the independent re-review returns PASS.
 
 ### T-065 · Docs-truth guard
 **Refs** 11-testing, ADR-017 · **Depends** T-061 · **Effort** M
