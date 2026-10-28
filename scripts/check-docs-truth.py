@@ -155,7 +155,7 @@ def check_added_evidence(base: str | None) -> None:
     )
     task_lines = task_text.splitlines()
     for box in added:
-        needle = box[2:].strip()
+        needle = box.strip()
         try:
             index = next(i for i, line in enumerate(task_lines) if line.strip() == needle)
         except StopIteration:
