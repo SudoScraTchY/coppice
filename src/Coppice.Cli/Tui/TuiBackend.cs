@@ -98,7 +98,7 @@ public sealed class TuiBackend : ITuiBackend
     public async Task<TuiData> ScanAsync()
     {
         // Resolve first so the scan reads exactly the roots `coppice scan` would, then use the same service.
-        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS, _registry).Inspect();
+        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS, _registry, _pins).Inspect();
         var scan = new ScanService(_fs, _runner, _env, _state, _clock, _registry);
         await scan.RunAsync(ScanWiring.FromDoctor(roots, _registry), _projectRoots).ConfigureAwait(false);
 
@@ -118,7 +118,7 @@ public sealed class TuiBackend : ITuiBackend
             return new ApplyPreparation(null, [], $"The plan's snapshot could not be loaded: {snapshot.Message}");
         }
 
-        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS, _registry).Inspect();
+        DoctorReport roots = new DoctorService(_fs, _runner, _env, _env.OS, _registry, _pins).Inspect();
         IReadOnlyList<BoundStep> bound = PlanBinder.Bind(
             plan,
             snapshot.Snapshot!,
