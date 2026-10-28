@@ -21,6 +21,9 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 
 - **Release identity:** 0.3.0 is withdrawn and untagged; `0.4.0-rc.2` is the release candidate, and
   the `v0.4.0` tag waits for the human gates. See `docs/adr/ADR-017-release-truth-and-size-budget.md`.
+- **Hold decision (2026-10-29):** the owner chose to keep the `0.4.0-rc.2` candidate at `e738b52`
+  with no tag until a human gate is signed. Resume from this candidate; do not rebuild or tag without
+  new evidence.
 - **NFR-11:** framework-dependent < 5 MB (primary), self-contained < 50 MB (optional);
   NativeAOT remains OQ-03.
 - **NFR-04:** met on a real filesystem: 30,000 items / 31,457,280,000 bytes in 9.965 s, and the real
@@ -44,7 +47,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | W7 | T-062 TUI copy + T-063 evidence | T-061 truth pass + T-064 kits | T-060 | B/T/F + six-cell CI; 19/19 evidence; reviewer |
 | W8 | T-065 docs guard | T-066 v1.0 planning | T-061/T-064 | docs-truth; reviewer; no v1.0 code |
 
-## Card status (as of 2026-10-28)
+## Card status (as of 2026-10-29)
 
 | Card | Status | Evidence / location |
 |---|---|---|
@@ -270,6 +273,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-28 | rc.2 T-074 rebuild E2E | plan `pln_20c055636739`, quarantine `f0c8bc0424ae4cbe`; byte-identical restore; audit 2 records; `evidence/v0.4.0-rc.2/` |
 | 2026-10-28 | T-063 rebuilt evidence archived | 19/19; FD 82–218 ms, SC 126–136; egress canary Passed |
 | 2026-10-28 | T-065 rebuilt CI/release guard | docs truth OK in `40696943889` and `40698827006` |
+| 2026-10-29 | Owner decision: keep rc.2 held | No human-gate evidence yet; the tag stays uncreated; resume when a gate is signed |
 
 ## Updating this file
 
