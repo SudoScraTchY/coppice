@@ -56,14 +56,14 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-047 NuGet four-part ordering | `done` | `266be19`, tests in the commit |
 | T-048 Go/Rust/Node wiring | `done` | `5db9c3f`; run `40287715101` green on all six cells; `EcosystemScanTests`/`EcosystemDoctorTests` |
 | T-049 read `config.toml` | `done` | `3a0afcf`; run `40288339463` green on all six cells |
-| T-050 GUI shell completion | `done` | `8ef6c1e`; run `40295759411` green on all six cells; GUI E2E, 19.3 ms cancel, boundary pin |
+| T-050 GUI shell completion | `done` | `8ef6c1e` + `05e5600`; run `40295759411` green on all six cells at `05e5600`; GUI E2E, 19.3 ms cancel, boundary pin |
 | T-042 completions + HTML | `done` | `4d3ecd5`; run `40288530712` green on all six cells |
 | T-051 FR-01/FR-02 | `done` | `75ac702`; run `40296987047` green on all six cells |
 | T-054 E-7 + escape filter | `done` | `bb148fe`; run `40284606058` green on all six cells with the tagged filter |
 | T-055 SDD truth + skills | `done` | `4afab29`, `d14dd80`, `a2d1d76`; run `40283969985` green on all six cells |
 | T-056 catalog hardening | `done` | `336354b`; run `40290685781` green on all six cells; 1,317 tests, 31 architecture |
 | T-039 Avalonia shell | `blocked-human` | boxes 1–3 closed by T-050; box 4 is the human screen-reader pass |
-| T-041 history/trends | `done` | `3ff49c8`; run `40300565804` green on all six cells |
+| T-041 history/trends | `done` | `3ff49c8` + `9062dcd`; run `40300565804` green on all six cells at `9062dcd` |
 | T-040 GUI pin editor | `blocked-human` | `110dc84`; run `40311141426` green on all six cells; box 3 is the human screen-reader pass |
 | T-043 v0.4 release | `blocked-human` | `0.4.0-rc.2` T-074 rebuild on `e738b52`: build `40696943889`, strict dry run `40698827006` (18 archives + nupkg, 19/19 checksums, linux-x64 smoke, no Release; `gh release create` is tag-only and unexercised); win-x64 FD 2,317,585 / SC 38,526,503 / GUI 50,039,275; rc.1 and the pre-T-074 rc.2 run are historical; tag withheld until the human gates |
 | T-052 FR-22 pins/quarantine | `done` | `69b1dd2`; run `40304314774` green on all six cells |
@@ -189,7 +189,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 
 | Date | What | Evidence |
 |---|---|---|
-| 2026-10-26 | GUI WIP parked; `main` returns to the committed T-039 GUI | branch `wip/gui-shell`, commit `5e6efa0` |
+| 2026-10-26 | GUI WIP parked; `main` returns to the committed T-039 GUI | branch `t-050-gui-shell`, commit `5e6efa0` |
 | 2026-10-26 | CI repair landed | `2ef5257`; local build/tests/architecture/format/goldens green |
 | 2026-10-26 | First six-cell run exposed a real macOS path bug | run `40280980743`: four cells + egress + license green, both macOS cells failed in the kill test |
 | 2026-10-26 | Root-link anchoring fixed | `30917d3`; `/var` and drive-root relative targets stay absolute |
@@ -202,7 +202,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-26 | T-048 ecosystem wiring landed | `5db9c3f`; run `40287715101` green on all six cells |
 | 2026-10-26 | T-049 config wiring and T-042 reach merged | `3a0afcf`, `4d3ecd5`; runs `40288339463`, `40288530712` green on all six cells |
 | 2026-10-26 | T-056 catalog hardening landed | `336354b`; run `40290685781` green; cancellation observed at 1.1 ms, probes bounded at 2 s |
-| 2026-10-26 | T-050 GUI shell completed | `8ef6c1e`; run `40295759411` green; E2E + boundary tests, 19.3 ms cancel |
+| 2026-10-26 | T-050 GUI shell completed | `8ef6c1e`, then the `05e5600` caveat; run `40295759411` green on `05e5600`; E2E + boundary tests, 19.3 ms cancel |
 | 2026-10-26 | T-051 detection and roots landed | `75ac702`; run `40296987047` green on all six cells |
 | 2026-10-26 | T-040 pin editor and T-052 pins/quarantine landed | `110dc84` (run `40311141426`), `69b1dd2` (run `40304314774`) |
 | 2026-10-26 | T-053 doctor budget and 30k fixture landed | `4faf9e9`; run `40306786443`; 30k/31.4 GB fake scan 1.379 s, doctor budget 4 s |
@@ -218,7 +218,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-26 | Strict release dry run | run `40399283405` on `905bdba`: six cells, package and aggregate green; exact 18 names + nupkg; fd/sc report `0.4.0-rc.1`; SC and GUI archives contain `docs/images`; the extracted GUI archive opened its window; no Release |
 | 2026-10-26 | Final rc.1 artifact clean E2E | SC zip from `40399283405`, scrubbed PATH, isolated state; plan `pln_2e4ffbf65e6d`, quarantine `493083826337143c`, audit 2 records intact |
 | 2026-10-26 | Clean-environment rc.1 E2E (not a fresh VM) | self-contained zip, scrubbed PATH, isolated state; version→doctor→scan→plan→apply→restore→audit verify; details in the section above |
-| 2026-10-26 | T-041 history/trends landed | `3ff49c8`; run `40300565804` green on all six cells |
+| 2026-10-26 | T-041 history/trends landed | `3ff49c8`, then `9062dcd`; run `40300565804` green on `9062dcd` (six cells) |
 | 2026-10-26 | First real six-cell run dispatched | run `40280980743` (superseded by `40282093437`) |
 | 2026-10-27 | Post-T-058 release dry run | run `40411290645` on `238dbdd`: six cells, package and aggregate green; exact 18 names + nupkg; fd/sc report `0.4.0-rc.1`; SC/GUI archives contain `docs/images`; no Release |
 | 2026-10-27 | Linux install smoke + strict dry run | run `40416009642` on `020431c`: six cells, package, linux-x64 install smoke and aggregate green; the published SC archive ran scan→plan→apply→restore→audit with no .NET on PATH; exact 18 names; no Release |

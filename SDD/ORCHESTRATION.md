@@ -18,8 +18,8 @@ alongside.
 
 ## Branch and worktree protocol
 
-- Branches: `fix/ci-green`, `t-048-ecosystems`, `t-049-config`, `t-050-gui-shell`, `t-05x-*`,
-  `wip/gui-shell`. Never reuse a merged branch.
+- Live branches: `t-050-gui-shell` (parked redesign) and `archive/t-049-config` (superseded
+  first T-049). Completed lanes land on `main`; their branches are retired. Never reuse a merged branch.
 - One card = one commit. Squash fixups with `git rebase -i --autosquash main` before merge.
 - Rebase the lane on `main`, then `git switch main && git merge --ff-only <branch>`. `main`
   stays linear; no merge commits.

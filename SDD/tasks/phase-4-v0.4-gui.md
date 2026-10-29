@@ -88,7 +88,7 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 
 **Acceptance**
 - [x] GUI release artifact self-contained and < reasonable size (record actual) — rc.2 win-x64 50,039,275 bytes; rc.1 50,039,274 is historical; see `evidence/v0.4.0-rc.2/candidate.md`
-- [ ] Roadmap updated and the v1.0 planning surface created (T-066)
+- [x] Roadmap updated and the v1.0 planning surface created (T-066) — `4c6f849` updated `SDD/12-roadmap.md`; `b083950` created the phase-5 planning cards
 - [x] A release dry run produces 18 archives + the package, with no Release created off-tag — run `40449838956`; `gh release list` stayed empty
 - [x] GUI screenshots in README, taken from the running shell — `docs/images/gui-{dashboard,items,history}.png` from the rc.1 binary; the GUI is unchanged in rc.2
 - [ ] v0.4.0 tag and GitHub Release published (all human gates first)
@@ -127,7 +127,7 @@ Goal: thin Avalonia front-end plus the time dimension. Exit per 12-roadmap.
 **Refs** 08-gui · **Depends** T-039, T-048 · **Effort** L
 
 **Build**
-- The redesign on `wip/gui-shell` (`5e6efa0`) is the starting point, not a deliverable: rebase it onto main, make it compile, and keep the screens from 08 (Dashboard, Roots, Items, Problems, Plan review, Apply progress, Quarantine, Settings/Setup).
+- The redesign on `t-050-gui-shell` (`5e6efa0`) is the starting point, not a deliverable: rebase it onto main, make it compile, and keep the screens from 08 (Dashboard, Roots, Items, Problems, Plan review, Apply progress, Quarantine, Settings/Setup).
 - MVVM over `Coppice.Application`; zero business logic. No direct `System.IO` or `System.Diagnostics.Process` in the GUI; `GuiPreferences` goes through the `IFileSystem` port or moves behind an adapter.
 - Add a headless end-to-end read → plan → apply → quarantine → restore test; keep the GUI/CLI plan equality.
 - Copy and the roots table are ecosystem-neutral after T-048; no ".NET caches" wording.
