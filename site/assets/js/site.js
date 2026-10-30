@@ -165,27 +165,32 @@
   }
 
   function initSpotlight() {
-    var story = document.querySelector(".story");
-    if (!story || !finePointer || reduceMotion) return;
+    if (!finePointer || reduceMotion) return;
 
-    var frame = null;
-    var nextX = 0;
-    var nextY = 0;
+    function attach(section) {
+      if (!section) return;
+      var frame = null;
+      var nextX = 0;
+      var nextY = 0;
 
-    story.addEventListener("pointerenter", function () { story.classList.add("is-spotlit"); });
-    story.addEventListener("pointerleave", function () { story.classList.remove("is-spotlit"); });
+      section.addEventListener("pointerenter", function () { section.classList.add("is-spotlit"); });
+      section.addEventListener("pointerleave", function () { section.classList.remove("is-spotlit"); });
 
-    story.addEventListener("pointermove", function (event) {
-      var rect = story.getBoundingClientRect();
-      nextX = event.clientX - rect.left;
-      nextY = event.clientY - rect.top;
-      if (frame !== null) return;
-      frame = window.requestAnimationFrame(function () {
-        story.style.setProperty("--mx", nextX + "px");
-        story.style.setProperty("--my", nextY + "px");
-        frame = null;
+      section.addEventListener("pointermove", function (event) {
+        var rect = section.getBoundingClientRect();
+        nextX = event.clientX - rect.left;
+        nextY = event.clientY - rect.top;
+        if (frame !== null) return;
+        frame = window.requestAnimationFrame(function () {
+          section.style.setProperty("--mx", nextX + "px");
+          section.style.setProperty("--my", nextY + "px");
+          frame = null;
+        });
       });
-    });
+    }
+
+    attach(document.querySelector(".hero"));
+    attach(document.querySelector(".story"));
   }
 
   initStory();

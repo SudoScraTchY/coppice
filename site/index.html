@@ -65,24 +65,97 @@
 
   <main id="main">
     <section class="hero" aria-labelledby="hero-title">
-      <svg class="hero-rings" viewBox="0 0 600 600" aria-hidden="true" focusable="false">
-        <g fill="none" stroke="currentColor" stroke-width="1" pathLength="100">
-          <circle class="hero-ring" cx="300" cy="300" r="60"/>
-          <circle class="hero-ring" cx="300" cy="300" r="100"/>
-          <circle class="hero-ring" cx="300" cy="300" r="140"/>
-          <circle class="hero-ring hero-ring-accent" cx="300" cy="300" r="180"/>
-          <circle class="hero-ring" cx="300" cy="300" r="220"/>
-          <circle class="hero-ring" cx="300" cy="300" r="260"/>
-          <circle class="hero-ring hero-ring-soft" cx="300" cy="300" r="300"/>
+      <div class="hero-art" aria-hidden="true">
+        <svg class="root-svg" viewBox="0 0 1200 900" focusable="false">
+          <defs>
+            <linearGradient id="root-fade" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
+              <stop offset=".3" stop-color="#ffffff" stop-opacity=".45"/>
+              <stop offset=".55" stop-color="#ffffff" stop-opacity="1"/>
+            </linearGradient>
+            <mask id="root-mask"><rect width="1200" height="900" fill="url(#root-fade)"/></mask>
+          </defs>
+          <g class="roots" mask="url(#root-mask)" fill="none" stroke-linecap="round">
+            <path class="root-path root-trunk" pathLength="1" d="M1125 -20 C 1135 80, 1110 190, 1082 290"/>
+            <path class="root-path root-trunk-inner" pathLength="1" d="M1125 -10 C 1130 90, 1106 195, 1082 290"/>
+            <path class="root-path root-main" pathLength="1" style="--i:0" d="M1082 290 C 1020 380, 900 450, 760 520 C 700 555, 650 610, 620 700"/>
+            <path class="root-path root-main" pathLength="1" style="--i:1" d="M1082 290 C 1050 430, 960 530, 850 640 C 810 685, 780 760, 775 850"/>
+            <path class="root-path root-main" pathLength="1" style="--i:2" d="M1082 290 C 1100 430, 1040 600, 970 750 C 940 815, 925 870, 930 920"/>
+            <path class="root-path root-main" pathLength="1" style="--i:3" d="M1082 290 C 1120 400, 1160 520, 1180 620 C 1190 670, 1195 730, 1185 800"/>
+            <path class="root-path root-main" pathLength="1" style="--i:4" d="M1082 290 C 1040 360, 960 420, 880 460"/>
+            <path class="root-path root-fine" pathLength="1" style="--i:5" d="M760 520 C 730 550, 690 580, 640 605"/>
+            <path class="root-path root-fine" pathLength="1" style="--i:6" d="M850 640 C 870 690, 880 750, 845 810"/>
+            <path class="root-path root-fine" pathLength="1" style="--i:7" d="M970 750 C 995 800, 1010 850, 985 900"/>
+            <path class="root-path root-fine" pathLength="1" style="--i:8" d="M620 700 C 590 735, 560 770, 545 820"/>
+            <path class="root-path root-fine" pathLength="1" style="--i:9" d="M1180 620 C 1160 670, 1145 720, 1130 780"/>
+            <path class="root-path root-fine" pathLength="1" style="--i:10" d="M880 460 C 840 480, 800 490, 760 500"/>
+            <path class="root-path root-main" pathLength="1" style="--i:11" d="M1082 290 C 980 340, 820 380, 680 420 C 560 455, 470 540, 430 650 C 410 710, 400 760, 410 820"/>
+            <path class="root-path root-fine" pathLength="1" style="--i:12" d="M680 420 C 620 460, 570 520, 540 590"/>
+            <path class="root-path root-fine" pathLength="1" style="--i:13" d="M430 650 C 400 690, 370 730, 350 790"/>
+            <path class="root-path root-main" pathLength="1" style="--i:14" d="M1082 290 C 1000 300, 880 330, 760 380 C 680 410, 610 470, 560 550"/>
+            <path class="root-path root-fine" pathLength="1" style="--i:15" d="M560 550 C 520 600, 490 650, 470 700"/>
+          </g>
+          <g class="root-nodes" mask="url(#root-mask)">
+            <circle class="root-node node-ok" cx="620" cy="700" r="7"/>
+            <circle class="root-node node-ok" cx="775" cy="850" r="6"/>
+            <circle class="root-node node-ok" cx="1185" cy="800" r="7"/>
+            <circle class="root-node node-warn" cx="880" cy="460" r="5"/>
+            <circle class="root-node node-muted" cx="640" cy="605" r="4"/>
+            <circle class="root-node node-muted" cx="845" cy="810" r="4"/>
+            <circle class="root-node node-warn" cx="1130" cy="780" r="5"/>
+            <circle class="root-node node-ok" cx="985" cy="900" r="5"/>
+            <circle class="root-node node-muted" cx="545" cy="820" r="4"/>
+            <circle class="root-node node-ok" cx="930" cy="920" r="5"/>
+            <circle class="root-node node-ok" cx="410" cy="820" r="6"/>
+            <circle class="root-node node-muted" cx="540" cy="590" r="4"/>
+            <circle class="root-node node-warn" cx="350" cy="790" r="5"/>
+            <circle class="root-node node-ok" cx="470" cy="700" r="5"/>
+          </g>
+          <g class="root-labels" mask="url(#root-mask)">
+            <text x="560" y="735">nuget-packages</text>
+            <text x="650" y="885">go-mod-cache</text>
+            <text x="1085" y="845">npm-cache</text>
+            <text x="985" y="235">cargo-registry</text>
+            <text x="640" y="430">dotnet-tools</text>
+            <text x="375" y="850">rustup</text>
+            <text x="490" y="720">dotnet-tools</text>
+          </g>
+          <g class="root-sprout" mask="url(#root-mask)">
+            <path d="M1125 34v-22 M1125 18c0-10-8-18-19-18 0 11 8 18 19 18z M1125 18c0-10 8-18 19-18 0 11-8 18-19 18z"/>
+            <line x1="1097" y1="36" x2="1153" y2="36"/>
+          </g>
+        </svg>
+        <span class="hero-scan" aria-hidden="true"></span>
+        <div class="hero-hud" aria-hidden="true">
+          <span class="hero-hud-kicker">Field note 01 / cache forest</span>
+          <span class="hero-hud-value"><i></i>3,152 items · 19.4 GB</span>
+        </div>
+      </div>
+
+      <svg class="hero-orbit" viewBox="0 0 800 800" aria-hidden="true" focusable="false">
+        <g fill="none" stroke="currentColor" stroke-width="1">
+          <circle cx="400" cy="400" r="120"/>
+          <circle cx="400" cy="400" r="200"/>
+          <circle cx="400" cy="400" r="280"/>
+          <circle cx="400" cy="400" r="360" stroke-dasharray="2 10"/>
         </g>
       </svg>
 
       <div class="container hero-grid">
         <div class="hero-head">
-          <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"></span> A native, plugin-based toolchain &amp; cache cleaner for polyglot developers</p>
+          <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"></span> KOP-IS <span class="eyebrow-sep" aria-hidden="true">·</span> A cache cleaner with evidence</p>
           <h1 id="hero-title">
-            <span class="line">Harvest what regrows.</span>
-            <span class="line accent">Never touch the root.</span>
+            <span class="line">
+              <span class="word" style="--i:0">Harvest</span>
+              <span class="word" style="--i:1">what</span>
+              <span class="word underline-word" style="--i:2">regrows.<svg class="word-stroke" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M2 7 Q 30 2 52 5 T 98 4" pathLength="100"/></svg></span>
+            </span>
+            <span class="line accent">
+              <span class="word" style="--i:3">Never</span>
+              <span class="word" style="--i:4">touch</span>
+              <span class="word" style="--i:5">the</span>
+              <span class="word" style="--i:6">root.</span>
+            </span>
           </h1>
         </div>
         <div class="hero-body">
@@ -95,7 +168,6 @@
             <span class="status-dot" aria-hidden="true"></span>
             v0.4.0-rc.2 <span class="status-sep" aria-hidden="true">·</span> candidate <span class="status-sep" aria-hidden="true">·</span> no tag
           </a>
-          <p class="hero-meta mono">Apache-2.0 <span aria-hidden="true">·</span> Windows / Linux / macOS <span aria-hidden="true">·</span> .NET 10</p>
         </div>
 
         <aside class="evidence-cabinet" aria-label="Evidence from the release candidate">
@@ -134,8 +206,17 @@ agrees with the quarantine index.</code></pre>
             <span class="pill pill-ok">restored · byte-identical</span>
           </div>
 
-          <p class="cabinet-note">Trimmed from the rc.2 clean-environment E2E run. Supporting evidence, not a fresh VM.</p>
+          <p class="cabinet-note">rc.2 E2E excerpt · supporting evidence, not a fresh VM.</p>
         </aside>
+      </div>
+
+      <div class="container hero-foot">
+        <ul class="hero-facts">
+          <li><span class="mono">3,152</span> packages <span aria-hidden="true">·</span> <span class="mono">19.4 GB</span> <span aria-hidden="true">·</span> <span class="mono">15.6–17.7 s</span> <span class="fact-note">single owner machine, T-058</span></li>
+          <li><span class="mono">4</span> ecosystems <span aria-hidden="true">·</span> <span class="mono">6</span> CI cells <span aria-hidden="true">·</span> <span class="mono">0</span> network calls</li>
+          <li><span class="mono">Apache-2.0</span> <span aria-hidden="true">·</span> Windows / Linux / macOS</li>
+        </ul>
+        <a class="scroll-cue" href="#why">Follow the cut <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
       </div>
     </section>
 
