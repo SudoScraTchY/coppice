@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Page not found — Coppice</title>
+  <meta name="description" content="This path was not found. Nothing else was deleted.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#15271E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2315271E'/%3E%3Cpath d='M12 21v-8M12 13C12 9.2 9.2 6 5 6c0 4.2 2.8 7 7 7zM12 13c0-3.8 2.8-7 7-7 0 4.2-3.2 7-7 7zM5 21h14' transform='translate(8 8) scale(2)' fill='none' stroke='%23F5F3ED' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <style>
+    :root { --paper: #F5F3ED; --ink: #1D2620; --ink-2: #3E4942; --forest: #15271E; --accent: #2C6A4C; --border: #E0DDD3; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      display: grid;
+      place-items: center;
+      min-height: 100svh;
+      padding: 24px;
+      background:
+        radial-gradient(900px 500px at 80% -10%, #DCEAE0 0%, transparent 60%),
+        var(--paper);
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+    .wrap { width: min(560px, 100%); }
+    .brand { display: inline-flex; align-items: center; gap: 9px; margin-bottom: 40px; color: var(--ink); text-decoration: none; font-size: 1.1rem; font-weight: 600; letter-spacing: -.03em; }
+    .brand svg { width: 26px; height: 26px; fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .code { color: var(--accent); font-family: "Cascadia Mono", Consolas, monospace; font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; }
+    h1 { margin: 12px 0 0; font-size: clamp(2.2rem, 8vw, 3.6rem); line-height: 1.02; letter-spacing: -.04em; font-weight: 600; }
+    p { margin: 16px 0 0; color: var(--ink-2); }
+    .button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; margin-top: 28px; padding: 0 20px; border-radius: 10px; background: var(--forest); color: var(--paper); font-size: 15px; font-weight: 550; text-decoration: none; }
+    .fine { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border); color: #5A655D; font-size: .68rem; font-family: "Cascadia Mono", Consolas, monospace; letter-spacing: .03em; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <a class="brand" href="/coppice/">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 21v-8 M12 13C12 9.2 9.2 6 5 6c0 4.2 2.8 7 7 7z M12 13c0-3.8 2.8-7 7-7 0 4.2-3.2 7-7 7z M5 21h14"/></svg>
+      coppice
+    </a>
+    <p class="code">404 · not found</p>
+    <h1>This page does not exist.</h1>
+    <p>Nothing else was deleted. The project lives at the root of this site.</p>
+    <a class="button" href="/coppice/">Back to Coppice</a>
+    <p class="fine">Apache-2.0 · Harvest what regrows. Never touch the root.</p>
+  </main>
+</body>
+</html>

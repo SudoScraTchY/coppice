@@ -47,7 +47,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | W7 | T-062 TUI copy + T-063 evidence | T-061 truth pass + T-064 kits | T-060 | B/T/F + six-cell CI; 19/19 evidence; reviewer |
 | W8 | T-065 docs guard | T-066 v1.0 planning | T-061/T-064 | docs-truth; reviewer; no v1.0 code |
 
-## Card status (as of 2026-10-29)
+## Card status (as of 2026-10-30)
 
 | Card | Status | Evidence / location |
 |---|---|---|
@@ -95,6 +95,12 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | T-071 FR-10 polyglot health checks | `not-started` | planning only |
 | T-072 network-policy decision | `not-started` | planning only |
 | T-073 per-project override roots | `not-started` | planning only |
+
+### Project site
+
+| Card | Status | Evidence / location |
+|---|---|---|
+| T-075 project landing page | `in-progress` | `site/` + `scripts/check-site.py`; Pages deploy pending |
 
 ## Human-only gates
 
@@ -175,9 +181,9 @@ none of them can be automated or self-certified.
    `docs/human-gates/second-reviewer-brief.md`.
 5. **Tag.** Add the dated rows to the evidence log, then make the release-identity edit in one commit:
    `<Version>0.4.0</Version>`, the CHANGELOG heading, the release-notes title and candidate paragraphs,
-   the README status/install/caption wording, the quickstart/commands version strings, and the active
-   version lines in `SDD/AGENDA.md`, `SDD/08-gui.md`, `SDD/12-roadmap.md`, `docs/safety.md` and
-   `docs/human-gates/README.md` — the dated evidence rows keep their historical `rc.1`/`rc.2`
+   the README status/install/caption wording, the quickstart/commands version strings, `site/index.html`,
+   and the active version lines in `SDD/AGENDA.md`, `SDD/08-gui.md`, `SDD/12-roadmap.md`, `docs/safety.md`
+   and `docs/human-gates/README.md` — the dated evidence rows keep their historical `rc.1`/`rc.2`
    references. T-074 is fixed in `d4036f2`; the second reviewer verifies the pin pass-through. Push,
    wait for a green `build.yml` on that commit (six cells, egress Passed, license, docs-truth), then
    `git tag -a v0.4.0 -m "v0.4.0" && git push origin v0.4.0`. `release.yml` refuses the tag if the

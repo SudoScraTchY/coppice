@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Colophon — Coppice</title>
+  <meta name="description" content="How the Coppice project page is made: static HTML, self-hosted Inter, design references, truth checks, privacy, and license.">
+  <meta name="theme-color" content="#15271E">
+  <link rel="canonical" href="https://sudoscratchy.github.io/coppice/colophon.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Coppice">
+  <meta property="og:title" content="Colophon — Coppice">
+  <meta property="og:description" content="How the Coppice project page is made: static HTML, self-hosted Inter, design references, truth checks, privacy, and license.">
+  <meta property="og:url" content="https://sudoscratchy.github.io/coppice/colophon.html">
+  <meta property="og:image" content="https://sudoscratchy.github.io/coppice/assets/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Colophon — Coppice">
+  <meta name="twitter:description" content="How the Coppice project page is made: static HTML, self-hosted Inter, design references, truth checks, privacy, and license.">
+  <meta name="twitter:image" content="https://sudoscratchy.github.io/coppice/assets/img/og.png">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <svg class="svg-sprite" aria-hidden="true" focusable="false" width="0" height="0">
+    <symbol id="i-sprout" viewBox="0 0 24 24"><path d="M12 21v-8 M12 13C12 9.2 9.2 6 5 6c0 4.2 2.8 7 7 7z M12 13c0-3.8 2.8-7 7-7 0 4.2-3.2 7-7 7z M5 21h14"/></symbol>
+  </svg>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="Coppice home">
+        <svg class="icon brand-mark" aria-hidden="true"><use href="#i-sprout"/></svg>
+        <span class="brand-name">coppice</span>
+      </a>
+      <a class="button button-small button-ghost header-github" href="index.html">Back to the project</a>
+    </div>
+  </header>
+
+  <main id="main" class="colophon-main">
+    <div class="container prose-page">
+      <p class="eyebrow">Colophon</p>
+      <h1>How this page is made.</h1>
+      <p class="lede">A static project page for a tool that makes no network calls. It loads no third-party assets, sets no cookies, and keeps its claims honest with a small checker.</p>
+
+      <section class="colophon-block">
+        <h2>The page</h2>
+        <p>One HTML page, one stylesheet, one small script, and a self-hosted font. There is no framework, no build step and no runtime dependency. GitHub Pages deploys the <code>site/</code> directory through <code>.github/workflows/pages.yml</code>.</p>
+        <p><code>scripts/check-site.py</code> runs locally and in CI. It verifies that every local asset exists, that no runtime asset comes from another origin, that the page names the current <code>&lt;Version&gt;</code>, that the candidate status is present, and that false release claims are absent.</p>
+      </section>
+
+      <section class="colophon-block">
+        <h2>Type</h2>
+        <p>Body and display type is <a href="https://rsms.me/inter/">Inter</a>, a variable font, self-hosted as a latin subset. It is licensed under the SIL Open Font License 1.1; the license text is at <a href="assets/fonts/OFL.txt">assets/fonts/OFL.txt</a>.</p>
+        <p>Terminal and label text uses the system monospace stack: Cascadia Mono, Consolas, DejaVu Sans Mono, then the platform default.</p>
+      </section>
+
+      <section class="colophon-block">
+        <h2>Design references</h2>
+        <p>The design practice on this page refers to two public skill collections:</p>
+        <ul>
+          <li><a href="https://github.com/emilkowalski/skills">emilkowalski/skills</a> — interface and motion guidance (MIT).</li>
+          <li><a href="https://github.com/Motionsites-AI/claude-skill">Motionsites-AI/claude-skill</a> — the MotionSites web-builder skill instructions (MIT; its media collection is not used).</li>
+        </ul>
+        <p>These are design references, not vendored code. No upstream media is hosted here, and the page implementation is original.</p>
+      </section>
+
+      <section class="colophon-block">
+        <h2>Truth</h2>
+        <p>The page currently describes <code>0.4.0-rc.2</code>, the release candidate at <code>e738b52</code>. There is no <code>v0.4.0</code> tag, no GitHub Release and no public package feed. The four human gates are listed in <a href="index.html#status">the status section</a> and in <a href="https://github.com/SudoScraTchY/coppice/blob/main/SDD/AGENDA.md">SDD/AGENDA.md</a>.</p>
+        <p>When the project version changes, the checker fails until this page is updated. That includes the tag procedure, which names the site version line.</p>
+      </section>
+
+      <section class="colophon-block">
+        <h2>Privacy</h2>
+        <p>No cookies, no analytics, no tracking pixels, no third-party scripts, no font CDN. The only network requests are for this origin's HTML, stylesheet, script, font and images. External links are ordinary links; following one leaves this page.</p>
+      </section>
+
+      <section class="colophon-block">
+        <h2>License</h2>
+        <p>Site content is Apache-2.0, the same license as the project. Product screenshots are from the rc.1 Avalonia shell; the GUI is unchanged in rc.2. Copyright 2026 Coppice Authors.</p>
+        <p><a href="https://github.com/SudoScraTchY/coppice/blob/main/LICENSE">Apache License 2.0</a> · <a href="https://github.com/SudoScraTchY/coppice/blob/main/NOTICE">NOTICE</a></p>
+      </section>
+
+      <p class="colophon-meta mono">Page last updated 2026-10-30 <span aria-hidden="true">·</span> v0.4.0-rc.2 <span aria-hidden="true">·</span> candidate</p>
+
+      <div class="colophon-footer">
+        <a class="button button-primary" href="index.html">Back to Coppice</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-bottom">
+      <p class="mono">© 2026 Coppice Authors</p>
+      <p class="mono">Apache-2.0 <span aria-hidden="true">·</span> no cookies <span aria-hidden="true">·</span> no third-party assets</p>
+      <a class="text-link" href="index.html">Project home</a>
+    </div>
+  </footer>
+</body>
+</html>

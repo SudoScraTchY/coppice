@@ -10,6 +10,7 @@
 | phase-3-v0.3-apply.md | v0.3 | T-031 … T-038, T-044 … T-049 | gateway, quarantine, audit, apply, TUI, CI mode, config, ecosystem wiring |
 | phase-4-v0.4-gui.md | v0.4 | T-039 … T-043, T-050 … T-065, T-074 | Avalonia GUI, history, completions, requirement closure, catalog hardening, user manifests, v0.4 release, truth pass, evidence, gate kits |
 | phase-5-v1.0-planning.md | v1.0 | T-066 … T-073 | planning surface: docs site, distribution, integration and network decisions |
+| phase-6-project-site.md | site | T-075 | project landing page and GitHub Pages |
 
 The live order, status and evidence are in [`../AGENDA.md`](../AGENDA.md). A card that is not in
 the agenda is not being worked on, even if its boxes are open.

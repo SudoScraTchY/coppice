@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coppice — Harvest what regrows. Never touch the root.</title>
+  <meta name="description" content="A native, plugin-based toolchain and cache cleaner for polyglot developers. Dry-run by default, quarantine instead of deletion, and a hash-chained audit ledger. 0.4.0-rc.2 is a candidate; no tag yet.">
+  <meta name="author" content="Coppice Authors">
+  <meta name="theme-color" content="#15271E">
+  <link rel="canonical" href="https://sudoscratchy.github.io/coppice/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Coppice">
+  <meta property="og:title" content="Coppice — Harvest what regrows. Never touch the root.">
+  <meta property="og:description" content="A native, plugin-based toolchain and cache cleaner for polyglot developers. Dry-run by default, quarantine instead of deletion, hash-chained audit. 0.4.0-rc.2 is a candidate; no tag yet.">
+  <meta property="og:url" content="https://sudoscratchy.github.io/coppice/">
+  <meta property="og:image" content="https://sudoscratchy.github.io/coppice/assets/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Coppice — harvest what regrows. Never touch the root. A 0.4.0-rc.2 candidate with an evidence cabinet.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Coppice — Harvest what regrows. Never touch the root.">
+  <meta name="twitter:description" content="A native, plugin-based toolchain and cache cleaner for polyglot developers. Dry-run by default, quarantine instead of deletion, hash-chained audit. 0.4.0-rc.2 is a candidate; no tag yet.">
+  <meta name="twitter:image" content="https://sudoscratchy.github.io/coppice/assets/img/og.png">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/site.css">
+  <script src="assets/js/site.js" defer></script>
+</head>
+<body id="top">
+  <svg class="svg-sprite" aria-hidden="true" focusable="false" width="0" height="0">
+    <symbol id="i-sprout" viewBox="0 0 24 24"><path d="M12 21v-8 M12 13C12 9.2 9.2 6 5 6c0 4.2 2.8 7 7 7z M12 13c0-3.8 2.8-7 7-7 0 4.2-3.2 7-7 7z M5 21h14"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15 M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 5h5v5 M19 5l-8 8 M19 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4.2-2.9 7.3-7 9-4.1-1.7-7-4.8-7-9V6z M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><path d="M3 5h18v4H3z M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9 M9 13h6"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 6h2 M4 12h2 M4 18h2 M10 6l2 2 4-4 M10 12l2 2 4-4 M10 18l2 2 4-4"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><path d="M6 10h12v10H6z M9 10V7a3 3 0 0 1 6 0v3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><path d="M9 9h10v10H9z M5 15H4V4h11v1"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18 M12 7v5l3 2"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5l9 16H3z M12 9v4.5 M12 17h.01"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  </svg>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="#top" aria-label="Coppice home">
+        <svg class="icon brand-mark" aria-hidden="true"><use href="#i-sprout"/></svg>
+        <span class="brand-name">coppice</span>
+      </a>
+      <nav class="primary-nav" aria-label="Primary">
+        <a href="#story">How it works</a>
+        <a href="#safety">Safety</a>
+        <a href="#status">Status</a>
+        <a href="#install">Build</a>
+      </nav>
+      <a class="button button-small button-ghost header-github" href="https://github.com/SudoScraTchY/coppice">
+        GitHub
+        <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <svg class="hero-rings" viewBox="0 0 600 600" aria-hidden="true" focusable="false">
+        <g fill="none" stroke="currentColor" stroke-width="1" pathLength="100">
+          <circle class="hero-ring" cx="300" cy="300" r="60"/>
+          <circle class="hero-ring" cx="300" cy="300" r="100"/>
+          <circle class="hero-ring" cx="300" cy="300" r="140"/>
+          <circle class="hero-ring hero-ring-accent" cx="300" cy="300" r="180"/>
+          <circle class="hero-ring" cx="300" cy="300" r="220"/>
+          <circle class="hero-ring" cx="300" cy="300" r="260"/>
+          <circle class="hero-ring hero-ring-soft" cx="300" cy="300" r="300"/>
+        </g>
+      </svg>
+
+      <div class="container hero-grid">
+        <div class="hero-head">
+          <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"></span> A native, plugin-based toolchain &amp; cache cleaner for polyglot developers</p>
+          <h1 id="hero-title">
+            <span class="line">Harvest what regrows.</span>
+            <span class="line accent">Never touch the root.</span>
+          </h1>
+        </div>
+        <div class="hero-body">
+          <p class="lede">Coppice proves what is actually in use, proposes a plan with a reason for every step, and moves approved items into a same-volume quarantine you can restore. No daemon. No network. No telemetry.</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#safety">Walk the safety model <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+            <a class="button button-ghost" href="https://github.com/SudoScraTchY/coppice">Read the source <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a>
+          </div>
+          <a class="status-chip" href="#status">
+            <span class="status-dot" aria-hidden="true"></span>
+            v0.4.0-rc.2 <span class="status-sep" aria-hidden="true">·</span> candidate <span class="status-sep" aria-hidden="true">·</span> no tag
+          </a>
+          <p class="hero-meta mono">Apache-2.0 <span aria-hidden="true">·</span> Windows / Linux / macOS <span aria-hidden="true">·</span> .NET 10</p>
+        </div>
+
+        <aside class="evidence-cabinet" aria-label="Evidence from the release candidate">
+          <div class="cabinet-head">
+            <span class="mono">evidence cabinet</span>
+            <span class="mono cabinet-ref">rc.2 <span aria-hidden="true">·</span> e738b52</span>
+          </div>
+
+          <div class="terminal">
+            <div class="terminal-bar">
+              <span class="terminal-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="mono">coppice — audit</span>
+            </div>
+            <pre><code><span class="t-prompt">$</span> coppice audit verify
+<span class="t-ok">coppice audit verify</span> — 2 record(s) over 2 line(s)
+verified: the chain is intact and the log
+agrees with the quarantine index.</code></pre>
+            <span class="scan-line" aria-hidden="true"></span>
+          </div>
+
+          <div class="plan-card">
+            <div class="plan-head">
+              <span class="mono">plan</span>
+              <span class="pill pill-safe">Safe</span>
+            </div>
+            <div class="plan-id mono">pln_20c055636739</div>
+            <div class="plan-meta mono"><span>1 step</span><span>18 B</span><span>keep-latest 1</span></div>
+            <p class="plan-reason">&ldquo;no project references it; beyond the 1 newest kept for <span class="mono">newtonsoft.json</span>; default policy, safe tier.&rdquo;</p>
+          </div>
+
+          <div class="quarantine-card">
+            <div>
+              <span class="mono quarantine-label">quarantine</span>
+              <span class="mono quarantine-id">f0c8bc0424ae4cbe</span>
+            </div>
+            <span class="pill pill-ok">restored · byte-identical</span>
+          </div>
+
+          <p class="cabinet-note">Trimmed from the rc.2 clean-environment E2E run. Supporting evidence, not a fresh VM.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section problem" id="why" aria-labelledby="problem-title">
+      <div class="container split">
+        <div class="split-head">
+          <p class="eyebrow">The problem</p>
+          <h2 id="problem-title">Caches grow.<br>Evidence doesn&rsquo;t.</h2>
+        </div>
+        <div class="prose">
+          <p>A polyglot machine collects SDK versions, package caches, build caches and global tools. Removing them is fragmented, and blind cleaners turn disk pressure into a trust problem.</p>
+          <p>Coppice starts from evidence. It resolves the registered cache locations, reads the project manifests that prove use, and refuses to propose anything it cannot prove. <strong>Unknown is never unused.</strong></p>
+          <div class="verdict-grid" aria-label="The three usage verdicts">
+            <div class="verdict">
+              <span class="verdict-dot verdict-dot-ok" aria-hidden="true"></span>
+              <span class="mono verdict-label">Referenced</span>
+              <p>Named by a readable project. Never proposed.</p>
+            </div>
+            <div class="verdict">
+              <span class="verdict-dot verdict-dot-mid" aria-hidden="true"></span>
+              <span class="mono verdict-label">Unreferenced</span>
+              <p>No project named it. Eligible for a plan.</p>
+            </div>
+            <div class="verdict">
+              <span class="verdict-dot verdict-dot-unknown" aria-hidden="true"></span>
+              <span class="mono verdict-label">Unknown</span>
+              <p>No proof either way. Never proposed.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section etymology" aria-labelledby="name-title">
+      <div class="container etymology-grid">
+        <div class="etymology-mark" aria-hidden="true">
+          <svg class="icon icon-large"><use href="#i-sprout"/></svg>
+        </div>
+        <div>
+          <p class="eyebrow">The name</p>
+          <p class="pron mono">/ˈkɒp.ɪs/ <span aria-hidden="true">·</span> <em>KOP-is</em></p>
+          <h2 id="name-title" class="etymology-line">A coppice is a wood cut on a cycle.<br>The stump stays; the growth returns.</h2>
+          <p class="prose-narrow">The tool does the same to caches: it cuts back what has grown beyond use, keeps the root, and leaves a way for everything to return.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section story" id="story" aria-labelledby="story-title">
+      <div class="container">
+        <div class="story-intro">
+          <p class="eyebrow">One cut, five proofs</p>
+          <h2 id="story-title">Every step shows its work.</h2>
+          <p class="lede">Follow one cache item through the rc.2 end-to-end run. The artifacts below are real output, trimmed and with paths shortened.</p>
+        </div>
+      </div>
+
+      <div class="container story-grid">
+        <div class="story-terminal-wrap">
+          <div class="story-terminal" aria-hidden="true">
+            <div class="terminal-bar">
+              <span class="terminal-dots"><i></i><i></i><i></i></span>
+              <span class="mono">coppice — rc.2 e2e</span>
+            </div>
+            <div class="story-panes">
+              <div class="story-pane is-active" data-story-pane="doctor">
+                <pre><code><span class="t-prompt">$</span> coppice doctor
+<span class="t-muted">resolving registered locations…</span>
+
+nuget-packages   <span class="t-ok">Ok</span>               cleanable
+dotnet-root      <span class="t-danger">Denied</span>           denylist
+go-bin           <span class="t-warn">FailsFingerprint</span> report-only
+npm-global       <span class="t-muted">None</span>             unresolved</code></pre>
+              </div>
+              <div class="story-pane" data-story-pane="scan">
+                <pre><code><span class="t-prompt">$</span> coppice scan --projects ~/src
+<span class="t-muted">snapshot stored · caches untouched</span>
+
+Usage
+  <span class="t-ok">Referenced</span>        1
+  <span class="t-accent">Unreferenced</span>      8
+  Unknown           0
+  Total             9
+
+<span class="t-muted">real machine: 3,152 packages / 19.4 GB</span>
+<span class="t-muted">15.6–17.7 s warm · single owner machine</span></code></pre>
+              </div>
+              <div class="story-pane" data-story-pane="plan">
+                <pre><code><span class="t-prompt">$</span> coppice plan --keep-latest 1
+
+plan   <span class="t-accent">pln_20c055636739</span>
+1 step · 18 B · keep-latest 1
+
+<span class="t-ok">Safe</span>  PathDelete  newtonsoft.json 1.0.0
+<span class="t-muted">reason  no project references it; beyond the
+1 newest kept; default policy, safe tier.</span>
+
+<span class="t-muted">the plan touches no cache</span></code></pre>
+              </div>
+              <div class="story-pane" data-story-pane="apply">
+                <pre><code><span class="t-prompt">$</span> coppice apply --plan plan.json --yes
+
+status      <span class="t-ok">Completed</span>
+ok          1
+failed      0
+reclaimed   18 B
+
+<span class="t-muted">Moved to quarantine. Restore with</span>
+<span class="t-accent">coppice quarantine restore</span></code></pre>
+              </div>
+              <div class="story-pane" data-story-pane="restore">
+                <pre><code><span class="t-prompt">$</span> coppice quarantine restore f0c8bc0424ae4cbe
+
+restored    <span class="t-ok">true</span> · byte-identical
+
+<span class="t-prompt">$</span> coppice audit verify
+<span class="t-ok">coppice audit verify</span> — 2 record(s) over 2 line(s)
+verified: the chain is intact and the log
+agrees with the quarantine index.</code></pre>
+              </div>
+            </div>
+            <div class="terminal-foot mono">supporting evidence <span aria-hidden="true">·</span> not a fresh VM</div>
+          </div>
+        </div>
+
+        <ol class="story-steps">
+          <li class="story-step is-active" data-story-step="doctor">
+            <span class="step-index mono">01</span>
+            <div class="step-body">
+              <h3>Find the roots.</h3>
+              <p>Read-only. It resolves the .NET, Go, Rust and Node locations, reports what validated, and refuses the rest. A denied or ambiguous path is a report, not a failure.</p>
+              <pre class="step-artifact" aria-label="Doctor output"><code>nuget-packages   Ok               cleanable
+dotnet-root      Denied           denylist
+go-bin           FailsFingerprint report-only
+npm-global       None             unresolved</code></pre>
+            </div>
+          </li>
+          <li class="story-step" data-story-step="scan">
+            <span class="step-index mono">02</span>
+            <div class="step-body">
+              <h3>Prove what is used.</h3>
+              <p>It reads project evidence and classifies every cached version. Without a project root, everything stays Unknown and nothing is proposed. That is the safety rule, not a bug.</p>
+              <pre class="step-artifact" aria-label="Scan usage output"><code>Referenced 1 · Unreferenced 8 · Unknown 0 · Total 9
+real machine: 3,152 packages / 19.4 GB
+15.6–17.7 s warm · single owner machine, T-058</code></pre>
+            </div>
+          </li>
+          <li class="story-step" data-story-step="plan">
+            <span class="step-index mono">03</span>
+            <div class="step-body">
+              <h3>Show the reason.</h3>
+              <p>Every step carries a reason. The plan is checksummed, bound to a snapshot, and touches no cache. Nothing is proposed because it looks old.</p>
+              <pre class="step-artifact" aria-label="Plan output"><code>plan pln_20c055636739 · 1 step · 18 B
+Safe  PathDelete  newtonsoft.json 1.0.0
+reason  no project references it; beyond the 1 newest kept;
+        default policy, safe tier.</code></pre>
+            </div>
+          </li>
+          <li class="story-step" data-story-step="apply">
+            <span class="step-index mono">04</span>
+            <div class="step-body">
+              <h3>Move, never delete.</h3>
+              <p>Path steps are renamed into a same-volume quarantine. A lock, a changed path or a failed check is a recorded refusal. <strong>apply never deletes.</strong></p>
+              <pre class="step-artifact" aria-label="Apply output"><code>status Completed · ok 1 · failed 0 · reclaimed 18 B
+Moved to quarantine. Restore with
+coppice quarantine restore</code></pre>
+            </div>
+          </li>
+          <li class="story-step" data-story-step="restore">
+            <span class="step-index mono">05</span>
+            <div class="step-body">
+              <h3>Leave a way back.</h3>
+              <p>Restore re-checks the content hash, containment and occupancy before moving anything back. The audit ledger is hash-chained and replayable.</p>
+              <pre class="step-artifact" aria-label="Restore and audit output"><code>restore f0c8bc0424ae4cbe · byte-identical
+audit verify — 2 record(s) over 2 line(s)
+verified: the chain is intact and the log agrees
+with the quarantine index.</code></pre>
+            </div>
+          </li>
+        </ol>
+      </div>
+
+      <p class="container story-footnote mono">Trimmed from the rc.2 clean-environment E2E run (`evidence/v0.4.0-rc.2/e2e-scrubbed-path.md`); paths shortened. Supporting machine evidence, not the fresh-VM human gate.</p>
+    </section>
+
+    <section class="section safety" id="safety" aria-labelledby="safety-title">
+      <div class="container">
+        <div class="safety-head">
+          <p class="eyebrow">Safety model</p>
+          <h2 id="safety-title">Nothing is deleted.<br>Everything is accounted for.</h2>
+          <p class="lede">One rule decides every step: a cache is only safe to remove when the evidence says it is not in use, and the user has seen why. The rings below are the boundaries that make that rule true rather than promised.</p>
+        </div>
+      </div>
+
+      <div class="container safety-grid">
+        <figure class="rings-figure" data-active-ring="0">
+          <svg class="rings-svg" viewBox="0 0 600 600" aria-hidden="true" focusable="false">
+            <circle class="ring-halo" cx="300" cy="300" r="92"/>
+            <circle class="ring ring-0" cx="300" cy="300" r="62"/>
+            <circle class="ring ring-1" cx="300" cy="300" r="105"/>
+            <circle class="ring ring-2" cx="300" cy="300" r="150"/>
+            <circle class="ring ring-3" cx="300" cy="300" r="195" pathLength="360" stroke-dasharray="300 60" transform="rotate(-90 300 300)"/>
+            <circle class="ring ring-4" cx="300" cy="300" r="240" pathLength="360" stroke-dasharray="300 60" transform="rotate(-90 300 300)"/>
+            <circle class="ring ring-5" cx="300" cy="300" r="285" pathLength="360" stroke-dasharray="300 60" transform="rotate(-90 300 300)"/>
+            <g class="ring-cut">
+              <line x1="300" y1="6" x2="300" y2="130" transform="rotate(300 300 300)"/>
+              <line x1="300" y1="6" x2="300" y2="130"/>
+            </g>
+            <g class="ring-sprout" transform="translate(276 276) scale(2)">
+              <path d="M12 21v-8 M12 13C12 9.2 9.2 6 5 6c0 4.2 2.8 7 7 7z M12 13c0-3.8 2.8-7 7-7 0 4.2-3.2 7-7 7z M5 21h14"/>
+            </g>
+          </svg>
+          <figcaption>The cut never reaches the root.</figcaption>
+          <p class="rings-note mono">Hover or focus a ring to see its rule.</p>
+        </figure>
+
+        <div class="safety-controls">
+          <div class="ring-list" role="group" aria-label="Safety boundaries">
+            <button class="ring-item is-active" type="button" data-ring="0" aria-pressed="true">
+              <span class="ring-index mono">01</span>
+              <span class="ring-text"><span class="ring-name">Root</span><span class="ring-rule">Project roots and cache roots. Never removed.</span></span>
+            </button>
+            <button class="ring-item" type="button" data-ring="1" aria-pressed="false">
+              <span class="ring-index mono">02</span>
+              <span class="ring-text"><span class="ring-name">Referenced</span><span class="ring-rule">Named by a project. Never proposed.</span></span>
+            </button>
+            <button class="ring-item" type="button" data-ring="2" aria-pressed="false">
+              <span class="ring-index mono">03</span>
+              <span class="ring-text"><span class="ring-name">Unknown</span><span class="ring-rule">No proof either way. Never proposed.</span></span>
+            </button>
+            <button class="ring-item" type="button" data-ring="3" aria-pressed="false">
+              <span class="ring-index mono">04</span>
+              <span class="ring-text"><span class="ring-name">Unreferenced</span><span class="ring-rule">Readable project, no reference. Eligible for a plan.</span></span>
+            </button>
+            <button class="ring-item" type="button" data-ring="4" aria-pressed="false">
+              <span class="ring-index mono">05</span>
+              <span class="ring-text"><span class="ring-name">Quarantine</span><span class="ring-rule">A same-volume rename. Restorable.</span></span>
+            </button>
+            <button class="ring-item" type="button" data-ring="5" aria-pressed="false">
+              <span class="ring-index mono">06</span>
+              <span class="ring-text"><span class="ring-name">Prune</span><span class="ring-rule">Permanent, explicit, 30-day default floor.</span></span>
+            </button>
+          </div>
+
+          <div class="gateway">
+            <h3>One gateway, eight checks.</h3>
+            <ol class="gateway-list">
+              <li><span>Entry allowlist</span>Only locations that declare a path-delete allowlist can authorize a move.</li>
+              <li><span>Canonicalize &amp; contain</span>The resolved path must stay inside a validated root.</li>
+              <li><span>Denylist floor</span>System directories, home roots, Desktop, Documents and Downloads are refused.</li>
+              <li><span>Never the root</span>The root itself is not a candidate.</li>
+              <li><span>Lock probe</span>A locked item is skipped, never forced.</li>
+              <li><span>Strict drift check</span>With <code>--strict</code>, path, size and mtime must still match.</li>
+              <li><span>TOCTOU re-verify</span>The whole chain is re-checked immediately before the rename.</li>
+              <li><span>Same-volume rename</span>The item moves to quarantine. It is not deleted.</li>
+            </ol>
+            <p class="gateway-note">A failure at any step is a recorded refusal, not a partial deletion. Every move appends one hash-chained audit line.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="container safety-cards">
+        <article class="safety-card">
+          <svg class="icon" aria-hidden="true"><use href="#i-archive"/></svg>
+          <h3>Quarantine, not deletion.</h3>
+          <p>Path steps are renamed to <code>.coppice/quarantine/…</code> on the same volume. Restore re-checks the content hash, containment and occupancy. Only <code>quarantine prune</code> deletes, after a 30-day default floor and a typed <code>yes</code>.</p>
+        </article>
+        <article class="safety-card">
+          <svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>
+          <h3>Signed history.</h3>
+          <p>Every mutation appends one hash-chained JSONL line. <code>audit verify</code> replays it against the index and the filesystem. Apply is write-ahead journaled; <code>--resume</code> reconciles an interrupted run.</p>
+        </article>
+        <article class="safety-card">
+          <svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg>
+          <h3>Read-only by default.</h3>
+          <p><code>doctor</code>, <code>roots</code>, <code>scan</code> and <code>plan</code> do not modify a scanned cache. The plan is checksummed, bound to a snapshot, and touches nothing. <code>apply</code> asks first.</p>
+        </article>
+      </div>
+
+      <div class="container safety-quotes">
+        <blockquote>
+          <p>&ldquo;apply never deletes.&rdquo;</p>
+          <cite class="mono">docs/safety.md</cite>
+        </blockquote>
+        <blockquote>
+          <p>&ldquo;Unknown &ne; unused.&rdquo;</p>
+          <cite class="mono">README.md</cite>
+        </blockquote>
+      </div>
+
+      <div class="container safety-link">
+        <a class="text-link" href="https://github.com/SudoScraTchY/coppice/blob/main/docs/safety.md">Read the full safety model <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </div>
+    </section>
+
+    <section class="section surfaces" id="surfaces" aria-labelledby="surfaces-title">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Three surfaces, one engine</p>
+          <h2 id="surfaces-title">The same services, wherever you work.</h2>
+          <p class="lede">The CLI, the seven-screen TUI and the Avalonia shell share the same scan, plan, gateway, journal and audit services. The desktop shell ships as a separate self-contained artifact.</p>
+        </div>
+
+        <div class="gui-collage">
+          <figure class="shot shot-main">
+            <img src="assets/img/gui-dashboard.png" width="1107" height="768" alt="Coppice dashboard: project roots, retention policy and the loaded scan." loading="lazy" decoding="async">
+            <figcaption><span class="mono">Dashboard</span> Project roots, retention policy and the loaded scan.</figcaption>
+          </figure>
+          <div class="shot-stack">
+            <figure class="shot">
+              <img src="assets/img/gui-items.png" width="1107" height="768" alt="Coppice evidence view: every item, its usage verdict and the reason behind the decision." loading="lazy" decoding="async">
+              <figcaption><span class="mono">Evidence</span> Every item, its verdict and its reason.</figcaption>
+            </figure>
+            <figure class="shot">
+              <img src="assets/img/gui-history.png" width="1107" height="768" alt="Coppice history view: 12 snapshots compared, with growth named per ecosystem." loading="lazy" decoding="async">
+              <figcaption><span class="mono">History</span> Snapshots compared, growth named per ecosystem.</figcaption>
+            </figure>
+          </div>
+        </div>
+        <p class="screenshot-caption mono">Captured from the rc.1 GUI; the GUI is unchanged in rc.2.</p>
+
+        <div class="surface-detail">
+          <article>
+            <h3><span class="mono">CLI</span> Scripted or interactive.</h3>
+            <p><code>doctor</code> · <code>scan --projects</code> · <code>plan</code> · <code>apply</code> · <code>quarantine list|restore|prune</code> · <code>audit show|verify</code> · <code>history</code> · <code>completions</code> · <code>tui</code></p>
+            <p class="fine">Exit codes: <code>0</code> success · <code>1</code> runtime · <code>2</code> usage · <code>3</code> safety abort · <code>4</code> partial or cancelled apply.</p>
+            <a class="text-link" href="https://github.com/SudoScraTchY/coppice/blob/main/docs/commands.md">Command reference <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          </article>
+          <article>
+            <h3><span class="mono">TUI</span> Keyboard first.</h3>
+            <p>Seven screens: Dashboard, Roots, Items, Problems, Plan review, Apply progress, Quarantine.</p>
+            <p class="fine"><kbd>space</kbd> toggles · a second <kbd>a</kbd> applies · <kbd>esc</kbd> cancels between steps.</p>
+            <a class="text-link" href="https://github.com/SudoScraTchY/coppice/blob/main/SDD/07-cli-tui.md">TUI contract <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section coverage" id="coverage" aria-labelledby="coverage-title">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Coverage</p>
+          <h2 id="coverage-title">Four ecosystems, one gateway.</h2>
+          <p class="lede">The .NET code profile and the Go, Rust and Node manifests resolve through the same engine, fingerprint gate and provenance reporting. A fifth ecosystem is one registry entry.</p>
+        </div>
+
+        <div class="eco-grid">
+          <article class="eco-card">
+            <span class="mono eco-index">01</span>
+            <h3>.NET</h3>
+            <p>NuGet packages, SDK tools and workloads. The built-in code profile.</p>
+            <ul class="mono">
+              <li>~/.nuget/packages</li>
+              <li>~/.dotnet/tools</li>
+              <li>~/.dotnet/packs</li>
+            </ul>
+          </article>
+          <article class="eco-card">
+            <span class="mono eco-index">02</span>
+            <h3>Go</h3>
+            <p>Module cache, build cache and <code>go/bin</code>.</p>
+            <ul class="mono">
+              <li>GOMODCACHE</li>
+              <li>GOCACHE</li>
+              <li>GOPATH/bin</li>
+            </ul>
+          </article>
+          <article class="eco-card">
+            <span class="mono eco-index">03</span>
+            <h3>Rust</h3>
+            <p>Cargo registry and git checkouts, plus rustup toolchains.</p>
+            <ul class="mono">
+              <li>CARGO_HOME</li>
+              <li>RUSTUP_HOME</li>
+            </ul>
+          </article>
+          <article class="eco-card">
+            <span class="mono eco-index">04</span>
+            <h3>Node / npm</h3>
+            <p>npm cache and global packages.</p>
+            <ul class="mono">
+              <li>npm_config_cache</li>
+              <li>%LOCALAPPDATA%\npm-cache</li>
+            </ul>
+          </article>
+        </div>
+
+        <p class="fine coverage-note">Installer-owned locations — MSI SDKs, the Visual Studio installer cache, NuGet&rsquo;s http-cache and temp — are report-only. Python, pnpm, yarn, bun and Docker are not scanned in 0.4.0-rc.2; they are v1.0 planning. <code>--projects</code> is never auto-discovered; without it, every cache stays Unknown.</p>
+      </div>
+    </section>
+
+    <section class="section numbers" id="numbers" aria-labelledby="numbers-title">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Measured, not promised</p>
+          <h2 id="numbers-title">Numbers with a filename.</h2>
+          <p class="lede">These are single-machine measurements and recorded fixtures, not a benchmark promise. Each number links to the evidence that produced it.</p>
+        </div>
+
+        <div class="stat-grid">
+          <article class="stat">
+            <div class="stat-number"><span class="sr-only">3,152</span><span aria-hidden="true" data-count="3152" data-decimals="0">3,152</span></div>
+            <p class="stat-unit mono">packages / 19.4 GB</p>
+            <p>Scanned in 15.6–17.7 s warm after the T-058 reference-index fix. 190.6 s before; 210.5 s cold.</p>
+            <a class="stat-source mono" href="https://github.com/SudoScraTchY/coppice/blob/main/SDD/AGENDA.md">AGENDA · T-058</a>
+          </article>
+          <article class="stat">
+            <div class="stat-number"><span class="sr-only">30,000</span><span aria-hidden="true" data-count="30000" data-decimals="0">30,000</span></div>
+            <p class="stat-unit mono">items / 31,457,280,000 B</p>
+            <p>Real filesystem, 1 MB sparse files, scanned in 9.965 s. NFR-04 met.</p>
+            <a class="stat-source mono" href="https://github.com/SudoScraTchY/coppice/blob/main/SDD/AGENDA.md">AGENDA · NFR-04</a>
+          </article>
+          <article class="stat">
+            <div class="stat-number"><span class="sr-only">86.5</span><span aria-hidden="true" data-count="86.5" data-decimals="1">86.5</span></div>
+            <p class="stat-unit mono">ms median cold start</p>
+            <p>Framework-dependent binary, rc.2 T-074 rebuild. Observed range 82–218 ms.</p>
+            <a class="stat-source mono" href="https://github.com/SudoScraTchY/coppice/blob/main/evidence/v0.4.0-rc.2/cold-start.md">evidence · cold start</a>
+          </article>
+          <article class="stat">
+            <div class="stat-number"><span class="sr-only">2.32</span><span aria-hidden="true" data-count="2.32" data-decimals="2">2.32</span></div>
+            <p class="stat-unit mono">MB single file</p>
+            <p>Framework-dependent CLI. Self-contained 38.53 MB; GUI 50.04 MB. No trimming.</p>
+            <a class="stat-source mono" href="https://github.com/SudoScraTchY/coppice/blob/main/docs/release-notes-v0.4.md">release notes · sizes</a>
+          </article>
+        </div>
+
+        <ul class="proof-strip">
+          <li><span class="mono">6</span> CI cells <span class="proof-note">Windows / Linux / macOS × x64 / arm64</span></li>
+          <li><span class="mono">1,396</span> unit + <span class="mono">33</span> architecture tests</li>
+          <li><span class="mono">12</span> goldens · <span class="mono">100k</span> escape cases</li>
+          <li><span class="mono">19/19</span> release-bundle checksums</li>
+        </ul>
+
+        <p class="fine numbers-note">The 3,152-package run is one owner machine after T-058; the 30,000-item run is a real-filesystem sparse fixture. CI is a six-cell matrix, not a performance benchmark.</p>
+      </div>
+    </section>
+
+    <section class="section status" id="status" aria-labelledby="status-title">
+      <div class="container status-grid">
+        <div class="status-copy">
+          <p class="eyebrow">Release status</p>
+          <h2 id="status-title">The tag is the last step, not the first.</h2>
+          <p class="lede">Coppice is at 0.4.0-rc.2. The machine evidence is green. Four human gates are open. So there is no v0.4.0 tag, no GitHub Release and no public package feed — by design.</p>
+          <div class="truth-callout">
+            <svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>
+            <span>No tag. No GitHub Release. No public package feed.</span>
+          </div>
+          <p>A green build is not evidence for a feature, and a machine cannot sign a human gate. This page shows the candidate and the open gates rather than skipping them.</p>
+          <div class="status-links">
+            <a class="text-link" href="https://github.com/SudoScraTchY/coppice/blob/main/SDD/AGENDA.md">AGENDA <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a>
+            <a class="text-link" href="https://github.com/SudoScraTchY/coppice/blob/main/CHANGELOG.md">CHANGELOG <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a>
+            <a class="text-link" href="https://github.com/SudoScraTchY/coppice/blob/main/docs/release-notes-v0.4.md">Release notes <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a>
+            <a class="text-link" href="https://github.com/SudoScraTchY/coppice/tree/main/evidence/v0.4.0-rc.2">Evidence <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a>
+          </div>
+        </div>
+
+        <div class="dossier">
+          <div class="dossier-head">
+            <span class="mono">candidate dossier</span>
+            <span class="pill pill-candidate">candidate</span>
+          </div>
+
+          <dl class="dossier-facts">
+            <div><dt>version</dt><dd class="mono">0.4.0-rc.2</dd></div>
+            <div><dt>commit</dt><dd class="mono">e738b52</dd></div>
+            <div><dt>build</dt><dd class="mono">40696943889</dd></div>
+            <div><dt>dry run</dt><dd class="mono">40698827006</dd></div>
+            <div><dt>E2E plan</dt><dd class="mono">pln_20c055636739</dd></div>
+            <div><dt>quarantine</dt><dd class="mono">f0c8bc0424ae4cbe</dd></div>
+          </dl>
+
+          <div class="gate-block">
+            <p class="mono gate-label">machine gates</p>
+            <ul class="gate-list">
+              <li><span>Six CI cells</span><span class="pill pill-ok">Passed</span></li>
+              <li><span>Egress canary</span><span class="pill pill-ok">Passed</span></li>
+              <li><span>Release bundle 19/19</span><span class="pill pill-ok">Passed</span></li>
+              <li><span>Clean-environment E2E</span><span class="pill pill-ok">Passed</span></li>
+            </ul>
+            <p class="mono gate-label gate-label-human">human gates</p>
+            <ul class="gate-list">
+              <li><span>Screen-reader smoke pass</span><span class="pill pill-open">Open</span></li>
+              <li><span>Fresh-VM transcript</span><span class="pill pill-open">Open</span></li>
+              <li><span>5+ dogfood reports</span><span class="pill pill-open">Open</span></li>
+              <li><span>Second safety reviewer</span><span class="pill pill-open">Open</span></li>
+            </ul>
+          </div>
+
+          <div class="tag-timeline" aria-label="Release path">
+            <div class="tag-node tag-node-done"><span class="tag-dot" aria-hidden="true"></span><span class="mono">rc.2 candidate</span><small>e738b52</small></div>
+            <div class="tag-line" aria-hidden="true"></div>
+            <div class="tag-node tag-node-open"><span class="tag-dot" aria-hidden="true"></span><span class="mono">four human gates</span><small>open</small></div>
+            <div class="tag-line tag-line-dashed" aria-hidden="true"></div>
+            <div class="tag-node tag-node-future"><span class="tag-dot" aria-hidden="true"></span><span class="mono">v0.4.0 tag</span><small>not yet</small></div>
+          </div>
+        </div>
+      </div>
+      <p class="container status-footnote fine">0.3.0 was withdrawn before it was ever tagged; the record is in <a href="https://github.com/SudoScraTchY/coppice/blob/main/docs/adr/ADR-017-release-truth-and-size-budget.md">ADR-017</a>. The rc.2 E2E is supporting machine evidence, not the fresh-VM gate.</p>
+    </section>
+
+    <section class="section install" id="install" aria-labelledby="install-title">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Get started</p>
+          <h2 id="install-title">Build from source, for now.</h2>
+          <p class="lede">All paths end with a <code>coppice</code> command on your <code>PATH</code>. No Docker, daemon, service or helper process is involved.</p>
+        </div>
+
+        <div class="install-grid">
+          <article class="install-card">
+            <div class="install-card-head"><h3>Framework-dependent</h3><span class="mono">~2.3 MB</span></div>
+            <p>Needs the .NET 10 runtime. Produces a single file.</p>
+            <div class="code-block">
+              <pre><code><span class="t-prompt">$</span> bash scripts/publish.sh win-x64</code></pre>
+              <button class="copy-button" type="button" data-copy="bash scripts/publish.sh win-x64" aria-label="Copy the framework-dependent publish command">
+                <svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span>
+              </button>
+            </div>
+          </article>
+
+          <article class="install-card">
+            <div class="install-card-head"><h3>Self-contained</h3><span class="mono">~38.5 MB</span></div>
+            <p>Needs no .NET runtime on the target machine.</p>
+            <div class="code-block">
+              <pre><code><span class="t-prompt">$</span> SELF_CONTAINED=1 bash scripts/publish.sh win-x64</code></pre>
+              <button class="copy-button" type="button" data-copy="SELF_CONTAINED=1 bash scripts/publish.sh win-x64" aria-label="Copy the self-contained publish command">
+                <svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span>
+              </button>
+            </div>
+          </article>
+
+          <article class="install-card">
+            <div class="install-card-head"><h3>dotnet tool</h3><span class="mono">local pack</span></div>
+            <p>Pack from a checkout, then install the candidate.</p>
+            <div class="code-block">
+              <pre><code><span class="t-prompt">$</span> dotnet pack \
+    src/Coppice.Cli/Coppice.Cli.csproj \
+    -c Release -o artifacts/packages
+<span class="t-prompt">$</span> dotnet tool install --global \
+    --add-source ./artifacts/packages \
+    coppice --version 0.4.0-rc.2</code></pre>
+              <button class="copy-button" type="button" data-copy="dotnet pack src/Coppice.Cli/Coppice.Cli.csproj -c Release -o artifacts/packages
+dotnet tool install --global --add-source ./artifacts/packages coppice --version 0.4.0-rc.2" aria-label="Copy the dotnet tool commands">
+                <svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span>
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <div class="install-callout">
+          <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+          <p><strong>No public package feed carries Coppice yet.</strong> A tag builds all six RIDs through <code>release.yml</code> with <code>SHA256SUMS.txt</code> and <code>SIZES.txt</code>; until then, build from a checkout. See the <a href="https://github.com/SudoScraTchY/coppice/blob/main/docs/quickstart.md">quickstart</a> for every path.</p>
+        </div>
+
+        <div class="rid-row">
+          <span class="mono">RIDs</span>
+          <span class="rid-chip mono">win-x64</span>
+          <span class="rid-chip mono">win-arm64</span>
+          <span class="rid-chip mono">linux-x64</span>
+          <span class="rid-chip mono">linux-arm64</span>
+          <span class="rid-chip mono">osx-x64</span>
+          <span class="rid-chip mono">osx-arm64</span>
+          <span class="fine">Only the linux-x64 self-contained archive has an automated install smoke today.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section faq" id="faq" aria-labelledby="faq-title">
+      <div class="container faq-grid">
+        <div class="faq-head">
+          <p class="eyebrow">FAQ</p>
+          <h2 id="faq-title">Questions the candidate can answer.</h2>
+          <p class="lede">Nothing here is a promise about a tagged release. The repository is the source of truth.</p>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Does <code>apply</code> delete anything?</summary>
+            <p>No. Path steps are renamed into a same-volume quarantine. Permanent removal is the separately confirmed <code>quarantine prune</code>, which defaults to a 30-day floor and requires a typed <code>yes</code> or <code>--yes</code>.</p>
+          </details>
+          <details>
+            <summary>What does <code>Unknown</code> mean?</summary>
+            <p>Coppice could not prove usage either way. Unknown items are never proposed, because absence of evidence is not evidence of absence.</p>
+          </details>
+          <details>
+            <summary>Does it read my source code?</summary>
+            <p>It reads project manifests and lock or asset files to resolve references. It never edits a project, a lock file or an SDK installation.</p>
+          </details>
+          <details>
+            <summary>Does it phone home?</summary>
+            <p>No network calls and no telemetry. ADR-009 is authoritative. CI runs the suite under <code>unshare --net</code> with an egress canary that fails if the network is available.</p>
+          </details>
+          <details>
+            <summary>Does it remove SDKs?</summary>
+            <p>No. Installer-owned locations are report-only. Coppice never asks for elevation and never runs a command as root or Administrator.</p>
+          </details>
+          <details>
+            <summary>Can I undo a move?</summary>
+            <p>Yes, while the item is in quarantine. Restore re-checks the content hash, containment and occupancy before moving it back. After <code>quarantine prune</code>, the content is gone.</p>
+          </details>
+          <details>
+            <summary>Does it clean <code>node_modules</code>, <code>bin</code> or <code>obj</code>?</summary>
+            <p>No. Coppice is a machine-level toolchain and cache cleaner, not a project-artifact cleaner. kondo-style project cleanup is v1.0 planning (T-069).</p>
+          </details>
+          <details>
+            <summary>Is it released?</summary>
+            <p>No. 0.4.0-rc.2 is a release candidate. There is no tag, no GitHub Release and no public package feed; four human gates are open. The <a href="#status">status section</a> names them.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <a class="brand brand-footer" href="#top" aria-label="Coppice home">
+          <svg class="icon brand-mark" aria-hidden="true"><use href="#i-sprout"/></svg>
+          <span class="brand-name">coppice</span>
+        </a>
+        <p>Harvest what regrows.<br>Never touch the root.</p>
+        <p class="mono footer-license">Apache-2.0 <span aria-hidden="true">·</span> © 2026 Coppice Authors</p>
+      </div>
+      <div class="footer-col">
+        <h3 class="mono">Product</h3>
+        <ul>
+          <li><a href="#story">How it works</a></li>
+          <li><a href="#safety">Safety model</a></li>
+          <li><a href="#status">Release status</a></li>
+          <li><a href="#install">Build from source</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h3 class="mono">Docs</h3>
+        <ul>
+          <li><a href="https://github.com/SudoScraTchY/coppice/blob/main/docs/quickstart.md">Quickstart</a></li>
+          <li><a href="https://github.com/SudoScraTchY/coppice/blob/main/docs/safety.md">Safety</a></li>
+          <li><a href="https://github.com/SudoScraTchY/coppice/blob/main/docs/commands.md">Commands</a></li>
+          <li><a href="https://github.com/SudoScraTchY/coppice/blob/main/docs/release-notes-v0.4.md">Release notes</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h3 class="mono">Project</h3>
+        <ul>
+          <li><a href="https://github.com/SudoScraTchY/coppice/blob/main/SDD/AGENDA.md">AGENDA</a></li>
+          <li><a href="https://github.com/SudoScraTchY/coppice/blob/main/CONTRIBUTING.md">Contributing</a></li>
+          <li><a href="https://github.com/SudoScraTchY/coppice/blob/main/SECURITY.md">Security</a></li>
+          <li><a href="https://github.com/SudoScraTchY/coppice/blob/main/LICENSE">License</a></li>
+          <li><a href="colophon.html">Colophon</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <a class="status-chip status-chip-footer" href="#status"><span class="status-dot" aria-hidden="true"></span> v0.4.0-rc.2 <span class="status-sep" aria-hidden="true">·</span> candidate <span class="status-sep" aria-hidden="true">·</span> no tag</a>
+      <p class="mono">This page loads no third-party assets, sets no cookies and uses no analytics.</p>
+      <p class="mono">© 2026 Coppice Authors</p>
+    </div>
+  </footer>
+</body>
+</html>

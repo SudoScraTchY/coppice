@@ -294,3 +294,6 @@ jobs:
 
       - name: Check the docs' state claims
         run: python3 scripts/check-docs-truth.py --base HEAD^
+
+      - name: Check the project site's assets and claims
+        run: python3 scripts/check-site.py
