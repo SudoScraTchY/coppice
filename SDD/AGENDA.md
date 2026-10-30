@@ -100,7 +100,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 
 | Card | Status | Evidence / location |
 |---|---|---|
-| T-075 project landing page | `in-progress` | `site/` + `scripts/check-site.py`; Pages deploy pending |
+| T-075 project landing page | `done` | pages run `41076908919`; live `https://sudoscratchy.github.io/coppice/`; `evidence/t-075-site/` |
 
 ## Human-only gates
 
@@ -280,6 +280,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-28 | T-063 rebuilt evidence archived | 19/19; FD 82–218 ms, SC 126–136; egress canary Passed |
 | 2026-10-28 | T-065 rebuilt CI/release guard | docs truth OK in `40696943889` and `40698827006` |
 | 2026-10-29 | Owner decision: keep rc.2 held | No human-gate evidence yet; the tag stays uncreated; resume when a gate is signed |
+| 2026-10-30 | T-075 project site deployed | pages run `41076908919`; build run `41076908815` (six cells, egress, license, docs truth); live `https://sudoscratchy.github.io/coppice/`; `evidence/t-075-site/` |
 
 ## Updating this file
 

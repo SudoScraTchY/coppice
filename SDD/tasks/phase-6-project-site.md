@@ -23,9 +23,10 @@ and the evidence, and deploys through free GitHub Pages.
 - No third-party runtime assets, cookies or analytics; no release, download or package-feed claim.
 
 **Acceptance**
-- [ ] The site check passes locally and in `build.yml` + `pages.yml`; the page names the current `<Version>`, states `No tag` and `No public package feed`, and makes no release claim
-- [ ] Pages deploys from `main`; the live URL and assets return 200; the run id and URL are recorded
-- [ ] Visual QA at 1440×900, 1024×768, 390×844 and 320 px: no horizontal overflow, no console errors, reduced-motion and keyboard pass, lazy screenshots loaded
-- [ ] T-075 is in the phase index and AGENDA, and `site/index.html` is in the tag-procedure version lines
+- [x] The site check passes locally and in `build.yml` + `pages.yml`; the page names the current `<Version>`, states `No tag` and `No public package feed`, and makes no release claim (`scripts/check-site.py`; build run `41076908815`; pages run `41076908919`)
+- [x] Pages deploys from `main`; the live URL and assets return 200; the run id and URL are recorded (`https://sudoscratchy.github.io/coppice/`; pages run `41076908919`)
+- [x] Visual QA at 1440×900, 1024×768, 390×844 and 320 px: no horizontal overflow, no console errors, reduced-motion and keyboard pass, lazy screenshots loaded (`evidence/t-075-site/`)
+- [x] T-075 is in the phase index and AGENDA, and `site/index.html` is in the tag-procedure version lines (`SDD/tasks/README.md`, `SDD/AGENDA.md`)
 
-> Evidence: pending deployment.
+> Evidence: `evidence/t-075-site/README.md`; live `https://sudoscratchy.github.io/coppice/`; pages
+> run `41076908919`; build run `41076908815` (six cells, egress, license, docs truth).
