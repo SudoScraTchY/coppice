@@ -30,3 +30,5 @@ and the evidence, and deploys through free GitHub Pages.
 
 > Evidence: `evidence/t-075-site/README.md`; live `https://sudoscratchy.github.io/coppice/`; pages
 > run `41076908919`; build run `41076908815` (six cells, egress, license, docs truth).
+> Hero redesign (2026-10-31): pages run `41131928520` on `686f852`; build run `41131928504` docs
+> truth + site check green; live URL unchanged; reduced-motion and keyboard rechecked.

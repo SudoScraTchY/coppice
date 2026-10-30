@@ -47,7 +47,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 | W7 | T-062 TUI copy + T-063 evidence | T-061 truth pass + T-064 kits | T-060 | B/T/F + six-cell CI; 19/19 evidence; reviewer |
 | W8 | T-065 docs guard | T-066 v1.0 planning | T-061/T-064 | docs-truth; reviewer; no v1.0 code |
 
-## Card status (as of 2026-10-30)
+## Card status (as of 2026-10-31)
 
 | Card | Status | Evidence / location |
 |---|---|---|
@@ -100,7 +100,7 @@ evidence for a feature. `blocked-human` cards never auto-tick.
 
 | Card | Status | Evidence / location |
 |---|---|---|
-| T-075 project landing page | `done` | pages run `41076908919`; live `https://sudoscratchy.github.io/coppice/`; `evidence/t-075-site/` |
+| T-075 project landing page | `done` | pages run `41131928520`; live `https://sudoscratchy.github.io/coppice/`; `evidence/t-075-site/` |
 
 ## Human-only gates
 
@@ -281,6 +281,7 @@ A gate is signed by a dated row in the evidence log. "I ran it" without a transc
 | 2026-10-28 | T-065 rebuilt CI/release guard | docs truth OK in `40696943889` and `40698827006` |
 | 2026-10-29 | Owner decision: keep rc.2 held | No human-gate evidence yet; the tag stays uncreated; resume when a gate is signed |
 | 2026-10-30 | T-075 project site deployed | pages run `41076908919`; build run `41076908815` (six cells, egress, license, docs truth); live `https://sudoscratchy.github.io/coppice/`; `evidence/t-075-site/` |
+| 2026-10-31 | T-075 hero redesign deployed | pages run `41131928520` on `686f852`; build run `41131928504` docs truth + site check green; live `https://sudoscratchy.github.io/coppice/`; `evidence/t-075-site/` |
 
 ## Updating this file
 

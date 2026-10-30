@@ -1,17 +1,25 @@
-# T-075 project site evidence — 2026-10-30
+# T-075 project site evidence — 2026-10-30, hero update 2026-10-31
 
 The project site is a static landing page for the `0.4.0-rc.2` candidate. It is not a release
 announcement: there is no `v0.4.0` tag, no GitHub Release and no public package feed, and the four
 human gates remain open.
 
 - **Live:** <https://sudoscratchy.github.io/coppice/>
-- **Deploy:** `pages` run [41076908919](https://github.com/SudoScraTchY/coppice/actions/runs/41076908919) — `build site` and `deploy site` succeeded.
-- **CI:** `build` run [41076908815](https://github.com/SudoScraTchY/coppice/actions/runs/41076908815) — six cells, egress, license and docs truth (including `scripts/check-site.py`) succeeded.
-- **Commit:** `c8d5f49`.
+- **Deploy:** initial `pages` run [41076908919](https://github.com/SudoScraTchY/coppice/actions/runs/41076908919) on `c8d5f49`; hero redesign `pages` run [41131928520](https://github.com/SudoScraTchY/coppice/actions/runs/41131928520) on `686f852` — both `build site` and `deploy site` succeeded.
+- **CI:** initial `build` run [41076908815](https://github.com/SudoScraTchY/coppice/actions/runs/41076908815) — six cells, egress, license and docs truth (including `scripts/check-site.py`) succeeded. The hero commit's `build` run [41131928504](https://github.com/SudoScraTchY/coppice/actions/runs/41131928504) has the docs truth and site check green.
+- **Commit:** initial `c8d5f49`; hero redesign `686f852`.
+
+## Hero redesign
+
+On 2026-10-31 the landing hero was rebuilt as a full-height night-forest scene: a word-by-word
+headline, an animated root-network SVG with ecosystem labels, a specimen HUD, a floating paper
+evidence cabinet and a facts rail. The page remains dependency-free; the root scene is inline SVG,
+the scan is a one-shot CSS animation, and reduced motion shows the completed state. The live
+reduced-motion and keyboard checks were repeated after the redesign.
 
 ## Truth checks
 
-- `py -3 scripts/check-site.py` → `site check: OK (version 0.4.0-rc.2; 14 files; 1,084,990 bytes)`.
+- `py -3 scripts/check-site.py` → `site check: OK (version 0.4.0-rc.2; 14 files; 1,098,639 bytes)`.
 - `py -3 scripts/check-docs-truth.py` → `docs truth: OK (version 0.4.0-rc.2)`.
 - The live index, CSS, JS, Inter WOFF2, three GUI screenshots, `og.png`, favicon, colophon,
   `404.html`, `robots.txt` and `sitemap.xml` all return `200`.
@@ -38,16 +46,17 @@ Chromium CDP, on the same files as the deploy:
 
 ## Live reduced-motion and keyboard
 
-- Reduced motion at load (390 px): `prefers-reduced-motion` true, hero lede animation `none`, opacity
-  `1`, scan line `display: none`, the `3,152` count is already final, `scrollWidth` 390.
+- Reduced motion at load (390 px): `prefers-reduced-motion` true, hero lede and headline animations
+  `none`, both at opacity `1`, the root paths at `stroke-dashoffset: 0px`, the scan line
+  `display: none`, the `3,152` count already final, `scrollWidth` 390.
 - Keyboard (1440 px): `Tab` order is skip link → brand → How it works → Safety → Status → Build →
   GitHub; no console errors. `live-focus.jpg` shows the skip link focused.
 
 ## Screenshots
 
-- `live-desktop.jpg` — live page, 1440×900.
-- `live-focus.jpg` — live page with the skip link focused.
-- `live-mobile-reduced.jpg` — live page at 390×844 with reduced motion.
+- `live-desktop.jpg` — live redesigned hero, 1440×900.
+- `live-focus.jpg` — live hero with the skip link focused.
+- `live-mobile-reduced.jpg` — live hero at 390×844 with reduced motion.
 - `rings.jpg` — the growth-rings safety figure.
 - `status.jpg` — the release-status dossier.
 - `install.jpg` — install commands on mobile, including the wrapped `dotnet tool` command.
